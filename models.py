@@ -18,6 +18,7 @@ class User(Base):
     id = Column(Integer, primary_key=True)
     telegram_id = Column(Integer, unique=True, nullable=False)
     username = Column(String(100), nullable=True)
+    chat_id = Column(String(100), nullable=True)
 
 
 class Agency(Base):
@@ -36,6 +37,8 @@ class Agent(Base):
     id = Column(Integer, primary_key=True)
     agency_id = Column(Integer, ForeignKey('agency.id'), nullable=False)
     agent_name = Column(String(100), nullable=False)
+    agent_phone = Column(String(100), nullable=False)
+    agent_email = Column(String(100), nullable=False)
 
     # Define relationship with Agency
     agency = relationship('Agency', back_populates='agents')
@@ -43,13 +46,27 @@ class Agent(Base):
     offers = relationship('Offer', back_populates='sales_agent')
 
 
+class Category(Base):
+    __tablename__ = 'category'
+
+    id = Column(Integer, primary_key=True)
+    category_name = Column(String(50), nullable=False)
+
+
+class Property(Base):
+    __tablename__ = 'property'
+
+    id = Column(Integer, primary_key=True)
+    property_type = Column(String(50), nullable=False)
+
+
 class Offer(Base):
     __tablename__ = 'offer'
 
     id = Column(Integer, primary_key=True)
     offer_type = Column(String(50), nullable=False)
-    property = Column(String(100), nullable=False)
-    category = Column(String(50), nullable=False)
+    property_id = Column(Integer, ForeignKey('property.id'), nullable=False)
+    category_id = Column(Integer, ForeignKey('category.id'), nullable=False)
     creation = Column(DateTime, nullable=False)
     last_update_date = Column(DateTime, nullable=True)
     sales_agent_id = Column(Integer, ForeignKey('agent.id'), nullable=False)
@@ -68,6 +85,9 @@ class Offer(Base):
     images = relationship('Images', back_populates='offer')
     # Define relationship with Inventory
     inventories = relationship('Inventory', secondary=offer_inventory, back_populates='offers')
+    # Define relationship with Property and Category
+    property = relationship('Property')
+    category = relationship('Category')
 
 
 class Images(Base):
