@@ -24,6 +24,10 @@
 .idea/**/uiDesigner.xml
 .idea/**/dbnavigator.xml
 
+
+migrations/versions
+
+
 # Gradle
 .idea/**/gradle.xml
 .idea/**/libraries
