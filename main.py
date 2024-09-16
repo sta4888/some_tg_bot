@@ -10,7 +10,6 @@ load_dotenv()
 
 # Инициализация бота
 API_TOKEN = os.environ.get('BOT_TOKEN')
-DATABASE_URL = os.environ.get('DB_URL')
 bot = telebot.TeleBot(API_TOKEN)
 
 
