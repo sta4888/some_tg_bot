@@ -26,6 +26,9 @@ class Agency(Base):
     id = Column(Integer, primary_key=True)
     agency_name = Column(String(100), nullable=False)
 
+    # Define relationship with Agent
+    agents = relationship('Agent', back_populates='agency')
+
 
 class Agent(Base):
     __tablename__ = 'agent'
