@@ -3,8 +3,13 @@ import telebot
 # from sqlalchemy.orm import sessionmaker
 # from models import Base, User
 
+from dotenv import load_dotenv
+import os
+load_dotenv()
+
+
 # Инициализация бота
-API_TOKEN = "YOUR_BOT_API_KEY"
+API_TOKEN = os.environ.get('BOT_TOKEN')
 bot = telebot.TeleBot(API_TOKEN)
 
 # # Настройка подключения к базе данных PostgreSQL через SQLAlchemy
