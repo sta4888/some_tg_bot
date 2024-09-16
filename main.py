@@ -33,6 +33,7 @@ def send_welcome(message):
 
 
 if __name__ == "__main__":
+    bot.delete_webhook()
     bot.polling()
     res = bot.get_me()
     print(res)
