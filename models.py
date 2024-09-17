@@ -26,7 +26,8 @@ class Agency(Base):
     __tablename__ = 'agency'
 
     id = Column(Integer, primary_key=True)
-    agency_name = Column(String(100), nullable=False)
+    agency_name = Column(String(100), nullable=True)
+    agency_id = Column(Integer, nullable=False)
 
     # Relationship with Agent
     agents = relationship('Agent', back_populates='agency')
