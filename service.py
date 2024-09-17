@@ -77,7 +77,7 @@ def parse_and_save_offer(xml_data):
 
         agent_obj = session.query(Agent).filter_by(agent_email=agent_email).first()
         if not agent_obj:
-            agent_obj = Agent(agent_name=agent_name, agent_phone=agent_phone, agent_email=agent_email, agency_id=agency_id)
+            agent_obj = Agent(agent_name=agent_name, agent_phone=agent_phone, agent_email=agent_email, agency_id=agency.id)
             session.add(agent_obj)
 
         # Создаём предложение
