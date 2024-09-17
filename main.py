@@ -1,3 +1,5 @@
+import datetime
+
 import telebot
 
 from connect import session
@@ -5,7 +7,7 @@ from models import Base, User
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 import os
-
+from telegram_bot_calendar import DetailedTelegramCalendar
 
 load_dotenv()
 
@@ -17,69 +19,47 @@ bot = telebot.TeleBot(API_TOKEN)
 # Простой обработчик команды /start
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
-    bot.reply_to(message, "Привет! Добро пожаловать в нашего бота.")
-
-    # Получаем данные о реферале из команды, если она есть
-    command_params = message.text.split()
-
-    referer_id = None
-    if len(command_params) > 1:
-        try:
-            referer_id = int(command_params[1])
-        except ValueError:
-            bot.reply_to(message, "Некорректный реферальный код.")
-
     # Поиск пользователя по telegram_id
     user = session.query(User).filter_by(telegram_id=message.from_user.id).first()
 
     # Если пользователь не найден, создаем нового без агентства
     if user is None:
+        bot.reply_to(message, "Привет! Добро пожаловать в нашего бота.")
         user = User(
             telegram_id=message.from_user.id,
             username=message.from_user.username,
             chat_id=message.chat.id,
-            is_client=False,
-            referer_id=referer_id
         )
         session.add(user)
         session.commit()
         bot.reply_to(message, "Новый пользователь добавлен.")
     else:
-        bot.reply_to(message, "Вы уже зарегистрированы.")
+        bot.reply_to(message, "Здравствуйте. Введите город")
 
 
-@bot.message_handler(content_types=['document'])
-def handle_document(message):
-    # Проверка MIME-типа файла (должен быть 'application/xml' или 'text/xml')
-    if message.document.mime_type in ['application/xml', 'text/xml']:
-        file_info = bot.get_file(message.document.file_id)
+# выбор города
+# первое - выбор даты(в какие даты вам нужно заехать)
+# количество спальных мест, комнат
 
-        # Загружаем файл
-        downloaded_file = bot.download_file(file_info.file_path)
 
-        try:
-            # Декодируем байты в строку
-            xml_data = downloaded_file.decode('utf-8')
+@bot.message_handler(commands=['help'])
+def send_help(message):
+    bot.send_message(message.chat, "Привет! Добро пожаловать в нашего бота.")
 
-            # Парсим XML-файл и сохраняем данные с помощью BeautifulSoup
-            agency_id = parse_and_save_offer(xml_data)
 
-            user = session.query(User).filter_by(telegram_id=message.from_user.id).first()
+@bot.callback_query_handler(func=DetailedTelegramCalendar.func())
+def handle_calendar(call):
+    result, key, step = DetailedTelegramCalendar().process(call.data)
 
-            if user:
-                user.agency_id = agency_id
-                session.commit()
-                print(f"Пользователь {user.id} связан с агентством {agency_id}.")
-            else:
-                print("Пользователь не найден.")
-
-            # Пример: выводим корневой элемент
-            soup = BeautifulSoup(xml_data, 'xml')
-            bot.reply_to(message, f"Файл XML получен! Корневой элемент: {soup.find().name}")
-        except Exception as e:
-            bot.reply_to(message, f"Ошибка при чтении XML файла: {str(e)}.")
-    else:
-        bot.reply_to(message, "Этот файл не является XML.")
+    if not result and key:
+        bot.edit_message_text(f"Выберите {step}",
+                              call.message.chat.id,
+                              call.message.message_id,
+                              reply_markup=key)
+    elif result:
+        bot.edit_message_text(f"Вы выбрали {result}",
+                              call.message.chat.id,
+                              call.message.message_id)
 
 
 if __name__ == "__main__":
