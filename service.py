@@ -123,3 +123,5 @@ def parse_and_save_offer(xml_data):
 
     session.commit()
     print(f"Offer with ID {agency.id} has been added.")
+
+    return agency.id

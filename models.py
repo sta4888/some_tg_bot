@@ -27,10 +27,10 @@ class User(Base):
     chat_id = Column(String(100), nullable=True)
     is_client = Column(Boolean, nullable=False, default=True)
 
-    # Внешний ключ для связи с Agency
-    agency_id = Column(Integer, ForeignKey('agency.id'), nullable=False)
+    # Внешний ключ для связи с Agency (делаем необязательным для отложенной связи)
+    agency_id = Column(Integer, ForeignKey('agency.id'), nullable=True)
 
-    # Связь с агентством
+    # Связь с агентством (может быть установлена позже)
     agency = relationship('Agency', back_populates='users')
 
     # Поле для хранения реферала (ссылка на другого пользователя)

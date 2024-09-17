@@ -20,28 +20,27 @@ bot = telebot.TeleBot(API_TOKEN)
 def send_welcome(message):
     bot.reply_to(message, "Привет! Добро пожаловать в нашего бота.")
 
+    # Получаем данные о реферале из команды, если она есть
     command_params = message.text.split()
 
-    # По умолчанию реферер отсутствует
     referer_id = None
-
-    if len(command_params) > 1:  # Если есть реферальный ID
+    if len(command_params) > 1:
         try:
             referer_id = int(command_params[1])
         except ValueError:
             bot.reply_to(message, "Некорректный реферальный код.")
 
-    # Ищем пользователя в базе данных
+    # Поиск пользователя по telegram_id
     user = session.query(User).filter_by(telegram_id=message.from_user.id).first()
 
-    # Если пользователь не найден, создаем нового
+    # Если пользователь не найден, создаем нового без агентства
     if user is None:
         user = User(
             telegram_id=message.from_user.id,
             username=message.from_user.username,
-            chat_id=message.chat.id,  # Поправил на message.chat.id
+            chat_id=message.chat.id,
             is_client=False,
-            referer_id=referer_id  # Устанавливаем реферера, если он есть
+            referer_id=referer_id
         )
         session.add(user)
         session.commit()
@@ -64,7 +63,16 @@ def handle_document(message):
             xml_data = downloaded_file.decode('utf-8')
 
             # Парсим XML-файл и сохраняем данные с помощью BeautifulSoup
-            parse_and_save_offer(xml_data)
+            agency_id = parse_and_save_offer(xml_data)
+
+            user = session.query(User).filter_by(telegram_id=message.from_user.id).first()
+
+            if user:
+                user.agency_id = agency_id
+                session.commit()
+                print(f"Пользователь {user.id} связан с агентством {agency_id}.")
+            else:
+                print("Пользователь не найден.")
 
             # Пример: выводим корневой элемент
             soup = BeautifulSoup(xml_data, 'xml')
