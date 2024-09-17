@@ -6,7 +6,6 @@ from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 import os
 
-from service import parse_and_save_offer
 
 load_dotenv()
 
