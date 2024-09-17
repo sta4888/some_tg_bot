@@ -20,13 +20,34 @@ bot = telebot.TeleBot(API_TOKEN)
 def send_welcome(message):
     bot.reply_to(message, "Привет! Добро пожаловать в нашего бота.")
 
-    # Пример сохранения пользователя в базу данных
+    command_params = message.text.split()
+
+    # По умолчанию реферер отсутствует
+    referer_id = None
+
+    if len(command_params) > 1:  # Если есть реферальный ID
+        try:
+            referer_id = int(command_params[1])
+        except ValueError:
+            bot.reply_to(message, "Некорректный реферальный код.")
+
+    # Ищем пользователя в базе данных
     user = session.query(User).filter_by(telegram_id=message.from_user.id).first()
 
-    # Если пользователь не найден, создайте нового
+    # Если пользователь не найден, создаем нового
     if user is None:
-        user = User(telegram_id=message.from_user.id, username=message.from_user.username)
+        user = User(
+            telegram_id=message.from_user.id,
+            username=message.from_user.username,
+            chat_id=message.chat.id,  # Поправил на message.chat.id
+            is_client=False,
+            referer_id=referer_id  # Устанавливаем реферера, если он есть
+        )
         session.add(user)
+        session.commit()
+        bot.reply_to(message, "Новый пользователь добавлен.")
+    else:
+        bot.reply_to(message, "Вы уже зарегистрированы.")
 
 
 @bot.message_handler(content_types=['document'])
