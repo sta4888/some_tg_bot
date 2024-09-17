@@ -2,10 +2,9 @@ import telebot
 
 from connect import session
 from models import Base, User
-
+from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 import os
-import xml.etree.ElementTree as ET
 
 from service import parse_and_save_offer
 
@@ -43,16 +42,14 @@ def handle_document(message):
             # Декодируем байты в строку
             xml_data = downloaded_file.decode('utf-8')
 
-            # Парсим XML-файл и сохраняем данные
+            # Парсим XML-файл и сохраняем данные с помощью BeautifulSoup
             parse_and_save_offer(xml_data)
 
             # Пример: выводим корневой элемент
-            root = ET.fromstring(xml_data)
-            bot.reply_to(message, f"Файл XML получен! Корневой элемент: {root.tag}")
-        except ET.ParseError:
-            bot.reply_to(message, "Ошибка при чтении XML файла. Возможно, это невалидный XML.")
-        except UnicodeDecodeError:
-            bot.reply_to(message, "Ошибка декодирования файла. Убедитесь, что файл закодирован в UTF-8.")
+            soup = BeautifulSoup(xml_data, 'xml')
+            bot.reply_to(message, f"Файл XML получен! Корневой элемент: {soup.find().name}")
+        except Exception as e:
+            bot.reply_to(message, f"Ошибка при чтении XML файла: {str(e)}.")
     else:
         bot.reply_to(message, "Этот файл не является XML.")
 

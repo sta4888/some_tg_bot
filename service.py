@@ -1,56 +1,56 @@
-import xml.etree.ElementTree as ET
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy import create_engine
+from bs4 import BeautifulSoup
 from datetime import datetime
+
 from connect import session
 from models import Property, Category, Agent, Offer, Inventory
 
 
 def parse_and_save_offer(xml_data):
-    # Парсинг XML
-    root = ET.fromstring(xml_data)
+    # Парсинг XML с помощью BeautifulSoup
+    soup = BeautifulSoup(xml_data, 'xml')
 
     # Достаём основные данные из XML
-    offer_type = root.find('type').text
-    property_type = root.find('property-type').text
-    category = root.find('category').text
-    creation_date = datetime.fromisoformat(root.find('creation-date').text)
-    last_update_date = datetime.strptime(root.find('last-update-date').text, '%Y-%m-%d %H:%M:%S %z')
+    offer_type = soup.find('type').text
+    property_type = soup.find('property-type').text
+    category = soup.find('category').text
+    creation_date = datetime.fromisoformat(soup.find('creation-date').text)
+    last_update_date = datetime.strptime(soup.find('last-update-date').text, '%Y-%m-%d %H:%M:%S %z')
 
     # Агент и агентство
-    agent_name = root.find('sales-agent/name').text
-    agent_phone = root.find('sales-agent/phone').text
-    agent_email = root.find('sales-agent/email').text
+    agent_name = soup.find('sales-agent').find('name').text
+    agent_phone = soup.find('sales-agent').find('phone').text
+    agent_email = soup.find('sales-agent').find('email').text
 
     # Цена
-    price_value = float(root.find('price/value').text)
+    price_value = float(soup.find('price').find('value').text)
 
     # Описание
-    description = root.find('description').text
+    description = soup.find('description').text
 
     # Минимальный срок проживания
-    min_stay = int(root.find('min-stay').text)
+    min_stay = int(soup.find('min-stay').text)
 
     # Локация
-    country = root.find('location/country').text
-    region = root.find('location/region').text
-    locality_name = root.find('location/locality-name').text
-    address = root.find('location/address').text
-    latitude = float(root.find('location/latitude').text)
-    longitude = float(root.find('location/longitude').text)
+    location = soup.find('location')
+    country = location.find('country').text
+    region = location.find('region').text
+    locality_name = location.find('locality-name').text
+    address = location.find('address').text
+    latitude = float(location.find('latitude').text)
+    longitude = float(location.find('longitude').text)
 
     # Площадь
-    area_value = float(root.find('area/value').text)
+    area_value = float(soup.find('area').find('value').text)
 
     # Время заезда и выезда
-    check_in_time_start = root.find('check-in-time/start-time').text
-    check_out_time_start = root.find('check-out-time/start-time').text
+    check_in_time_start = soup.find('check-in-time').find('start-time').text
+    check_out_time_start = soup.find('check-out-time').find('start-time').text
 
     # Inventory items (e.g., wi-fi, washing machine)
     inventories = {
-        'washing_machine': root.find('washing-machine').text,
-        'wi_fi': root.find('wi-fi').text,
-        'tv': root.find('tv').text,
+        'washing_machine': soup.find('washing-machine').text,
+        'wi_fi': soup.find('wi-fi').text,
+        'tv': soup.find('tv').text,
         # add more inventories as needed...
     }
 
