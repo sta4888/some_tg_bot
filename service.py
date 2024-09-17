@@ -9,7 +9,7 @@ def parse_and_save_offer(xml_data):
     # Парсинг XML с помощью BeautifulSoup
     soup = BeautifulSoup(xml_data, 'xml')
 
-    agency_id = soup.find('agency-id').text
+    agency_id = int(soup.find('agency-id').text)
 
     agency = session.query(Agency).filter_by(agency_id=agency_id).first()
     if not agency:
