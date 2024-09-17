@@ -2,7 +2,7 @@ from bs4 import BeautifulSoup
 from datetime import datetime
 
 from connect import session
-from models import Property, Category, Agent, Offer, Inventory, Agency
+from models import Property, Category, Agent, Offer, Inventory, Agency, Image
 
 
 def parse_and_save_offer(xml_data):
@@ -23,6 +23,7 @@ def parse_and_save_offer(xml_data):
         offer_type = offer.find('type').text
         property_type = offer.find('property-type').text
         category = offer.find('category').text
+        images = [img.get_text(strip=True) for img in offer.find_all('image')]
         creation_date = datetime.fromisoformat(offer.find('creation-date').text)
         last_update_date = datetime.strptime(offer.find('last-update-date').text, '%Y-%m-%d %H:%M:%S %z')
 
@@ -98,6 +99,12 @@ def parse_and_save_offer(xml_data):
         )
 
         session.add(offer)
+
+        for index, url in enumerate(images):
+            is_main = (index == 0)
+            image = Image(offer_id=offer.id, url=url, is_main=is_main)
+            session.add(image)
+
         session.commit()
 
         # Добавляем инвентарь (если есть)

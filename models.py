@@ -60,6 +60,17 @@ class Property(Base):
     property_type = Column(String(50), nullable=False)
 
 
+class Image(Base):
+    __tablename__ = 'image'
+
+    id = Column(Integer, primary_key=True)
+    offer_id = Column(Integer, ForeignKey('offer.id'), nullable=False)
+    url = Column(String, nullable=False)
+    is_main = Column(Integer, default=0)  # 0 for False, 1 for True
+
+    offer = relationship('Offer', back_populates='images')
+
+
 class Offer(Base):
     __tablename__ = 'offer'
 
@@ -82,6 +93,7 @@ class Offer(Base):
     property = relationship('Property')
     category = relationship('Category')
     inventories = relationship('Inventory', secondary=offer_inventory)
+    images = relationship('Image', back_populates='offer')
 
 
 class Inventory(Base):
