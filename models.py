@@ -1,10 +1,11 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Float, Table
+from sqlalchemy import Column, Integer, String, DateTime, Float, ForeignKey, Table
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
+import datetime
 
 Base = declarative_base()
 
-# Association table for many-to-many relationship between Offer and Inventory
+# Association table for many-to-many relationship between Offer and Inventory (e.g., features like wi-fi, etc.)
 offer_inventory = Table(
     'offer_inventory', Base.metadata,
     Column('offer_id', Integer, ForeignKey('offer.id')),
@@ -27,7 +28,7 @@ class Agency(Base):
     id = Column(Integer, primary_key=True)
     agency_name = Column(String(100), nullable=False)
 
-    # Define relationship with Agent
+    # Relationship with Agent
     agents = relationship('Agent', back_populates='agency')
 
 
@@ -40,9 +41,7 @@ class Agent(Base):
     agent_phone = Column(String(100), nullable=False)
     agent_email = Column(String(100), nullable=False)
 
-    # Define relationship with Agency
     agency = relationship('Agency', back_populates='agents')
-    # Define relationship with Offer
     offers = relationship('Offer', back_populates='sales_agent')
 
 
@@ -77,36 +76,15 @@ class Offer(Base):
     area = Column(Float, nullable=True)
     check_in_time = Column(String(50), nullable=True)
     check_out_time = Column(String(50), nullable=True)
-    deposit = Column(Float, nullable=True)
 
-    # Define relationship with Agent
     sales_agent = relationship('Agent', back_populates='offers')
-    # Define relationship with Images
-    images = relationship('Images', back_populates='offer')
-    # Define relationship with Inventory
-    inventories = relationship('Inventory', secondary=offer_inventory, back_populates='offers')
-    # Define relationship with Property and Category
     property = relationship('Property')
     category = relationship('Category')
-
-
-class Images(Base):
-    __tablename__ = 'images'
-
-    id = Column(Integer, primary_key=True)
-    offer_id = Column(Integer, ForeignKey('offer.id'), nullable=False)
-    image_url = Column(String, nullable=False)
-
-    # Define relationship with Offer
-    offer = relationship('Offer', back_populates='images')
+    inventories = relationship('Inventory', secondary=offer_inventory)
 
 
 class Inventory(Base):
     __tablename__ = 'inventory'
 
     id = Column(Integer, primary_key=True)
-    inventory_name = Column(String(100), nullable=False)
-    default_value = Column(String(100), nullable=True)
-
-    # Define many-to-many relationship with Offer
-    offers = relationship('Offer', secondary=offer_inventory, back_populates='inventories')
+    name = Column(String(100), nullable=False)
