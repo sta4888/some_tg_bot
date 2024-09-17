@@ -100,11 +100,16 @@ def parse_and_save_offer(xml_data):
 
         session.add(offer)
 
+        # Выполняем промежуточное сохранение (флашим сессию), чтобы получить offer.id
+        session.flush()
+
+        # Теперь можно добавлять изображения
         for index, url in enumerate(images):
             is_main = (index == 0)
             image = Image(offer_id=offer.id, url=url, is_main=is_main)
             session.add(image)
 
+        # Фиксируем транзакцию
         session.commit()
 
         # Добавляем инвентарь (если есть)
