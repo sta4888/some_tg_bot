@@ -6,6 +6,7 @@ from models import Base, User
 from dotenv import load_dotenv
 import os
 import xml.etree.ElementTree as ET
+
 from service import parse_and_save_offer
 
 load_dotenv()
@@ -39,18 +40,21 @@ def handle_document(message):
         downloaded_file = bot.download_file(file_info.file_path)
 
         try:
-            # Парсим XML-файл
-            root = ET.fromstring(downloaded_file)
-            # parse_and_save_offer(root)
-            print(root)
+            # Декодируем байты в строку
+            xml_data = downloaded_file.decode('utf-8')
+
+            # Парсим XML-файл и сохраняем данные
+            parse_and_save_offer(xml_data)
 
             # Пример: выводим корневой элемент
+            root = ET.fromstring(xml_data)
             bot.reply_to(message, f"Файл XML получен! Корневой элемент: {root.tag}")
         except ET.ParseError:
             bot.reply_to(message, "Ошибка при чтении XML файла. Возможно, это невалидный XML.")
+        except UnicodeDecodeError:
+            bot.reply_to(message, "Ошибка декодирования файла. Убедитесь, что файл закодирован в UTF-8.")
     else:
         bot.reply_to(message, "Этот файл не является XML.")
-
 
 
 if __name__ == "__main__":
