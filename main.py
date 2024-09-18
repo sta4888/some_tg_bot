@@ -79,7 +79,6 @@ def ask_end_date(c):
 def ask_guest(message):
     if message.text.isdigit():
         user_data[message.chat.id]['guest'] = int(message.text)
-        bot.send_message(message.chat.id, "Спасибо! Вот ваши данные:")
         bot.send_message(message.chat.id, "Сколько раздельных спальных мест вам нужно?")
         bot.register_next_step_handler(message, ask_bedrooms)
     else:
@@ -92,6 +91,7 @@ def ask_bedrooms(message):
     bot.send_message(message.chat.id, "Спасибо! Вот ваши данные:")
     bot.send_message(message.chat.id, f"Город: {user_data[message.chat.id]['city']}\n"
                                       f"Даты: {user_data[message.chat.id]['start_date']} - {user_data[message.chat.id]['end_date']}\n"
+                                      f"Сколько гостей: {user_data[message.chat.id]['guest']}\n"
                                       f"Спальных мест: {user_data[message.chat.id]['bedrooms']}")
 
 
