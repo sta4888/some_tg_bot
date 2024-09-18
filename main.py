@@ -66,14 +66,25 @@ def handle_start_date(c):
                     f"Вы выбрали даты:\nЗаезд: {user_data[c.message.chat.id]['start_date']}\nВыезд: {user_data[c.message.chat.id]['end_date']}.",
                     c.message.chat.id,
                     c.message.message_id)
-                bot.send_message(c.message.chat.id, "Сколько раздельных спальных мест вам нужно?")
-                bot.register_next_step_handler(c.message, ask_bedrooms)
+                bot.send_message(c.message.chat.id, "Сколько гостей?")
+                bot.register_next_step_handler(c.message, ask_guest)
 
 
 def ask_end_date(c):
     start_date = datetime.datetime.strptime(user_data[c.message.chat.id]['start_date'], '%Y-%m-%d').date()
     calendar, step = DetailedTelegramCalendar(min_date=start_date + datetime.timedelta(days=1), locale='ru').build()
     bot.send_message(c.message.chat.id, f"Выберите дату выезда:", reply_markup=calendar)
+
+
+def ask_guest(message):
+    if message.text.isdigit():
+        user_data[message.chat.id]['guest'] = int(message.text)
+        bot.send_message(message.chat.id, "Спасибо! Вот ваши данные:")
+        bot.send_message(message.chat.id, "Сколько раздельных спальных мест вам нужно?")
+        bot.register_next_step_handler(message, ask_bedrooms)
+    else:
+        bot.send_message(message.chat.id, "Пожалуйста, введите корректное число.")
+        bot.register_next_step_handler(message, ask_guest)
 
 
 def ask_bedrooms(message):
