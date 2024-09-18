@@ -66,7 +66,7 @@ def handle_start_date(c):
                     f"Вы выбрали даты:\nЗаезд: {user_data[c.message.chat.id]['start_date']}\nВыезд: {user_data[c.message.chat.id]['end_date']}.",
                     c.message.chat.id,
                     c.message.message_id)
-                bot.send_message(c.message.chat.id, "Сколько спальных мест вам нужно?")
+                bot.send_message(c.message.chat.id, "Сколько раздельных спальных мест вам нужно?")
                 bot.register_next_step_handler(c.message, ask_bedrooms)
 
 
