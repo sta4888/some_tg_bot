@@ -12,6 +12,13 @@ bot = telebot.TeleBot(API_TOKEN)
 
 user_data = {}
 
+# Словарь для дней недели и месяцев на русском
+days_of_week = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
+months_of_year = [
+    'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
+    'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
+]
+
 
 @bot.message_handler(commands=['start'])
 def start(message):
@@ -26,13 +33,13 @@ def ask_city(message):
 
 
 def ask_start_date(message):
-    calendar, step = DetailedTelegramCalendar(min_date=datetime.date.today()).build()
+    calendar, step = DetailedTelegramCalendar(min_date=datetime.date.today(), locale='ru').build()
     bot.send_message(message.chat.id, f"Выберите дату заезда:", reply_markup=calendar)
 
 
 @bot.callback_query_handler(func=DetailedTelegramCalendar.func())
 def handle_start_date(c):
-    result, key, step = DetailedTelegramCalendar(min_date=datetime.date.today()).process(c.data)
+    result, key, step = DetailedTelegramCalendar(min_date=datetime.date.today(), locale='ru').process(c.data)
     if not result and key:
         bot.edit_message_text(f"Выберите дату {LSTEP[step]}",
                               c.message.chat.id,
@@ -65,7 +72,7 @@ def handle_start_date(c):
 
 def ask_end_date(c):
     start_date = datetime.datetime.strptime(user_data[c.message.chat.id]['start_date'], '%Y-%m-%d').date()
-    calendar, step = DetailedTelegramCalendar(min_date=start_date + datetime.timedelta(days=1)).build()
+    calendar, step = DetailedTelegramCalendar(min_date=start_date + datetime.timedelta(days=1), locale='ru').build()
     bot.send_message(c.message.chat.id, f"Выберите дату выезда:", reply_markup=calendar)
 
 
