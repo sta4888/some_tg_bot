@@ -38,32 +38,31 @@ def cal(c):
         user_data[c.message.chat.id]['start_date'] = result.strftime('%Y-%m-%d')
 
         bot.edit_message_text(f"Вы выбрали дату заезда: {user_data[c.message.chat.id]['start_date']}.\n"
-                              f"Введите дату выезда (формат: YYYY-MM-DD):",
+                              f"Теперь выберите дату выезда:",
                               c.message.chat.id,
                               c.message.message_id)
 
-        bot.register_next_step_handler(c.message, ask_end_date)
+        calendar, step = DetailedTelegramCalendar(min_date=result + datetime.timedelta(days=1)).build()
+        bot.send_message(c.message.chat.id, f"Выберите дату выезда:", reply_markup=calendar)
 
 
-def ask_end_date(message):
-    try:
-        end_date = datetime.datetime.strptime(message.text, '%Y-%m-%d')
-        start_date = datetime.datetime.strptime(user_data[message.chat.id]['start_date'], '%Y-%m-%d')
+@bot.callback_query_handler(func=DetailedTelegramCalendar.func())
+def cal_end(c):
+    result, key, step = DetailedTelegramCalendar(min_date=datetime.date.today()).process(c.data)
+    if not result and key:
+        bot.edit_message_text(f"Выберите дату {LSTEP[step]}",
+                              c.message.chat.id,
+                              c.message.message_id,
+                              reply_markup=key)
+    elif result:
+        user_data[c.message.chat.id]['end_date'] = result.strftime('%Y-%m-%d')
 
-        if end_date <= start_date:
-            raise ValueError
-
-        user_data[message.chat.id]['end_date'] = end_date.strftime('%Y-%m-%d')
-
-        bot.send_message(message.chat.id,
-                         f"Вы выбрали даты:\nЗаезд: {user_data[message.chat.id]['start_date']}\nВыезд: {user_data[message.chat.id]['end_date']}.")
-        bot.send_message(message.chat.id, "Сколько спальных мест вам нужно?")
-        bot.register_next_step_handler(message, ask_bedrooms)
-
-    except ValueError:
-        bot.send_message(message.chat.id,
-                         "Неверный формат даты или дата выезда должна быть позже даты заезда. Пожалуйста, введите дату в формате YYYY-MM-DD.")
-        bot.register_next_step_handler(message, ask_end_date)
+        bot.edit_message_text(
+            f"Вы выбрали даты:\nЗаезд: {user_data[c.message.chat.id]['start_date']}\nВыезд: {user_data[c.message.chat.id]['end_date']}.",
+            c.message.chat.id,
+            c.message.message_id)
+        bot.send_message(c.message.chat.id, "Сколько спальных мест вам нужно?")
+        bot.register_next_step_handler(c.message, ask_bedrooms)
 
 
 def ask_bedrooms(message):
