@@ -42,13 +42,19 @@ def cal(c):
                               c.message.chat.id,
                               c.message.message_id)
 
+        # Переходим к выбору даты выезда
         calendar, step = DetailedTelegramCalendar(min_date=result + datetime.timedelta(days=1)).build()
         bot.send_message(c.message.chat.id, f"Выберите дату выезда:", reply_markup=calendar)
 
 
-@bot.callback_query_handler(func=DetailedTelegramCalendar.func())
+@bot.callback_query_handler(func=lambda c: True)
 def cal_end(c):
-    result, key, step = DetailedTelegramCalendar(min_date=datetime.date.today()).process(c.data)
+    if c.message.chat.id not in user_data or 'start_date' not in user_data[c.message.chat.id]:
+        return
+
+    # Обработка выбора даты выезда
+    result, key, step = DetailedTelegramCalendar(
+        min_date=user_data[c.message.chat.id]['start_date'] + datetime.timedelta(days=1)).process(c.data)
     if not result and key:
         bot.edit_message_text(f"Выберите дату {LSTEP[step]}",
                               c.message.chat.id,
