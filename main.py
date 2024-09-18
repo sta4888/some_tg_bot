@@ -22,12 +22,16 @@ def start(message):
 
 def ask_city(message):
     user_data[message.chat.id]['city'] = message.text
+    ask_start_date(message)
+
+
+def ask_start_date(message):
     calendar, step = DetailedTelegramCalendar(min_date=datetime.date.today()).build()
     bot.send_message(message.chat.id, f"Выберите дату заезда:", reply_markup=calendar)
 
 
 @bot.callback_query_handler(func=DetailedTelegramCalendar.func())
-def cal(c):
+def handle_start_date(c):
     result, key, step = DetailedTelegramCalendar(min_date=datetime.date.today()).process(c.data)
     if not result and key:
         bot.edit_message_text(f"Выберите дату {LSTEP[step]}",
@@ -36,23 +40,24 @@ def cal(c):
                               reply_markup=key)
     elif result:
         user_data[c.message.chat.id]['start_date'] = result.strftime('%Y-%m-%d')
-
         bot.edit_message_text(f"Вы выбрали дату заезда: {user_data[c.message.chat.id]['start_date']}.\n"
                               f"Теперь выберите дату выезда:",
                               c.message.chat.id,
                               c.message.message_id)
-
-        # Переходим к выбору даты выезда
-        calendar, step = DetailedTelegramCalendar(min_date=result + datetime.timedelta(days=1)).build()
-        bot.send_message(c.message.chat.id, f"Выберите дату выезда:", reply_markup=calendar)
+        ask_end_date(c)
 
 
-@bot.callback_query_handler(func=lambda c: True)
-def cal_end(c):
+def ask_end_date(c):
+    start_date = datetime.datetime.strptime(user_data[c.message.chat.id]['start_date'], '%Y-%m-%d')
+    calendar, step = DetailedTelegramCalendar(min_date=start_date + datetime.timedelta(days=1)).build()
+    bot.send_message(c.message.chat.id, f"Выберите дату выезда:", reply_markup=calendar)
+
+
+@bot.callback_query_handler(func=DetailedTelegramCalendar.func())
+def handle_end_date(c):
     if c.message.chat.id not in user_data or 'start_date' not in user_data[c.message.chat.id]:
         return
 
-    # Обработка выбора даты выезда
     result, key, step = DetailedTelegramCalendar(
         min_date=user_data[c.message.chat.id]['start_date'] + datetime.timedelta(days=1)).process(c.data)
     if not result and key:
@@ -62,7 +67,6 @@ def cal_end(c):
                               reply_markup=key)
     elif result:
         user_data[c.message.chat.id]['end_date'] = result.strftime('%Y-%m-%d')
-
         bot.edit_message_text(
             f"Вы выбрали даты:\nЗаезд: {user_data[c.message.chat.id]['start_date']}\nВыезд: {user_data[c.message.chat.id]['end_date']}.",
             c.message.chat.id,
