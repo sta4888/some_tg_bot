@@ -39,33 +39,37 @@ def handle_start_date(c):
                               c.message.message_id,
                               reply_markup=key)
     elif result:
-        if user_data[c.message.chat.id].get('start_date') is None:
-            user_data[c.message.chat.id]['start_date'] = result.strftime('%Y-%m-%d')
-            bot.edit_message_text(f"Вы выбрали дату заезда: {user_data[c.message.chat.id]['start_date']}.\n"
-                                  f"Теперь выберите дату выезда:",
-                                  c.message.chat.id,
-                                  c.message.message_id)
-            ask_end_date(c)
-        else:
-            user_data[c.message.chat.id]['end_date'] = result.strftime('%Y-%m-%d')
-            bot.edit_message_text(
-                f"Вы выбрали даты:\nЗаезд: {user_data[c.message.chat.id]['start_date']}\nВыезд: {user_data[c.message.chat.id]['end_date']}.",
-                c.message.chat.id,
-                c.message.message_id)
-            bot.send_message(c.message.chat.id, "Сколько спальных мест вам нужно?")
-            bot.register_next_step_handler(c.message, ask_bedrooms)
+        user_data[c.message.chat.id]['start_date'] = result.strftime('%Y-%m-%d')
+        bot.edit_message_text(f"Вы выбрали дату заезда: {user_data[c.message.chat.id]['start_date']}.\n"
+                              f"Теперь выберите время заезда (в формате ЧЧ:ММ):",
+                              c.message.chat.id,
+                              c.message.message_id)
+        bot.register_next_step_handler(c.message, ask_start_time)
 
 
-def ask_end_date(c):
-    start_date = datetime.datetime.strptime(user_data[c.message.chat.id]['start_date'], '%Y-%m-%d').date()
+def ask_start_time(message):
+    try:
+        # Проверяем, что пользователь ввел корректное время
+        start_time = datetime.datetime.strptime(message.text, '%H:%M').time()
+        user_data[message.chat.id]['start_time'] = start_time.strftime('%H:%M')
+
+        ask_end_date(message)
+    except ValueError:
+        bot.send_message(message.chat.id, "Пожалуйста, введите время в формате ЧЧ:ММ.")
+        bot.register_next_step_handler(message, ask_start_time)
+
+
+def ask_end_date(message):
+    start_date = datetime.datetime.strptime(user_data[message.chat.id]['start_date'], '%Y-%m-%d').date()
     calendar, step = DetailedTelegramCalendar(min_date=start_date + datetime.timedelta(days=1)).build()
-    bot.send_message(c.message.chat.id, f"Выберите дату выезда:", reply_markup=calendar)
+    bot.send_message(message.chat.id, f"Выберите дату выезда:", reply_markup=calendar)
 
 
 def ask_bedrooms(message):
     user_data[message.chat.id]['bedrooms'] = message.text
     bot.send_message(message.chat.id, "Спасибо! Вот ваши данные:")
     bot.send_message(message.chat.id, f"Город: {user_data[message.chat.id]['city']}\n"
+                                      f"Дата заезда: {user_data[message.chat.id]['start_date']} {user_data[message.chat.id]['start_time']}\n"
                                       f"Даты: {user_data[message.chat.id]['start_date']} - {user_data[message.chat.id]['end_date']}\n"
                                       f"Спальных мест: {user_data[message.chat.id]['bedrooms']}")
 
