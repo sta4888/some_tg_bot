@@ -33,14 +33,13 @@ def ask_start_date(message):
 @bot.callback_query_handler(func=DetailedTelegramCalendar.func())
 def handle_start_date(c):
     result, key, step = DetailedTelegramCalendar(min_date=datetime.date.today()).process(c.data)
-    print(user_data[c.message.chat.id]['start_date'])
+    print(user_data[c.message.chat.id].get('start_date'))
     if not result and key:
         bot.edit_message_text(f"Выберите дату {LSTEP[step]}",
                               c.message.chat.id,
                               c.message.message_id,
                               reply_markup=key)
     elif result:
-        print(user_data[c.message.chat.id]['start_date'])
         user_data[c.message.chat.id]['start_date'] = result.strftime('%Y-%m-%d')
         bot.edit_message_text(f"Вы выбрали дату заезда: {user_data[c.message.chat.id]['start_date']}.\n"
                               f"Теперь выберите дату выезда:",
