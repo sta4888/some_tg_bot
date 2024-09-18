@@ -17,49 +17,64 @@ bot = telebot.TeleBot(API_TOKEN)
 
 
 # Простой обработчик команды /start
+user_data = {}
+
+
 @bot.message_handler(commands=['start'])
-def send_welcome(message):
-    # Поиск пользователя по telegram_id
-    user = session.query(User).filter_by(telegram_id=message.from_user.id).first()
+def start(message):
+    bot.send_message(message.chat.id, "Привет! Давайте начнем. Какой город вы выбираете?")
+    user_data[message.chat.id] = {}
+    bot.register_next_step_handler(message, ask_city)
 
-    # Если пользователь не найден, создаем нового без агентства
-    if user is None:
-        bot.reply_to(message, "Привет! Добро пожаловать в нашего бота.")
-        user = User(
-            telegram_id=message.from_user.id,
-            username=message.from_user.username,
-            chat_id=message.chat.id,
-        )
-        session.add(user)
-        session.commit()
-        bot.reply_to(message, "Новый пользователь добавлен.")
+
+def ask_city(message):
+    user_data[message.chat.id]['city'] = message.text
+    bot.send_message(message.chat.id, "Отлично! Пожалуйста, введите дату начала (формат: YYYY-MM-DD):")
+    bot.register_next_step_handler(message, ask_start_date)
+
+
+def ask_start_date(message):
+    try:
+        start_date = datetime.strptime(message.text, '%Y-%m-%d')
+        user_data[message.chat.id]['start_date'] = start_date.strftime('%Y-%m-%d')
+
+        # Предложим дату окончания
+        end_date = start_date + datetime.timedelta(days=1)
+        user_data[message.chat.id]['end_date'] = end_date.strftime('%Y-%m-%d')
+
+        bot.send_message(message.chat.id, f"Вы выбрали дату заезда: {user_data[message.chat.id]['start_date']}.")
+        bot.send_message(message.chat.id,
+                         f"Предлагаем дату выезда: {user_data[message.chat.id]['end_date']}. Если хотите изменить, введите новую дату выезда (формат: YYYY-MM-DD), иначе просто напишите 'ОК'.")
+        bot.register_next_step_handler(message, ask_end_date)
+    except ValueError:
+        bot.send_message(message.chat.id, "Неверный формат даты. Пожалуйста, введите дату в формате YYYY-MM-DD.")
+        bot.register_next_step_handler(message, ask_start_date)
+
+
+def ask_end_date(message):
+    if message.text.lower() == 'ок':
+        pass
     else:
-        bot.reply_to(message, "Здравствуйте. Введите город")
+        try:
+            end_date = datetime.strptime(message.text, '%Y-%m-%d')
+            user_data[message.chat.id]['end_date'] = end_date.strftime('%Y-%m-%d')
+        except ValueError:
+            bot.send_message(message.chat.id, "Неверный формат даты. Пожалуйста, введите дату в формате YYYY-MM-DD.")
+            bot.register_next_step_handler(message, ask_end_date)
+            return
+
+    bot.send_message(message.chat.id,
+                     f"Даты заезда: {user_data[message.chat.id]['start_date']}, выезда: {user_data[message.chat.id]['end_date']}.")
+    bot.send_message(message.chat.id, "Сколько спальных мест вам нужно?")
+    bot.register_next_step_handler(message, ask_bedrooms)
 
 
-# выбор города
-# первое - выбор даты(в какие даты вам нужно заехать)
-# количество спальных мест, комнат
-
-
-@bot.message_handler(commands=['help'])
-def send_help(message):
-    bot.send_message(message.chat, "Привет! Добро пожаловать в нашего бота.")
-
-
-@bot.callback_query_handler(func=DetailedTelegramCalendar.func())
-def handle_calendar(call):
-    result, key, step = DetailedTelegramCalendar().process(call.data)
-
-    if not result and key:
-        bot.edit_message_text(f"Выберите {step}",
-                              call.message.chat.id,
-                              call.message.message_id,
-                              reply_markup=key)
-    elif result:
-        bot.edit_message_text(f"Вы выбрали {result}",
-                              call.message.chat.id,
-                              call.message.message_id)
+def ask_bedrooms(message):
+    user_data[message.chat.id]['bedrooms'] = message.text
+    bot.send_message(message.chat.id, "Спасибо! Вот ваши данные:")
+    bot.send_message(message.chat.id, f"Город: {user_data[message.chat.id]['city']}\n"
+                                      f"Даты: {user_data[message.chat.id]['start_date']} - {user_data[message.chat.id]['end_date']}\n"
+                                      f"Спальных мест: {user_data[message.chat.id]['bedrooms']}")
 
 
 if __name__ == "__main__":
