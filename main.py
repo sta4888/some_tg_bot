@@ -7,14 +7,13 @@ from models import Base, User
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 import os
-from telegram_bot_calendar import DetailedTelegramCalendar
+from telegram_bot_calendar import DetailedTelegramCalendar, LSTEP
 
 load_dotenv()
 
 # Инициализация бота
 API_TOKEN = os.environ.get('BOT_TOKEN')
 bot = telebot.TeleBot(API_TOKEN)
-
 
 # Простой обработчик команды /start
 user_data = {}
@@ -29,6 +28,10 @@ def start(message):
 
 def ask_city(message):
     user_data[message.chat.id]['city'] = message.text
+    calendar, step = DetailedTelegramCalendar().build()
+    bot.send_message(message.chat.id,
+                     f"Select {LSTEP[step]}",
+                     reply_markup=calendar)
     bot.send_message(message.chat.id, "Отлично! Пожалуйста, введите дату начала (формат: YYYY-MM-DD):")
     bot.register_next_step_handler(message, ask_start_date)
 
@@ -75,6 +78,20 @@ def ask_bedrooms(message):
     bot.send_message(message.chat.id, f"Город: {user_data[message.chat.id]['city']}\n"
                                       f"Даты: {user_data[message.chat.id]['start_date']} - {user_data[message.chat.id]['end_date']}\n"
                                       f"Спальных мест: {user_data[message.chat.id]['bedrooms']}")
+
+
+@bot.callback_query_handler(func=DetailedTelegramCalendar.func())
+def cal(c):
+    result, key, step = DetailedTelegramCalendar().process(c.data)
+    if not result and key:
+        bot.edit_message_text(f"Select {LSTEP[step]}",
+                              c.message.chat.id,
+                              c.message.message_id,
+                              reply_markup=key)
+    elif result:
+        bot.edit_message_text(f"You selected {result}",
+                              c.message.chat.id,
+                              c.message.message_id)
 
 
 if __name__ == "__main__":
