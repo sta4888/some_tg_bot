@@ -48,7 +48,8 @@ def handle_start_date(c):
 
 
 def ask_end_date(c):
-    start_date = datetime.datetime.strptime(user_data[c.message.chat.id]['start_date'], '%Y-%m-%d')
+    # Преобразование start_date в datetime.date
+    start_date = datetime.datetime.strptime(user_data[c.message.chat.id]['start_date'], '%Y-%m-%d').date()
     calendar, step = DetailedTelegramCalendar(min_date=start_date + datetime.timedelta(days=1)).build()
     bot.send_message(c.message.chat.id, f"Выберите дату выезда:", reply_markup=calendar)
 
@@ -58,8 +59,8 @@ def handle_end_date(c):
     if c.message.chat.id not in user_data or 'start_date' not in user_data[c.message.chat.id]:
         return
 
-    result, key, step = DetailedTelegramCalendar(
-        min_date=user_data[c.message.chat.id]['start_date'] + datetime.timedelta(days=1)).process(c.data)
+    start_date = datetime.datetime.strptime(user_data[c.message.chat.id]['start_date'], '%Y-%m-%d').date()
+    result, key, step = DetailedTelegramCalendar(min_date=start_date + datetime.timedelta(days=1)).process(c.data)
     if not result and key:
         bot.edit_message_text(f"Выберите дату {LSTEP[step]}",
                               c.message.chat.id,
