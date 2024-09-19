@@ -1,18 +1,18 @@
 import telebot
-
 from connect import session
-from models import Base, User
+from models import Base, User, OfferLink  # Предполагаем, что OfferLink – это таблица для ссылок
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 import os
-
 from service import parse_and_save_offer
 
 load_dotenv()
 
-# Инициализация бота
 API_TOKEN = os.environ.get('BOT_TOKEN')
 bot = telebot.TeleBot(API_TOKEN)
+
+# Временное хранилище данных, пока пользователь вводит ссылки
+user_offer_data = {}
 
 
 # Простой обработчик команды /start
@@ -22,18 +22,17 @@ def send_welcome(message):
 
     # Получаем данные о реферале из команды, если она есть
     command_params = message.text.split()
-
     referer_id = None
     if len(command_params) > 1:
         try:
             referer_id = int(command_params[1])
         except ValueError:
             bot.reply_to(message, "Некорректный реферальный код.")
+            return
 
     # Поиск пользователя по telegram_id
     user = session.query(User).filter_by(telegram_id=message.from_user.id).first()
 
-    # Если пользователь не найден, создаем нового без агентства
     if user is None:
         user = User(
             telegram_id=message.from_user.id,
@@ -44,43 +43,66 @@ def send_welcome(message):
         )
         session.add(user)
         session.commit()
-        bot.reply_to(message, "Новый пользователь добавлен.")
+        bot.reply_to(message, "Новый пользователь добавлен. Теперь загрузите XML-файл.")
     else:
-        bot.reply_to(message, "Вы уже зарегистрированы.")
+        bot.reply_to(message, "Вы уже зарегистрированы. Пожалуйста, загрузите XML-файл.")
 
 
+# Обработка загрузки XML-файла
 @bot.message_handler(content_types=['document'])
 def handle_document(message):
-    # Проверка MIME-типа файла (должен быть 'application/xml' или 'text/xml')
     if message.document.mime_type in ['application/xml', 'text/xml']:
         file_info = bot.get_file(message.document.file_id)
-
-        # Загружаем файл
         downloaded_file = bot.download_file(file_info.file_path)
 
         try:
-            # Декодируем байты в строку
             xml_data = downloaded_file.decode('utf-8')
 
-            # Парсим XML-файл и сохраняем данные с помощью BeautifulSoup
-            agency_id = parse_and_save_offer(xml_data)
+            # Парсим данные и запускаем генератор
+            offers_generator = parse_and_save_offer(xml_data)
+            next_offer = next(offers_generator)
 
-            user = session.query(User).filter_by(telegram_id=message.from_user.id).first()
+            # Сохраняем текущее состояние (данные пользователя и генератора) во временную переменную
+            user_offer_data[message.from_user.id] = {
+                'generator': offers_generator,
+                'current_offer_id': next_offer,
+                'file_uploaded': True
+            }
 
-            if user:
-                user.agency_id = agency_id
-                session.commit()
-                print(f"Пользователь {user.id} связан с агентством {agency_id}.")
-            else:
-                print("Пользователь не найден.")
+            bot.reply_to(message, f"XML файл загружен. Введите ссылку для предложения с internal_id: {next_offer}")
 
-            # Пример: выводим корневой элемент
-            soup = BeautifulSoup(xml_data, 'xml')
-            bot.reply_to(message, f"Файл XML получен! Корневой элемент: {soup.find().name}")
         except Exception as e:
-            bot.reply_to(message, f"Ошибка при чтении XML файла: {str(e)}.")
+            bot.reply_to(message, f"Ошибка при обработке XML файла: {str(e)}.")
     else:
         bot.reply_to(message, "Этот файл не является XML.")
+
+
+# Обработка ввода ссылки для предложения
+@bot.message_handler(
+    func=lambda message: message.from_user.id in user_offer_data and user_offer_data[message.from_user.id][
+        'file_uploaded'])
+def handle_offer_link(message):
+    user_data = user_offer_data[message.from_user.id]
+
+    # Получаем текущий internal_id и ссылку, введённую пользователем
+    internal_id = user_data['current_offer_id']
+    offer_link = message.text
+
+    # Сохраняем ссылку в базу данных
+    offer_link_obj = OfferLink(internal_id=internal_id, link=offer_link)
+    session.add(offer_link_obj)
+    session.commit()
+
+    bot.reply_to(message, f"Ссылка для предложения {internal_id} сохранена.")
+
+    # Переходим к следующему предложению
+    try:
+        next_offer = next(user_data['generator'])
+        user_data['current_offer_id'] = next_offer
+        bot.reply_to(message, f"Введите ссылку для предложения с internal_id: {next_offer}")
+    except StopIteration:
+        bot.reply_to(message, "Все предложения обработаны.")
+        del user_offer_data[message.from_user.id]  # Удаляем данные, когда все предложения обработаны
 
 
 if __name__ == "__main__":

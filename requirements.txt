@@ -5,3 +5,5 @@ psycopg2-binary
 python-dotenv
 beautifulsoup4
 lxml
+icalendar
+requests
