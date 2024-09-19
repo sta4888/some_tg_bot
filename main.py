@@ -1,109 +1,89 @@
-import telebot
-from connect import session
-from models import Base, User, OfferLink  # Предполагаем, что OfferLink – это таблица для ссылок
-from bs4 import BeautifulSoup
-from dotenv import load_dotenv
 import os
-from service import parse_and_save_offer
+import uuid
+from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
+from pydantic import BaseModel
+from icalendar import Calendar, Event
+from datetime import datetime
+from pathlib import Path
 
-load_dotenv()
+app = FastAPI()
 
-API_TOKEN = os.environ.get('BOT_TOKEN')
-bot = telebot.TeleBot(API_TOKEN)
-
-# Временное хранилище данных, пока пользователь вводит ссылки
-user_offer_data = {}
-
-
-# Простой обработчик команды /start
-@bot.message_handler(commands=['start'])
-def send_welcome(message):
-    bot.reply_to(message, "Привет! Добро пожаловать в нашего бота.")
-
-    # Получаем данные о реферале из команды, если она есть
-    command_params = message.text.split()
-    referer_id = None
-    if len(command_params) > 1:
-        try:
-            referer_id = int(command_params[1])
-        except ValueError:
-            bot.reply_to(message, "Некорректный реферальный код.")
-            return
-
-    # Поиск пользователя по telegram_id
-    user = session.query(User).filter_by(telegram_id=message.from_user.id).first()
-
-    if user is None:
-        user = User(
-            telegram_id=message.from_user.id,
-            username=message.from_user.username,
-            chat_id=message.chat.id,
-            is_client=False,
-            referer_id=referer_id
-        )
-        session.add(user)
-        session.commit()
-        bot.reply_to(message, "Новый пользователь добавлен. Теперь загрузите XML-файл.")
-    else:
-        bot.reply_to(message, "Вы уже зарегистрированы. Пожалуйста, загрузите XML-файл.")
+# Папка для хранения сгенерированных файлов
+ICAL_FILES_DIR = Path("./ical_files")
+ICAL_FILES_DIR.mkdir(exist_ok=True)
 
 
-# Обработка загрузки XML-файла
-@bot.message_handler(content_types=['document'])
-def handle_document(message):
-    if message.document.mime_type in ['application/xml', 'text/xml']:
-        file_info = bot.get_file(message.document.file_id)
-        downloaded_file = bot.download_file(file_info.file_path)
-
-        try:
-            xml_data = downloaded_file.decode('utf-8')
-
-            # Парсим данные и запускаем генератор
-            offers_generator = parse_and_save_offer(xml_data)
-            next_offer = next(offers_generator)
-
-            # Сохраняем текущее состояние (данные пользователя и генератора) во временную переменную
-            user_offer_data[message.from_user.id] = {
-                'generator': offers_generator,
-                'current_offer_id': next_offer,
-                'file_uploaded': True
-            }
-
-            bot.reply_to(message, f"XML файл загружен. Введите ссылку для предложения с internal_id: {next_offer}")
-
-        except Exception as e:
-            bot.reply_to(message, f"Ошибка при обработке XML файла: {str(e)}.")
-    else:
-        bot.reply_to(message, "Этот файл не является XML.")
+class EventData(BaseModel):
+    summary: str
+    description: str
+    location: str
+    dtstart: datetime
+    dtend: datetime
 
 
-# Обработка ввода ссылки для предложения
-@bot.message_handler(
-    func=lambda message: message.from_user.id in user_offer_data and user_offer_data[message.from_user.id][
-        'file_uploaded'])
-def handle_offer_link(message):
-    user_data = user_offer_data[message.from_user.id]
+@app.post("/generate_ical/")
+def generate_ical():
+    # Генерируем уникальный идентификатор файла
+    unique_id = uuid.uuid4().hex[:16]  # UUID-4 как уникальный идентификатор
+    filename = f"{unique_id}.ical"
+    filepath = ICAL_FILES_DIR / filename
 
-    # Получаем текущий internal_id и ссылку, введённую пользователем
-    internal_id = user_data['current_offer_id']
-    offer_link = message.text
+    # Создаем новый календарь
+    cal = Calendar()
+    cal.add('prodid', '-//My Calendar Product//mycalendar.com//')
+    cal.add('version', '2.0')
+    cal.add('calscale', 'GREGORIAN')
 
-    # Сохраняем ссылку в базу данных
-    offer_link_obj = OfferLink(internal_id=internal_id, link=offer_link)
-    session.add(offer_link_obj)
-    session.commit()
+    # Сохраняем пустой файл
+    with open(filepath, 'wb') as f:
+        f.write(cal.to_ical())
 
-    bot.reply_to(message, f"Ссылка для предложения {internal_id} сохранена.")
-
-    # Переходим к следующему предложению
-    try:
-        next_offer = next(user_data['generator'])
-        user_data['current_offer_id'] = next_offer
-        bot.reply_to(message, f"Введите ссылку для предложения с internal_id: {next_offer}")
-    except StopIteration:
-        bot.reply_to(message, "Все предложения обработаны.")
-        del user_offer_data[message.from_user.id]  # Удаляем данные, когда все предложения обработаны
+    return {"message": "iCal file generated", "url": f"/ical/{unique_id}"}
 
 
-if __name__ == "__main__":
-    bot.polling()
+@app.post("/ical/{unique_id}/add_event/")
+def add_event(unique_id: str, event_data: EventData):
+    # Путь к файлу
+    filepath = ICAL_FILES_DIR / f"{unique_id}.ical"
+
+    # Проверяем существует ли файл
+    if not filepath.exists():
+        raise HTTPException(status_code=404, detail="iCal file not found")
+
+    # Загружаем календарь
+    with open(filepath, 'rb') as f:
+        cal = Calendar.from_ical(f.read())
+
+    # Создаем новое событие
+    event = Event()
+    event.add('summary', event_data.summary)
+    event.add('dtstart', event_data.dtstart)
+    event.add('dtend', event_data.dtend)
+    event.add('description', event_data.description)
+    event.add('location', event_data.location)
+    event.add('uid', unique_id)
+
+    # Добавляем событие в календарь
+    cal.add_component(event)
+
+    # Сохраняем изменения
+    with open(filepath, 'wb') as f:
+        f.write(cal.to_ical())
+
+    return {"message": "Event added", "url": f"/ical/{unique_id}"}
+
+
+@app.get("/ical/{unique_id}")
+def get_ical_file(unique_id: str):
+    # Путь к файлу
+    filepath = ICAL_FILES_DIR / f"{unique_id}.ical"
+
+    # Проверяем существует ли файл
+    if not filepath.exists():
+        raise HTTPException(status_code=404, detail="iCal file not found")
+
+    # Возвращаем файл
+    return FileResponse(filepath, media_type='text/calendar', filename=f"{unique_id}.ical")
+
+
