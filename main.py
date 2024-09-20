@@ -51,18 +51,18 @@ def handle_document(message):
             internal_ids = parse_and_save_offer(xml_data, bot, message)
 
             # Проверяем, какие internal_id уже существуют
-            existing_ids = {offer.internal_id for offer in
-                            session.query(Offer).filter(Offer.internal_id.in_(internal_ids)).all()}
+            existing_offers = session.query(Offer).filter(Offer.internal_id.in_(internal_ids)).all()
+            existing_ids = {offer.internal_id: offer for offer in existing_offers}
 
-            # Запросим у пользователя, хочет ли он обновить данные
+            # Запросим у пользователя, хочет ли он обновить данные для существующих internal_id
             if existing_ids:
                 user_states[message.from_user.id] = {
-                    'internal_ids': list(existing_ids),
+                    'internal_ids': list(existing_ids.keys()),
                     'current_index': 0,
                     'update_existing': True
                 }
                 bot.reply_to(message,
-                             f"Существуют данные для internal_id: {', '.join(existing_ids)}. Вы хотите их обновить? (да/нет)")
+                             f"Существуют данные для internal_id: {', '.join(existing_ids.keys())}. Вы хотите их обновить? (да/нет)")
             else:
                 # Если нет существующих записей, запрашиваем ссылки
                 user_states[message.from_user.id] = {
@@ -91,7 +91,7 @@ def handle_update_confirmation(message):
         internal_id = internal_ids[current_index]
         offer = session.query(Offer).filter_by(internal_id=internal_id).first()
 
-        if offer:
+        if offer and offer.created_by == user_id:  # Проверяем, принадлежит ли запись этому пользователю
             # Здесь нужно обновить данные предложения
             # Например:
             # offer.url_to = 'новый URL'  # Сначала получите новый URL от пользователя
@@ -110,7 +110,7 @@ def handle_update_confirmation(message):
                 del user_states[user_id]  # Удаляем пользователя из состояния
                 bot.reply_to(message, "Все данные успешно обновлены.")
         else:
-            bot.reply_to(message, f"Предложение с internal_id {internal_id} не найдено.")
+            bot.reply_to(message, f"Предложение с internal_id {internal_id} не найдено или не принадлежит вам.")
     else:
         # Если пользователь не хочет обновлять, просто удаляем состояние
         del user_states[user_id]
