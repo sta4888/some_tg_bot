@@ -131,6 +131,7 @@ class Photo(Base):
 
     id = Column(Integer, primary_key=True)
     offer_id = Column(Integer, ForeignKey('offer.id'))
+    is_main = Column(Boolean, default=False)
     url = Column(String(255), nullable=False)  # Ссылка на изображение
 
     offer = relationship("Offer", back_populates="photos")  # Связь с предложением

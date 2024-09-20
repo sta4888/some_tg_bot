@@ -54,10 +54,11 @@ def parse_and_save_offer(xml_data, bot, message):
 
                 # Обновляем фотографии
                 existing_offer.photos.clear()  # Очищаем старые фотографии
-                for photo in offer.find_all('photo'):
+                for photo in offer.find_all('image'):
                     photo_url = photo.text if photo else None
+                    photo_is_main = photo.get('main') if photo else None
                     if photo_url:
-                        new_photo = Photo(url=photo_url)
+                        new_photo = Photo(url=photo_url, is_main=1 if photo_is_main else 0)
                         existing_offer.photos.append(new_photo)
 
                 # Пропускаем добавление internal_id, так как мы обновляем существующее предложение
@@ -85,11 +86,12 @@ def parse_and_save_offer(xml_data, bot, message):
         )
 
         # Добавляем фотографии, если есть
-        for photo in offer.find_all('photo'):
+        for photo in offer.find_all('image'):
             photo_url = photo.text if photo else None
+            photo_is_main = photo.get('main') if photo else None
             if photo_url:
-                new_photo = Photo(url=photo_url)
-                new_offer.photos.append(new_photo)  # Добавляем фотографию к предложению
+                new_photo = Photo(url=photo_url, is_main=1 if photo_is_main else 0)
+                existing_offer.photos.append(new_photo)
 
         # Сохраняем новое предложение в базе данных
         session.add(new_offer)
