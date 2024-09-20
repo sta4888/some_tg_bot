@@ -3,6 +3,7 @@ from connect import session
 from models import User, Offer
 from dotenv import load_dotenv
 import os
+import requests  # Добавим библиотеку для HTTP-запросов
 from service import parse_and_save_offer
 
 load_dotenv()
@@ -34,37 +35,41 @@ def send_welcome(message):
     if user.is_client:
         bot.reply_to(message, "Привет! Вы зарегистрированы как пользователь.")
     else:
-        bot.reply_to(message, "Добро пожаловать, хост! Пожалуйста, загрузите XML-файл.")
+        bot.reply_to(message, "Добро пожаловать, хост! Пожалуйста, отправьте ссылку на XML-файл.")
 
 
-# Обработка загрузки XML-файла
-@bot.message_handler(content_types=['document'])
-def handle_document(message):
+# Обработка получения ссылки на XML-файл
+@bot.message_handler(
+    func=lambda message: message.from_user.id in user_states and 'url_input' in user_states[message.from_user.id])
+def handle_url_input(message):
     user = session.query(User).filter_by(telegram_id=message.from_user.id).first()
+    url = message.text.strip()
 
-    if message.document.mime_type in ['application/xml', 'text/xml']:
-        file_info = bot.get_file(message.document.file_id)
-        downloaded_file = bot.download_file(file_info.file_path)
+    try:
+        response = requests.get(url)
+        response.raise_for_status()  # Проверяем на ошибки HTTP
+        xml_data = response.content.decode('utf-8')  # Декодируем содержимое в строку
 
-        try:
-            xml_data = downloaded_file.decode('utf-8')
-            internal_ids = parse_and_save_offer(xml_data, bot, message)
+        internal_ids = parse_and_save_offer(xml_data, bot, message)
 
-            if internal_ids:
-                # Если нет существующих записей, запрашиваем ссылки
-                user_states[message.from_user.id] = {
-                    'internal_ids': internal_ids,
-                    'current_index': 0
-                }
-                bot.reply_to(message, f"Пожалуйста, введите URL для предложения с internal_id: {internal_ids[0]}")
+        if internal_ids:
+            user_states[message.from_user.id]['internal_ids'] = internal_ids
+            user_states[message.from_user.id]['current_index'] = 0
+            bot.reply_to(message, f"Пожалуйста, введите URL для предложения с internal_id: {internal_ids[0]}")
+        else:
+            bot.reply_to(message, "В загруженном файле нет ни одного нового объекта.")
+    except Exception as e:
+        bot.reply_to(message, f"Ошибка при загрузке файла: {str(e)}.")
 
-            else:
-                bot.reply_to(message, f"В вами загруженном файле нет ни одного нового объекта")
-        except Exception as e:
-            bot.reply_to(message, f"Ошибка при обработке XML файла: {str(e)}.")
-    else:
-        bot.reply_to(message, "Этот файл не является XML.")
 
+# Обработка текстовых сообщений от пользователей для ввода URL
+@bot.message_handler(func=lambda message: message.text.startswith("http") and not message.from_user.id in user_states)
+def request_url(message):
+    user_states[message.from_user.id] = {'url_input': True}
+    bot.reply_to(message, "Пожалуйста, введите ссылку на XML-файл.")
+
+
+# Остальные обработчики остаются без изменений
 
 # Обработка ответа на запрос обновления
 @bot.message_handler(
@@ -80,10 +85,8 @@ def handle_update_confirmation(message):
         internal_id = internal_ids[current_index]
         offer = session.query(Offer).filter_by(internal_id=internal_id).first()
 
-        if offer and offer.created_by == user_id:  # Проверяем, принадлежит ли запись этому пользователю
+        if offer and offer.created_by == user_id:
             # Здесь нужно обновить данные предложения
-            # Например:
-            # offer.url_to = 'новый URL'  # Сначала получите новый URL от пользователя
             session.commit()
             bot.reply_to(message, f"Данные для internal_id {internal_id} обновлены.")
 
