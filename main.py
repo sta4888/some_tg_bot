@@ -59,17 +59,9 @@ def handle_document(message):
             xml_data = downloaded_file.decode('utf-8')
 
             # Парсим данные и запускаем генератор
-            offers_generator = parse_and_save_offer(xml_data)
-            next_offer = next(offers_generator)
+            parse_and_save_offer(xml_data, bot, message)
 
-            # Сохраняем текущее состояние (данные пользователя и генератора) во временную переменную
-            user_offer_data[message.from_user.id] = {
-                'generator': offers_generator,
-                'current_offer_id': next_offer,
-                'file_uploaded': True
-            }
-
-            bot.reply_to(message, f"XML файл загружен. Введите ссылку для предложения с internal_id: {next_offer}")
+            bot.reply_to(message, f"Ваши данные загружены: {value}")
 
         except Exception as e:
             bot.reply_to(message, f"Ошибка при обработке XML файла: {str(e)}.")

@@ -5,7 +5,7 @@ from connect import session
 from models import Property, Category, Agent, Offer, Inventory, Agency, Image
 
 
-def parse_and_save_offer(xml_data):
+def parse_and_save_offer(xml_data, bot, message):
     # Парсинг XML с помощью BeautifulSoup
     soup = BeautifulSoup(xml_data, 'xml')
 
@@ -68,7 +68,7 @@ def parse_and_save_offer(xml_data):
                     session.add(image)
 
                 # Генератор для обработки ссылок
-                yield offer.id
+                bot.reply_to(message, f"XML файл загружен. Введите ссылку для предложения с internal_id: {value}")
 
             except Exception as e:
                 # Логируем ошибки для отладки
