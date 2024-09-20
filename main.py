@@ -42,14 +42,14 @@ def send_welcome(message):
 
 
 # Обработка загрузки XML-файла
+# Словарь для хранения состояния пользователей
+user_states = {}
+
+
+# Обработка загрузки XML-файла
 @bot.message_handler(content_types=['document'])
 def handle_document(message):
     user = session.query(User).filter_by(telegram_id=message.from_user.id).first()
-
-    # # Проверяем, является ли пользователь хостом
-    # if not user or not user.is_client:
-    #     bot.reply_to(message, "Только хосты могут загружать XML-файлы.")
-    #     return
 
     if message.document.mime_type in ['application/xml', 'text/xml']:
         file_info = bot.get_file(message.document.file_id)
@@ -57,11 +57,13 @@ def handle_document(message):
 
         try:
             xml_data = downloaded_file.decode('utf-8')
+            internal_ids = parse_and_save_offer(xml_data, bot, message)
 
-            # Парсим данные и запускаем генератор
-            parse_and_save_offer(xml_data, bot, message)
-
-            bot.reply_to(message, f"Ваши данные загружены!")
+            # Запросим у пользователя ссылки для каждого internal_id
+            if internal_ids:
+                user_states[message.from_user.id] = internal_ids
+                bot.reply_to(message,
+                             f"Пожалуйста, введите URL для предложений с internal_id: {', '.join(internal_ids)}")
 
         except Exception as e:
             bot.reply_to(message, f"Ошибка при обработке XML файла: {str(e)}.")
@@ -69,35 +71,32 @@ def handle_document(message):
         bot.reply_to(message, "Этот файл не является XML.")
 
 
-# Обработка ввода ссылки для предложения
-@bot.message_handler(
-    func=lambda message: message.from_user.id in user_offer_data and user_offer_data[message.from_user.id][
-        'file_uploaded'])
-def handle_offer_link(message):
-    user_data = user_offer_data[message.from_user.id]
+# Обработка текстовых сообщений от пользователей
+@bot.message_handler(func=lambda message: message.from_user.id in user_states)
+def handle_url_input(message):
+    user_id = message.from_user.id
+    internal_ids = user_states[user_id]
 
-    # Получаем текущий internal_id и ссылку, введённую пользователем
-    internal_id = user_data['current_offer_id']
-    offer_link = message.text
+    # Получаем ссылку от пользователя
+    url_to = message.text.strip()
 
-    # Сохраняем ссылку в базу данных
-    offer = session.query(Offer).filter_by(id=internal_id).first()
-    if offer:
-        offer.link = offer_link  # Обновляем предложение ссылкой
-        session.commit()
+    # Обновляем значение url_to для соответствующего internal_id
+    if internal_ids:
+        internal_id = internal_ids.pop(0)  # Получаем первый internal_id
+        offer = session.query(Offer).filter_by(internal_id=internal_id).first()
 
-        bot.reply_to(message, f"Ссылка для предложения {internal_id} сохранена.")
+        if offer:
+            offer.url_to = url_to
+            session.commit()
+            bot.reply_to(message, f"Ссылка для internal_id {internal_id} обновлена на: {url_to}")
 
-        # Переходим к следующему предложению
-        try:
-            next_offer = next(user_data['generator'])
-            user_data['current_offer_id'] = next_offer
-            bot.reply_to(message, f"Введите ссылку для предложения с internal_id: {next_offer}")
-        except StopIteration:
-            bot.reply_to(message, "Все предложения обработаны.")
-            del user_offer_data[message.from_user.id]  # Удаляем данные, когда все предложения обработаны
+            # Если все internal_ids обработаны, удаляем пользователя из состояния
+            if not internal_ids:
+                del user_states[user_id]
+        else:
+            bot.reply_to(message, f"Предложение с internal_id {internal_id} не найдено.")
     else:
-        bot.reply_to(message, "Предложение не найдено. Попробуйте снова.")
+        bot.reply_to(message, "Произошла ошибка, попробуйте снова.")
 
 
 if __name__ == "__main__":
