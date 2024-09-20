@@ -22,8 +22,7 @@ def parse_and_save_offer(xml_data, bot, message):
 
     for offer in soup.find_all('offer'):
         # Достаём основные данные из XML
-        internal_id = offer.get('internal-id') if offer.get('internal-id') else None
-        print(f"--internal_id {internal_id}")
+        internal_id = offer.find('internal-id').text if offer.find('internal-id') else None
         offer_type = offer.find('type').text if offer.find('type') else None
         property_type = offer.find('property-type').text if offer.find('property-type') else None
         category = offer.find('category').text if offer.find('category') else None
@@ -39,9 +38,9 @@ def parse_and_save_offer(xml_data, bot, message):
         internal_ids.append(internal_id)
 
         # Преобразуем даты, если они есть
-        creation_date = datetime.strptime(creation_date_str, '%Y-%m-%dT%H:%M:%S') if creation_date_str else None
+        creation_date = datetime.strptime(creation_date_str, '%Y-%m-%dT%H:%M:%S%z') if creation_date_str else None
         last_update_date = datetime.strptime(last_update_date_str,
-                                             '%Y-%m-%dT%H:%M:%S') if last_update_date_str else None
+                                             '%Y-%m-%dT%H:%M:%S%z') if last_update_date_str else None
 
         # Создаём новый объект Offer
         new_offer = Offer(
