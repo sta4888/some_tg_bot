@@ -63,7 +63,8 @@ def handle_url_input(message):
 
 
 # Обработка текстовых сообщений от пользователей для ввода URL
-@bot.message_handler(func=lambda message: message.text.startswith("http") and not message.from_user.id in user_states)
+@bot.message_handler(func=lambda message: message.text.startswith(
+    "https://realtycalendar.ru/") and not message.from_user.id in user_states)
 def request_url(message):
     user_states[message.from_user.id] = {'url_input': True}
     bot.reply_to(message, "Пожалуйста, введите ссылку на XML-файл.")
