@@ -36,12 +36,24 @@ def parse_and_save_offer(xml_data, bot, message):
         if internal_id is None or offer_type is None or property_type is None:
             continue
 
-        internal_ids.append(internal_id)
+        # Преобразуем даты, если они есть
+        creation_date_str = offer.find('creation-date').text if offer.find('creation-date') else None
+        last_update_date_str = offer.find('last-update-date').text if offer.find('last-update-date') else None
 
         # Преобразуем даты, если они есть
-        creation_date = datetime.strptime(creation_date_str, '%Y-%m-%dT%H:%M:%S%z') if creation_date_str else None
-        last_update_date = datetime.strptime(last_update_date_str,
-                                             '%Y-%m-%dT%H:%M:%S%z') if last_update_date_str else None
+        if creation_date_str:
+            creation_date_str = creation_date_str.replace(' ', 'T')  # Заменяем пробел на T
+            creation_date = datetime.strptime(creation_date_str, '%Y-%m-%dT%H:%M:%S %z')
+        else:
+            creation_date = None
+
+        if last_update_date_str:
+            last_update_date_str = last_update_date_str.replace(' ', 'T')  # Заменяем пробел на T
+            last_update_date = datetime.strptime(last_update_date_str, '%Y-%m-%dT%H:%M:%S %z')
+        else:
+            last_update_date = None
+
+        internal_ids.append(internal_id)
 
         # Создаём новый объект Offer
         new_offer = Offer(
