@@ -1,8 +1,6 @@
 from datetime import datetime
-
 from bs4 import BeautifulSoup
 from sqlalchemy.orm import sessionmaker
-
 from connect import engine
 from models import Photo, Offer, User
 
@@ -22,8 +20,7 @@ def parse_and_save_offer(xml_data, bot, message):
 
     for offer in soup.find_all('offer'):
         # Достаём основные данные из XML
-        internal_id = offer.get('internal-id') if offer.get('internal-id') else None
-        print(f"--internal_id {internal_id}")
+        internal_id = offer.find('internal-id').text if offer.find('internal-id') else None
         offer_type = offer.find('type').text if offer.find('type') else None
         property_type = offer.find('property-type').text if offer.find('property-type') else None
         category = offer.find('category').text if offer.find('category') else None
@@ -36,22 +33,19 @@ def parse_and_save_offer(xml_data, bot, message):
         if internal_id is None or offer_type is None or property_type is None:
             continue
 
-        # Преобразуем даты, если они есть
-        creation_date_str = offer.find('creation-date').text if offer.find('creation-date') else None
-        last_update_date_str = offer.find('last-update-date').text if offer.find('last-update-date') else None
+        # Преобразуем даты
+        creation_date = None
+        last_update_date = None
 
-        # Преобразуем даты, если они есть
         if creation_date_str:
-            creation_date_str = creation_date_str.replace(' ', 'T')  # Заменяем пробел на T
-            creation_date = datetime.strptime(creation_date_str, '%Y-%m-%dT%H:%M:%S %z')
-        else:
-            creation_date = None
+            creation_date = datetime.strptime(creation_date_str,
+                                              '%Y-%m-%dT%H:%M:%S%z') if '+' in creation_date_str else datetime.strptime(
+                creation_date_str, '%Y-%m-%dT%H:%M:%S')
 
         if last_update_date_str:
-            last_update_date_str = last_update_date_str.replace(' ', 'T')  # Заменяем пробел на T
-            last_update_date = datetime.strptime(last_update_date_str, '%Y-%m-%dT%H:%M:%S %z')
-        else:
-            last_update_date = None
+            last_update_date = datetime.strptime(last_update_date_str,
+                                                 '%Y-%m-%dT%H:%M:%S%z') if '+' in last_update_date_str else datetime.strptime(
+                last_update_date_str, '%Y-%m-%dT%H:%M:%S')
 
         internal_ids.append(internal_id)
 
@@ -67,7 +61,7 @@ def parse_and_save_offer(xml_data, bot, message):
             description=description,
             min_stay=min_stay,
             created_at=datetime.now(),  # Установка даты создания
-            created_by=user,  # Пример ID пользователя, можно заменить на актуальный
+            created_by=user.id if user else None,  # ID пользователя
         )
 
         # Добавляем фотографии, если есть
@@ -85,5 +79,4 @@ def parse_and_save_offer(xml_data, bot, message):
     session.close()
 
     print(f"--internal_ids {internal_ids}")
-
     return internal_ids
