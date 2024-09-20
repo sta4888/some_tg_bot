@@ -42,7 +42,7 @@ def send_welcome(message):
     user_states[message.from_user.id] = {'url_input': True}
 
 
-@bot.message_handler(func=lambda message: 'realtycalendar.ru' in message.text)
+@bot.message_handler(func=lambda message: 'https://realtycalendar.ru/xml_feed' in message.text)
 def handle_url_input(message):
     user = session.query(User).filter_by(telegram_id=message.from_user.id).first()
     url = message.text.strip()
@@ -71,7 +71,7 @@ def handle_url_input(message):
 
 # Обработка текстовых сообщений от пользователей для ввода URL
 @bot.message_handler(func=lambda message: message.text.startswith(
-    "https://realtycalendar.ru/") and not message.from_user.id in user_states)
+    "https://realtycalendar.ru/apart") and not message.from_user.id in user_states)
 def request_url(message):
     user_states[message.from_user.id] = {'url_input': True}
     bot.reply_to(message, "Пожалуйста, введите ссылку на XML-файл.")
