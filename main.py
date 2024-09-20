@@ -54,6 +54,7 @@ def handle_url_input(message):
         xml_data = response.content.decode('utf-8')
 
         internal_ids = parse_and_save_offer(xml_data, bot, message)
+        # пасибо! 👌Добавлено объектов: число
 
         if internal_ids:
             user_states[message.from_user.id]['internal_ids'] = internal_ids
