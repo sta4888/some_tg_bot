@@ -1,6 +1,8 @@
 from datetime import datetime
+
 from bs4 import BeautifulSoup
 from sqlalchemy.orm import sessionmaker
+
 from connect import engine
 from models import Photo, Offer, User
 
@@ -20,7 +22,8 @@ def parse_and_save_offer(xml_data, bot, message):
 
     for offer in soup.find_all('offer'):
         # Достаём основные данные из XML
-        internal_id = offer.find('internal-id').text if offer.find('internal-id') else None
+        internal_id = offer.get('internal-id') if offer.get('internal-id') else None
+        print(f"--internal_id {internal_id}")
         offer_type = offer.find('type').text if offer.find('type') else None
         property_type = offer.find('property-type').text if offer.find('property-type') else None
         category = offer.find('category').text if offer.find('category') else None
@@ -33,21 +36,12 @@ def parse_and_save_offer(xml_data, bot, message):
         if internal_id is None or offer_type is None or property_type is None:
             continue
 
-        # Преобразуем даты
-        creation_date = None
-        last_update_date = None
-
-        if creation_date_str:
-            creation_date = datetime.strptime(creation_date_str,
-                                              '%Y-%m-%dT%H:%M:%S%z') if '+' in creation_date_str else datetime.strptime(
-                creation_date_str, '%Y-%m-%dT%H:%M:%S')
-
-        if last_update_date_str:
-            last_update_date = datetime.strptime(last_update_date_str,
-                                                 '%Y-%m-%dT%H:%M:%S%z') if '+' in last_update_date_str else datetime.strptime(
-                last_update_date_str, '%Y-%m-%dT%H:%M:%S')
-
         internal_ids.append(internal_id)
+
+        # # Преобразуем даты, если они есть
+        # creation_date = datetime.strptime(creation_date_str, '%Y-%m-%dT%H:%M:%S%z') if creation_date_str else None
+        # last_update_date = datetime.strptime(last_update_date_str,
+        #                                      '%Y-%m-%dT%H:%M:%S%z') if last_update_date_str else None
 
         # Создаём новый объект Offer
         new_offer = Offer(
@@ -56,12 +50,12 @@ def parse_and_save_offer(xml_data, bot, message):
             agency_id=agency_id,
             property_type=property_type,
             category=category,
-            creation_date=creation_date,
-            last_update_date=last_update_date,
+            creation_date=creation_date_str,
+            last_update_date=last_update_date_str,
             description=description,
             min_stay=min_stay,
             created_at=datetime.now(),  # Установка даты создания
-            created_by=user.id if user else None,  # ID пользователя
+            created_by=user,  # Пример ID пользователя, можно заменить на актуальный
         )
 
         # Добавляем фотографии, если есть
@@ -79,4 +73,5 @@ def parse_and_save_offer(xml_data, bot, message):
     session.close()
 
     print(f"--internal_ids {internal_ids}")
+
     return internal_ids
