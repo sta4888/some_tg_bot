@@ -20,6 +20,7 @@ user_states = {}
 def send_welcome(message):
     bot.reply_to(message, "Привет! Добро пожаловать в нашего бота.")
 
+    # Найдем пользователя или создадим нового
     user = session.query(User).filter_by(telegram_id=message.from_user.id).first()
 
     if user is None:
@@ -37,18 +38,20 @@ def send_welcome(message):
     else:
         bot.reply_to(message, "Добро пожаловать, хост! Пожалуйста, отправьте ссылку на XML-файл.")
 
+    # Инициализируем состояние пользователя для обработки URL
+    user_states[message.from_user.id] = {'url_input': True}
 
-# Обработка получения ссылки на XML-файл
-@bot.message_handler(
-    func=lambda message: message.from_user.id in user_states and 'url_input' in user_states[message.from_user.id])
+
+@bot.message_handler(func=lambda message: 'realtycalendar.ru' in message.text)
 def handle_url_input(message):
     user = session.query(User).filter_by(telegram_id=message.from_user.id).first()
     url = message.text.strip()
 
     try:
+        # Пытаемся загрузить и обработать XML-файл
         response = requests.get(url)
-        response.raise_for_status()  # Проверяем на ошибки HTTP
-        xml_data = response.content.decode('utf-8')  # Декодируем содержимое в строку
+        response.raise_for_status()
+        xml_data = response.content.decode('utf-8')
 
         internal_ids = parse_and_save_offer(xml_data, bot, message)
 
@@ -58,8 +61,12 @@ def handle_url_input(message):
             bot.reply_to(message, f"Пожалуйста, введите URL для предложения с internal_id: {internal_ids[0]}")
         else:
             bot.reply_to(message, "В загруженном файле нет ни одного нового объекта.")
+
     except Exception as e:
         bot.reply_to(message, f"Ошибка при загрузке файла: {str(e)}.")
+
+
+# Другие обработчики остаются без изменений
 
 
 # Обработка текстовых сообщений от пользователей для ввода URL
