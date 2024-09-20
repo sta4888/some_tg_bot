@@ -36,12 +36,38 @@ def parse_and_save_offer(xml_data, bot, message):
         if internal_id is None or offer_type is None or property_type is None:
             continue
 
-        internal_ids.append(internal_id)
+        # Проверяем, существует ли предложение с таким internal_id
+        existing_offer = session.query(Offer).filter_by(internal_id=internal_id).first()
 
-        # # Преобразуем даты, если они есть
-        # creation_date = datetime.strptime(creation_date_str, '%Y-%m-%dT%H:%M:%S%z') if creation_date_str else None
-        # last_update_date = datetime.strptime(last_update_date_str,
-        #                                      '%Y-%m-%dT%H:%M:%S%z') if last_update_date_str else None
+        if existing_offer:
+            # Если предложение существует и принадлежит тому же пользователю, обновляем его
+            if existing_offer.created_by == user.id:
+                # Обновляем необходимые поля
+                existing_offer.offer_type = offer_type
+                existing_offer.property_type = property_type
+                existing_offer.category = category
+                existing_offer.creation_date = creation_date_str
+                existing_offer.last_update_date = last_update_date_str
+                existing_offer.description = description
+                existing_offer.min_stay = min_stay
+                existing_offer.updated_at = datetime.now()  # Обновляем дату последнего изменения
+
+                # Обновляем фотографии
+                existing_offer.photos.clear()  # Очищаем старые фотографии
+                for photo in offer.find_all('photo'):
+                    photo_url = photo.text if photo else None
+                    if photo_url:
+                        new_photo = Photo(url=photo_url)
+                        existing_offer.photos.append(new_photo)
+
+                # Пропускаем добавление internal_id, так как мы обновляем существующее предложение
+                continue
+            else:
+                # Если предложение существует и не принадлежит текущему пользователю, пропускаем его
+                continue
+
+        # Если предложение не существует, добавляем новое
+        internal_ids.append(internal_id)
 
         # Создаём новый объект Offer
         new_offer = Offer(
@@ -55,7 +81,7 @@ def parse_and_save_offer(xml_data, bot, message):
             description=description,
             min_stay=min_stay,
             created_at=datetime.now(),  # Установка даты создания
-            created_by=user.id if user else None,  # Пример ID пользователя, можно заменить на актуальный
+            created_by=user.id if user else None,  # Пример ID пользователя
         )
 
         # Добавляем фотографии, если есть
@@ -65,7 +91,7 @@ def parse_and_save_offer(xml_data, bot, message):
                 new_photo = Photo(url=photo_url)
                 new_offer.photos.append(new_photo)  # Добавляем фотографию к предложению
 
-        # Сохраняем предложение в базе данных
+        # Сохраняем новое предложение в базе данных
         session.add(new_offer)
 
     # Фиксируем транзакцию и закрываем сессию
