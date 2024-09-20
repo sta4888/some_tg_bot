@@ -57,11 +57,12 @@ def handle_document(message):
 
         try:
             xml_data = downloaded_file.decode('utf-8')
+            print(xml_data)
 
             # Парсим данные и запускаем генератор
             parse_and_save_offer(xml_data, bot, message)
 
-            bot.reply_to(message, f"Ваши данные загружены: {value}")
+            bot.reply_to(message, f"Ваши данные загружены!")
 
         except Exception as e:
             bot.reply_to(message, f"Ошибка при обработке XML файла: {str(e)}.")

@@ -10,6 +10,7 @@ def parse_and_save_offer(xml_data, bot, message):
     soup = BeautifulSoup(xml_data, 'xml')
 
     agency_id = int(soup.find('agency-id').text)
+    print(f"--agency_id {agency_id}")
 
     # Открываем транзакцию
     with session.begin():
