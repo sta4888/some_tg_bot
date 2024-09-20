@@ -57,7 +57,6 @@ def handle_document(message):
 
         try:
             xml_data = downloaded_file.decode('utf-8')
-            print(xml_data)
 
             # Парсим данные и запускаем генератор
             parse_and_save_offer(xml_data, bot, message)

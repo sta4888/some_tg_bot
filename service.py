@@ -10,68 +10,118 @@ def parse_and_save_offer(xml_data, bot, message):
     soup = BeautifulSoup(xml_data, 'xml')
 
     agency_id = int(soup.find('agency-id').text)
-    print(f"--agency_id {agency_id}")
 
-    # Открываем транзакцию
-    with session.begin():
-        agency = session.query(Agency).filter_by(agency_id=agency_id).first()
-        if not agency:
-            agency = Agency(agency_id=agency_id)
-            session.add(agency)
+    agency = session.query(Agency).filter_by(agency_id=agency_id).first()
+    if not agency:
+        agency = Agency(agency_id=agency_id)
+        session.add(agency)
 
-        for offer_data in soup.find_all('offer'):
-            try:
-                # Достаём основные данные
-                offer_type = offer_data.find('type').text
-                property_type = offer_data.find('property-type').text
-                category = offer_data.find('category').text
-                creation_date = datetime.fromisoformat(offer_data.find('creation-date').text)
-                last_update_date = datetime.strptime(offer_data.find('last-update-date').text, '%Y-%m-%d %H:%M:%S %z')
-                price_value = float(offer_data.find('price').find('value').text)
+    session.add(agency)
 
-                # Дополнительные данные
-                description = offer_data.find('description').text or ""
-                min_stay = int(offer_data.find('min-stay').text)
-                location = offer_data.find('location')
-                address = location.find('address').text
-                area_value = float(offer_data.find('area').find('value').text)
+    for offer in soup.find_all('offer'):
+        # Достаём основные данные из XML
+        offer_type = offer.find('type').text
+        property_type = offer.find('property-type').text
+        category = offer.find('category').text
+        images = [img.get_text(strip=True) for img in offer.find_all('image')]
+        creation_date = datetime.fromisoformat(offer.find('creation-date').text)
+        last_update_date = datetime.strptime(offer.find('last-update-date').text, '%Y-%m-%d %H:%M:%S %z')
 
-                # Получение/создание записей связанных моделей
-                property_obj = session.query(Property).filter_by(property_type=property_type).first()
-                if not property_obj:
-                    property_obj = Property(property_type=property_type)
-                    session.add(property_obj)
+        # Агент и агентство
+        agent_name = offer.find('sales-agent').find('name').text
+        agent_phone = offer.find('sales-agent').find('phone').text
+        agent_email = offer.find('sales-agent').find('email').text
 
-                category_obj = session.query(Category).filter_by(category_name=category).first()
-                if not category_obj:
-                    category_obj = Category(category_name=category)
-                    session.add(category_obj)
+        # Цена
+        price_value = float(offer.find('price').find('value').text)
 
-                # Создаём новое предложение
-                offer = Offer(
-                    offer_type=offer_type,
-                    property=property_obj,
-                    category=category_obj,
-                    creation=creation_date,
-                    last_update_date=last_update_date,
-                    price=price_value,
-                    description=description,
-                    min_stay=min_stay,
-                    location=address,
-                    area=area_value,
-                )
-                session.add(offer)
-                session.flush()  # Промежуточное сохранение, чтобы получить ID
+        # Описание
+        description = offer.find('description').text
 
-                # Сохранение изображений
-                for img_url in offer_data.find_all('image'):
-                    image = Image(offer_id=offer.id, url=img_url.get_text(strip=True))
-                    session.add(image)
+        # Минимальный срок проживания
+        min_stay = int(offer.find('min-stay').text)
 
-                # Генератор для обработки ссылок
-                bot.reply_to(message, f"XML файл загружен. Введите ссылку для предложения с internal_id: {value}")
+        # Локация
+        location = offer.find('location')
+        country = location.find('country').text
+        region = location.find('region').text
+        locality_name = location.find('locality-name').text
+        address = location.find('address').text
+        latitude = float(location.find('latitude').text)
+        longitude = float(location.find('longitude').text)
 
-            except Exception as e:
-                # Логируем ошибки для отладки
-                print(f"Ошибка при парсинге предложения: {e}")
-                session.rollback()  # Откат транзакции в случае ошибки
+        # Площадь
+        area_value = float(offer.find('area').find('value').text)
+
+        # Время заезда и выезда
+        check_in_time_start = offer.find('check-in-time').find('start-time').text
+        check_out_time_start = offer.find('check-out-time').find('start-time').text
+
+        # Inventory items (e.g., wi-fi, washing machine)
+        inventories = {
+            'washing_machine': offer.find('washing-machine').text,
+            'wi_fi': offer.find('wi-fi').text,
+            'tv': offer.find('tv').text,
+            # add more inventories as needed...
+        }
+
+        # Создаём или ищем существующие записи
+        property_obj = session.query(Property).filter_by(property_type=property_type).first()
+        if not property_obj:
+            property_obj = Property(property_type=property_type)
+            session.add(property_obj)
+
+        category_obj = session.query(Category).filter_by(category_name=category).first()
+        if not category_obj:
+            category_obj = Category(category_name=category)
+            session.add(category_obj)
+
+        agent_obj = session.query(Agent).filter_by(agent_email=agent_email).first()
+        if not agent_obj:
+            agent_obj = Agent(agent_name=agent_name, agent_phone=agent_phone, agent_email=agent_email, agency_id=agency.id)
+            session.add(agent_obj)
+
+        # Создаём предложение
+        offer = Offer(
+            offer_type=offer_type,
+            property=property_obj,
+            category=category_obj,
+            creation=creation_date,
+            last_update_date=last_update_date,
+            sales_agent=agent_obj,
+            price=price_value,
+            description=description,
+            min_stay=min_stay,
+            location=f"{address}, {locality_name}, {region}, {country}",
+            area=area_value,
+            check_in_time=check_in_time_start,
+            check_out_time=check_out_time_start
+        )
+
+        session.add(offer)
+
+        # Выполняем промежуточное сохранение (флашим сессию), чтобы получить offer.id
+        session.flush()
+
+        # Теперь можно добавлять изображения
+        for index, url in enumerate(images):
+            is_main = (index == 0)
+            image = Image(offer_id=offer.id, url=url, is_main=is_main)
+            session.add(image)
+
+        # Фиксируем транзакцию
+        session.commit()
+
+        # Добавляем инвентарь (если есть)
+        for inventory_name, available in inventories.items():
+            if available == '1':  # Если инвентарь доступен
+                inventory_obj = session.query(Inventory).filter_by(name=inventory_name).first()
+                if not inventory_obj:
+                    inventory_obj = Inventory(name=inventory_name)
+                    session.add(inventory_obj)
+                offer.inventories.append(inventory_obj)
+
+    session.commit()
+    print(f"Offer with ID {agency.id} has been added.")
+
+    return agency.id
