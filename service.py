@@ -23,6 +23,7 @@ def parse_and_save_offer(xml_data, bot, message):
     for offer in soup.find_all('offer'):
         # Достаём основные данные из XML
         internal_id = offer.find('internal-id').text if offer.find('internal-id') else None
+        print(f"--internal_id {internal_id}")
         offer_type = offer.find('type').text if offer.find('type') else None
         property_type = offer.find('property-type').text if offer.find('property-type') else None
         category = offer.find('category').text if offer.find('category') else None
@@ -70,5 +71,7 @@ def parse_and_save_offer(xml_data, bot, message):
     # Фиксируем транзакцию и закрываем сессию
     session.commit()
     session.close()
+
+    print(f"--internal_ids {internal_ids}")
 
     return internal_ids
