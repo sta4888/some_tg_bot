@@ -1,6 +1,6 @@
 import telebot
 from connect import session
-from models import Base, User, OfferLink  # Предполагаем, что OfferLink – это таблица для ссылок
+from models import User, Offer  # Обновленные модели
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 import os
@@ -15,42 +15,42 @@ bot = telebot.TeleBot(API_TOKEN)
 user_offer_data = {}
 
 
-# Простой обработчик команды /start
+# Обработчик команды /start с приветствием для хоста
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
     bot.reply_to(message, "Привет! Добро пожаловать в нашего бота.")
 
-    # Получаем данные о реферале из команды, если она есть
-    command_params = message.text.split()
-    referer_id = None
-    if len(command_params) > 1:
-        try:
-            referer_id = int(command_params[1])
-        except ValueError:
-            bot.reply_to(message, "Некорректный реферальный код.")
-            return
-
     # Поиск пользователя по telegram_id
     user = session.query(User).filter_by(telegram_id=message.from_user.id).first()
 
+    # Если пользователь не зарегистрирован, добавляем его
     if user is None:
         user = User(
             telegram_id=message.from_user.id,
             username=message.from_user.username,
             chat_id=message.chat.id,
-            is_client=False,
-            referer_id=referer_id
+            is_client=False  # По умолчанию не хост
         )
         session.add(user)
         session.commit()
-        bot.reply_to(message, "Новый пользователь добавлен. Теперь загрузите XML-файл.")
+
+    # Приветствие для хостов
+    if user.is_client:  # Или используйте другой флаг для хоста
+        bot.reply_to(message, "Добро пожаловать, хост! Пожалуйста, загрузите XML-файл.")
     else:
-        bot.reply_to(message, "Вы уже зарегистрированы. Пожалуйста, загрузите XML-файл.")
+        bot.reply_to(message, "Привет! Вы зарегистрированы как пользователь.")
 
 
 # Обработка загрузки XML-файла
 @bot.message_handler(content_types=['document'])
 def handle_document(message):
+    user = session.query(User).filter_by(telegram_id=message.from_user.id).first()
+
+    # Проверяем, является ли пользователь хостом
+    if not user or not user.is_client:
+        bot.reply_to(message, "Только хосты могут загружать XML-файлы.")
+        return
+
     if message.document.mime_type in ['application/xml', 'text/xml']:
         file_info = bot.get_file(message.document.file_id)
         downloaded_file = bot.download_file(file_info.file_path)
@@ -89,20 +89,23 @@ def handle_offer_link(message):
     offer_link = message.text
 
     # Сохраняем ссылку в базу данных
-    offer_link_obj = OfferLink(internal_id=internal_id, link=offer_link)
-    session.add(offer_link_obj)
-    session.commit()
+    offer = session.query(Offer).filter_by(id=internal_id).first()
+    if offer:
+        offer.link = offer_link  # Обновляем предложение ссылкой
+        session.commit()
 
-    bot.reply_to(message, f"Ссылка для предложения {internal_id} сохранена.")
+        bot.reply_to(message, f"Ссылка для предложения {internal_id} сохранена.")
 
-    # Переходим к следующему предложению
-    try:
-        next_offer = next(user_data['generator'])
-        user_data['current_offer_id'] = next_offer
-        bot.reply_to(message, f"Введите ссылку для предложения с internal_id: {next_offer}")
-    except StopIteration:
-        bot.reply_to(message, "Все предложения обработаны.")
-        del user_offer_data[message.from_user.id]  # Удаляем данные, когда все предложения обработаны
+        # Переходим к следующему предложению
+        try:
+            next_offer = next(user_data['generator'])
+            user_data['current_offer_id'] = next_offer
+            bot.reply_to(message, f"Введите ссылку для предложения с internal_id: {next_offer}")
+        except StopIteration:
+            bot.reply_to(message, "Все предложения обработаны.")
+            del user_offer_data[message.from_user.id]  # Удаляем данные, когда все предложения обработаны
+    else:
+        bot.reply_to(message, "Предложение не найдено. Попробуйте снова.")
 
 
 if __name__ == "__main__":

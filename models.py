@@ -92,6 +92,19 @@ class Image(Base):
     offer = relationship('Offer', back_populates='images')
 
 
+# Модель Links, которая содержит ссылки, связанные с предложением
+class Links(Base):
+    __tablename__ = 'links'
+
+    id = Column(Integer, primary_key=True)
+    offer_id = Column(Integer, ForeignKey('offer.id'), nullable=False)
+    link_url = Column(String, nullable=False)  # Ссылка на что-то, например, URL
+
+    # Связь с предложением (Offer)
+    offer = relationship('Offer', back_populates='links')
+
+
+# Обновленная модель Offer для связи с Links
 class Offer(Base):
     __tablename__ = 'offer'
 
@@ -115,6 +128,9 @@ class Offer(Base):
     category = relationship('Category')
     inventories = relationship('Inventory', secondary=offer_inventory)
     images = relationship('Image', back_populates='offer')
+
+    # Связь с моделью Links
+    links = relationship('Links', uselist=False, back_populates='offer')  # Один к одному (uselist=False)
 
 
 class Inventory(Base):
