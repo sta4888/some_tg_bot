@@ -54,9 +54,10 @@ def handle_url_input(message):
         xml_data = response.content.decode('utf-8')
 
         internal_ids = parse_and_save_offer(xml_data, bot, message)
-        # пасибо! 👌Добавлено объектов: число
+        #
 
         if internal_ids:
+            bot.send_message(message.chat.id, f'спасибо! 👌\nДобавлено объектов: {len(internal_ids)}')
             user_states[message.from_user.id]['internal_ids'] = internal_ids
             user_states[message.from_user.id]['current_index'] = 0
             bot.reply_to(message, f"Пожалуйста, введите URL для предложения с internal_id: {internal_ids[0]}")
