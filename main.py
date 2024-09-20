@@ -1,6 +1,6 @@
 import telebot
 from connect import session
-from models import User, Offer  # Обновленные модели
+from models import User, Offer
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 import os
@@ -13,6 +13,9 @@ bot = telebot.TeleBot(API_TOKEN)
 
 # Временное хранилище данных, пока пользователь вводит ссылки
 user_offer_data = {}
+
+# Словарь для хранения состояния пользователей
+user_states = {}
 
 
 # Обработчик команды /start с приветствием для хоста
@@ -42,11 +45,6 @@ def send_welcome(message):
 
 
 # Обработка загрузки XML-файла
-# Словарь для хранения состояния пользователей
-user_states = {}
-
-
-# Обработка загрузки XML-файла
 @bot.message_handler(content_types=['document'])
 def handle_document(message):
     user = session.query(User).filter_by(telegram_id=message.from_user.id).first()
@@ -59,11 +57,13 @@ def handle_document(message):
             xml_data = downloaded_file.decode('utf-8')
             internal_ids = parse_and_save_offer(xml_data, bot, message)
 
-            # Запросим у пользователя ссылки для каждого internal_id
+            # Запросим у пользователя ссылки по порядку
             if internal_ids:
-                user_states[message.from_user.id] = internal_ids
-                bot.reply_to(message,
-                             f"Пожалуйста, введите URL для предложений с internal_id: {', '.join(internal_ids)}")
+                user_states[message.from_user.id] = {
+                    'internal_ids': internal_ids,
+                    'current_index': 0  # Индекс текущего internal_id
+                }
+                bot.reply_to(message, f"Пожалуйста, введите URL для предложения с internal_id: {internal_ids[0]}")
 
         except Exception as e:
             bot.reply_to(message, f"Ошибка при обработке XML файла: {str(e)}.")
@@ -75,28 +75,35 @@ def handle_document(message):
 @bot.message_handler(func=lambda message: message.from_user.id in user_states)
 def handle_url_input(message):
     user_id = message.from_user.id
-    internal_ids = user_states[user_id]
+    user_state = user_states[user_id]
 
     # Получаем ссылку от пользователя
     url_to = message.text.strip()
+    internal_ids = user_state['internal_ids']
+    current_index = user_state['current_index']
 
-    # Обновляем значение url_to для соответствующего internal_id
-    if internal_ids:
-        internal_id = internal_ids.pop(0)  # Получаем первый internal_id
-        offer = session.query(Offer).filter_by(internal_id=internal_id).first()
+    # Получаем текущий internal_id
+    internal_id = internal_ids[current_index]
+    offer = session.query(Offer).filter_by(internal_id=internal_id).first()
 
-        if offer:
-            offer.url_to = url_to
-            session.commit()
-            bot.reply_to(message, f"Ссылка для internal_id {internal_id} обновлена на: {url_to}")
+    if offer:
+        offer.url_to = url_to
+        session.commit()
+        bot.reply_to(message, f"Ссылка для internal_id {internal_id} обновлена на: {url_to}")
 
-            # Если все internal_ids обработаны, удаляем пользователя из состояния
-            if not internal_ids:
-                del user_states[user_id]
+        # Переходим к следующему internal_id
+        current_index += 1
+        user_state['current_index'] = current_index
+
+        # Проверяем, остались ли еще internal_ids
+        if current_index < len(internal_ids):
+            next_internal_id = internal_ids[current_index]
+            bot.reply_to(message, f"Пожалуйста, введите URL для предложения с internal_id: {next_internal_id}")
         else:
-            bot.reply_to(message, f"Предложение с internal_id {internal_id} не найдено.")
+            del user_states[user_id]  # Удаляем пользователя из состояния
+            bot.reply_to(message, "Все ссылки успешно обновлены.")
     else:
-        bot.reply_to(message, "Произошла ошибка, попробуйте снова.")
+        bot.reply_to(message, f"Предложение с internal_id {internal_id} не найдено.")
 
 
 if __name__ == "__main__":
