@@ -46,10 +46,10 @@ def send_welcome(message):
 def handle_document(message):
     user = session.query(User).filter_by(telegram_id=message.from_user.id).first()
 
-    # Проверяем, является ли пользователь хостом
-    if not user or not user.is_client:
-        bot.reply_to(message, "Только хосты могут загружать XML-файлы.")
-        return
+    # # Проверяем, является ли пользователь хостом
+    # if not user or not user.is_client:
+    #     bot.reply_to(message, "Только хосты могут загружать XML-файлы.")
+    #     return
 
     if message.document.mime_type in ['application/xml', 'text/xml']:
         file_info = bot.get_file(message.document.file_id)
