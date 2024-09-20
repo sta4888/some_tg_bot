@@ -55,7 +55,7 @@ def parse_and_save_offer(xml_data, bot, message):
             description=description,
             min_stay=min_stay,
             created_at=datetime.now(),  # Установка даты создания
-            created_by=user,  # Пример ID пользователя, можно заменить на актуальный
+            created_by=user.id if user else None,  # Пример ID пользователя, можно заменить на актуальный
         )
 
         # Добавляем фотографии, если есть
