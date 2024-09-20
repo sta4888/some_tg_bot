@@ -50,27 +50,29 @@ def handle_document(message):
             xml_data = downloaded_file.decode('utf-8')
             internal_ids = parse_and_save_offer(xml_data, bot, message)
 
-            # Проверяем, какие internal_id уже существуют
-            existing_offers = session.query(Offer).filter(Offer.internal_id.in_(internal_ids)).all()
-            existing_ids = {offer.internal_id: offer for offer in existing_offers}
+            if internal_ids:
+                # Проверяем, какие internal_id уже существуют
+                existing_offers = session.query(Offer).filter(Offer.internal_id.in_(internal_ids)).all()
+                existing_ids = {offer.internal_id: offer for offer in existing_offers}
 
-            # Запросим у пользователя, хочет ли он обновить данные для существующих internal_id
-            if existing_ids:
-                user_states[message.from_user.id] = {
-                    'internal_ids': list(existing_ids.keys()),
-                    'current_index': 0,
-                    'update_existing': True
-                }
-                bot.reply_to(message,
-                             f"Существуют данные для internal_id: {', '.join(existing_ids.keys())}. Вы хотите их обновить? (да/нет)")
+                # Запросим у пользователя, хочет ли он обновить данные для существующих internal_id
+                if existing_ids:
+                    user_states[message.from_user.id] = {
+                        'internal_ids': list(existing_ids.keys()),
+                        'current_index': 0,
+                        'update_existing': True
+                    }
+                    bot.reply_to(message,
+                                 f"Существуют данные для internal_id: {', '.join(existing_ids.keys())}. Вы хотите их обновить? (да/нет)")
+                else:
+                    # Если нет существующих записей, запрашиваем ссылки
+                    user_states[message.from_user.id] = {
+                        'internal_ids': internal_ids,
+                        'current_index': 0
+                    }
+                    bot.reply_to(message, f"Пожалуйста, введите URL для предложения с internal_id: {internal_ids[0]}")
             else:
-                # Если нет существующих записей, запрашиваем ссылки
-                user_states[message.from_user.id] = {
-                    'internal_ids': internal_ids,
-                    'current_index': 0
-                }
-                bot.reply_to(message, f"Пожалуйста, введите URL для предложения с internal_id: {internal_ids[0]}")
-
+                bot.reply_to(message, f"В вами загруженном файле нет ни одного нового объекта")
         except Exception as e:
             bot.reply_to(message, f"Ошибка при обработке XML файла: {str(e)}.")
     else:
