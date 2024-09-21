@@ -111,6 +111,8 @@ class Offer(Base):
     creator = relationship("User", foreign_keys=[created_by])  # Связь с пользователем, создавшим запись
     photos = relationship("Photo", back_populates="offer")  # Связь с фотографиями
 
+    available_on_file = Column(Boolean, default=True)
+
 
 class Price(Base):
     __tablename__ = 'price'
