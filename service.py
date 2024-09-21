@@ -5,6 +5,7 @@ from models import Location, Offer
 def find_offers(city, start_date, end_date, guest_count, bedrooms):
     # Поиск местоположения по городу
     locations = session.query(Location).filter(Location.locality_name.ilike(f'%{city}%')).all()
+    print(f"--locations {locations}")
 
     if not locations:
         return None  # Если нет предложений в этом городе
