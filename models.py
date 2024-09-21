@@ -57,6 +57,7 @@ class Offer(Base):
 
     min_stay = Column(Integer)
     agency_id = Column(Integer)
+    description = Column(Text)
 
     sales_agent_id = Column(Integer, ForeignKey('sales_agent.id'))
     price_id = Column(Integer, ForeignKey('price.id'), unique=True)  # Одно предложение - одна цена
