@@ -64,13 +64,18 @@ def parse_and_save_offer(xml_data, bot, message):
         price_period = offer.find('price').find('period').text if offer.find('price') and offer.find('price').find(
             'period') else None
 
-        price = None
+        deposit_value = float(offer.find('deposit').find('value').text) if offer.find('deposit') and offer.find('deposit').find(
+            'value') else None
+        deposit_currency = offer.find('deposit').find('currency').text if offer.find('deposit') and offer.find('deposit').find(
+            'currency') else None
+
         if price_value and price_currency:
-            price = session.query(Price).filter_by(value=price_value, currency=price_currency,
-                                                   period=price_period).first()
-            if not price:
-                price = Price(value=price_value, currency=price_currency, period=price_period)
-                session.add(price)
+            price = Price(value=price_value,
+                          currency=price_currency,
+                          period=price_period,
+                          deposit=deposit_value,
+                          deposit_currency=deposit_currency)
+            session.add(price)
 
         # Обработка местоположения
         location_country = offer.find('location').find('country').text if offer.find('location') and offer.find(
@@ -124,7 +129,7 @@ def parse_and_save_offer(xml_data, bot, message):
             else:
                 continue
 
-        internal_ids.append(internal_id)
+        internal_ids.append({'internal_id': internal_id, 'location_address': location_address})
 
         # Создаем новое предложение
         new_offer = Offer(

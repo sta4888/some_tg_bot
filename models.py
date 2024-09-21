@@ -55,6 +55,9 @@ class Offer(Base):
     creation_date = Column(DateTime)
     last_update_date = Column(DateTime)
 
+    min_stay = Column(Integer)
+    agency_id = Column(Integer)
+
     sales_agent_id = Column(Integer, ForeignKey('sales_agent.id'))
     price_id = Column(Integer, ForeignKey('price.id'), unique=True)  # Одно предложение - одна цена
     location_id = Column(Integer, ForeignKey('location.id'), unique=True)  # Одно предложение - одно местоположение

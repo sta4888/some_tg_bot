@@ -67,9 +67,12 @@ def handle_url_input(message):
             session.commit()
 
             bot.send_message(message.chat.id, f'спасибо! 👌\nДобавлено объектов: {len(internal_ids)}')
-            user_states[message.from_user.id]['internal_ids'] = internal_ids
-            user_states[message.from_user.id]['current_index'] = 0
-            bot.reply_to(message, f"Пожалуйста, введите URL для объекта с internal_id: {internal_ids[0]}")
+            user_states[message.from_user.id] = {'internal_ids': internal_ids, 'current_index': 0}
+
+            first_internal_id = internal_ids[0].get('internal_id')
+            first_location_address = internal_ids[0].get('location_address')
+            bot.reply_to(message,
+                         f"Пожалуйста, введите URL для объекта с internal_id: {first_internal_id}\nадресом: {first_location_address}")
         else:
             bot.reply_to(message, "В загруженном файле нет ни одного нового объекта.")
 
@@ -97,7 +100,9 @@ def handle_update_confirmation(message):
         # Обновляем данные для существующих internal_id
         internal_ids = user_state['internal_ids']
         current_index = user_state['current_index']
-        internal_id = internal_ids[current_index]
+        current_internal_id_data = internal_ids[current_index]
+        internal_id = current_internal_id_data.get('internal_id')
+
         offer = session.query(Offer).filter_by(internal_id=internal_id).first()
 
         if offer and offer.created_by == user_id:
@@ -110,7 +115,8 @@ def handle_update_confirmation(message):
             user_state['current_index'] = current_index
 
             if current_index < len(internal_ids):
-                next_internal_id = internal_ids[current_index]
+                next_internal_id_data = internal_ids[current_index]
+                next_internal_id = next_internal_id_data.get('internal_id')
                 bot.reply_to(message,
                              f"Обновите данные для internal_id: {next_internal_id}. Пожалуйста, введите новый URL.")
             else:
@@ -135,7 +141,9 @@ def handle_url_input(message):
     internal_ids = user_state['internal_ids']
     current_index = user_state['current_index']
 
-    internal_id = internal_ids[current_index]
+    current_internal_id_data = internal_ids[current_index]
+    internal_id = current_internal_id_data.get('internal_id')
+
     offer = session.query(Offer).filter_by(internal_id=internal_id).first()
 
     if offer:
@@ -147,7 +155,8 @@ def handle_url_input(message):
         user_state['current_index'] = current_index
 
         if current_index < len(internal_ids):
-            next_internal_id = internal_ids[current_index]
+            next_internal_id_data = internal_ids[current_index]
+            next_internal_id = next_internal_id_data.get('internal_id')
             bot.reply_to(message, f"Пожалуйста, введите URL для предложения с internal_id: {next_internal_id}")
         else:
             del user_states[user_id]
