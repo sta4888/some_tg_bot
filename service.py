@@ -137,7 +137,7 @@ def parse_and_save_offer(xml_data, bot, message):
         if not existing_offer:
             new_offer = Offer(
                 internal_id=internal_id,
-                type=offer_type,
+                offer_type=offer_type,
                 property_type=property_type,
                 category=category,
                 description=description,
