@@ -130,7 +130,6 @@ def parse_and_save_offer(xml_data, bot, message):
             'parking': offer.find('amenities').find('parking').text == 'true' if offer.find('amenities') and offer.find('amenities').find('parking') else False,
             'safe': offer.find('amenities').find('safe').text == 'true' if offer.find('amenities') and offer.find('amenities').find('safe') else False,
             'water_heater': offer.find('amenities').find('water-heater').text == 'true' if offer.find('amenities') and offer.find('amenities').find('water-heater') else False,
-            'telephon': offer.find('amenities').find('telephon').text == 'true' if offer.find('amenities') and offer.find('amenities').find('telephon') else False,
             'balcony': offer.find('amenities').find('balcony').text == 'true' if offer.find('amenities') and offer.find('amenities').find('balcony') else False
         }
         # Создание нового предложения или обновление существующего
