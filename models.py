@@ -93,7 +93,7 @@ class Offer(Base):
     jacuzzi = Column(Boolean, default=False)
     balcony = Column(Boolean, default=False)
     elevator = Column(Boolean, default=False)
-    sleeps = Column(String(20))  # '2+2'
+    sleeps = Column(String(20))  # '2+2'  не добавляется
     rooms = Column(Integer)
 
     check_in_time_start = Column(String(5))  # '14:00'
@@ -112,6 +112,14 @@ class Offer(Base):
     photos = relationship("Photo", back_populates="offer")  # Связь с фотографиями
 
     available_on_file = Column(Boolean, default=True)
+
+
+# class Sleeps(Base):
+#     __tablename__ = "sleeps"
+#
+#     one_sleep =
+#     two_sleep =
+#     for_persons =
 
 
 class Price(Base):
