@@ -18,7 +18,7 @@ user_states = {}
 # Обработчик команды /start с приветствием для хоста
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
-    bot.send_message(message, "Привет! Добро пожаловать в нашего бота.")
+    bot.send_message(message.chat.id, "Привет! Добро пожаловать в нашего бота.")
 
     # Найдем пользователя или создадим нового
     user = session.query(User).filter_by(telegram_id=message.from_user.id).first()
@@ -34,9 +34,9 @@ def send_welcome(message):
         session.commit()
 
     if user.is_client:
-        bot.send_message(message, "Привет! Вы зарегистрированы как пользователь.")
+        bot.send_message(message.chat.id, "Привет! Вы зарегистрированы как пользователь.")
     else:
-        bot.send_message(message, "Добро пожаловать, хост! Пожалуйста, отправьте ссылку на XML-файл.")
+        bot.send_message(message.chat.id, "Добро пожаловать, хост! Пожалуйста, отправьте ссылку на XML-файл.")
 
     # Инициализируем состояние пользователя для обработки URL
     user_states[message.from_user.id] = {'url_input': True}
