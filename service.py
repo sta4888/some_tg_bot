@@ -10,6 +10,9 @@ def find_offers(city, start_date, end_date, guest_count, bedrooms):
     if not locations:
         return None  # Если нет предложений в этом городе
 
+    for location in locations:
+        print(location.locality_name)
+
     # Поиск предложений, удовлетворяющих условиям
     offers = session.query(Offer).filter(
         Offer.location_id.in_([loc.id for loc in locations]),  # Предложения по найденным локациям
