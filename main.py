@@ -94,6 +94,9 @@ def ask_guest(message):
 
 def ask_bedrooms(message):
     user_data[message.chat.id]['bedrooms'] = message.text
+    # user_data[message.chat.id] эти полученные данные мы должны запросить в базе
+    # узнать, есть ли у нас по таким запросам букинги
+    # если есть, то вывести их пользователю
     bot.send_message(message.chat.id, "Спасибо! Вот ваши данные:")
     bot.send_message(message.chat.id, f"Город: {user_data[message.chat.id]['city']}\n"
                                       f"Даты: {user_data[message.chat.id]['start_date']} - {user_data[message.chat.id]['end_date']}\n"
