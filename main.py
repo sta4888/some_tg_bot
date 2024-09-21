@@ -6,6 +6,7 @@ import os
 
 from connect import session
 from models import Location, Offer
+from service import find_offers
 
 load_dotenv()
 
@@ -97,9 +98,6 @@ def ask_guest(message):
 
 def ask_bedrooms(message):
     user_data[message.chat.id]['bedrooms'] = message.text
-    # user_data[message.chat.id] эти полученные данные мы должны запросить в базе
-    # узнать, есть ли у нас по таким запросам букинги
-    # если есть, то вывести их пользователю
     bot.send_message(message.chat.id, "Спасибо! Вот ваши данные:")
     bot.send_message(message.chat.id, f"Город: {user_data[message.chat.id]['city']}\n"
                                       f"Даты: {user_data[message.chat.id]['start_date']} - {user_data[message.chat.id]['end_date']}\n"
@@ -121,24 +119,6 @@ def ask_bedrooms(message):
                              f"Предложение: {offer.description}\nЦена: {offer.price.value} {offer.price.currency}")
     else:
         bot.send_message(chat_id, "К сожалению, нет доступных предложений по вашему запросу.")
-
-
-def find_offers(city, start_date, end_date, guest_count, bedrooms):
-    # Поиск местоположения по городу
-    locations = session.query(Location).filter(Location.locality_name.ilike(f'%{city}%')).all()
-
-    if not locations:
-        return None  # Если нет предложений в этом городе
-
-    # Поиск предложений, удовлетворяющих условиям
-    offers = session.query(Offer).filter(
-        Offer.location_id.in_([loc.id for loc in locations]),  # Предложения по найденным локациям
-        Offer.sleeps >= guest_count,  # Предложения, где могут разместиться столько гостей
-        Offer.rooms >= bedrooms,  # Предложения с нужным количеством спален
-        Offer.available_on_file.is_(True)  # Только доступные предложения
-    ).all()
-
-    return offers
 
 
 if __name__ == "__main__":
