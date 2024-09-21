@@ -119,37 +119,29 @@ def parse_and_save_offer(xml_data, bot, message):
             'air_conditioner': bool(offer.find('air-conditioner').text) if offer.find('air-conditioner') else 0,
             'kids_friendly': bool(offer.find('kids-friendly').text) if offer.find('kids-friendly') else 0,
             'party': bool(offer.find('party').text) if offer and offer.find('party') else 0,
-            'refrigerator':  bool(offer.find('refrigerator').text) if offer.find('refrigerator') else 0,
+            'refrigerator': bool(offer.find('refrigerator').text) if offer.find('refrigerator') else 0,
             'phone': bool(offer.find('phone').text) if offer.find('phone') else 0,
             'stove': bool(offer.find('stove').text) if offer.find('stove') else 0,
             'dishwasher': bool(offer.find('dishwasher').text) if offer.find('dishwasher') else 0,
-            'music_center': offer.find('music-center').text == 'true' if offer.find(
-                'amenities') and offer.find('music-center') else False,
-            'microwave': offer.find('microwave').text == 'true' if offer.find(
-                'amenities') and offer.find('microwave') else False,
-            'iron': offer.find('iron').text == 'true' if offer and offer.find(
-                'amenities').find('iron') else False,
-            'concierge': offer.find('concierge').text == 'true' if offer.find(
-                'amenities') and offer.find('concierge') else False,
-            'parking': offer.find('parking').text == 'true' if offer and offer.find(
-                'amenities').find('parking') else False,
-            'safe': offer.find('safe').text == 'true' if offer and offer.find(
-                'amenities').find('safe') else False,
-            'water_heater': offer.find('water-heater').text == 'true' if offer.find(
-                'amenities') and offer.find('water-heater') else False,
+            'music_center': bool(offer.find('music-center').text) if offer.find('music-center') else 0,
+            'microwave': bool(offer.find('microwave').text) if offer.find('microwave') else 0,
+            'iron': bool(offer.find('iron').text) if offer.find('iron') else 0,
+            'concierge': bool(offer.find('concierge').text) if offer.find('concierge') else 0,
+            'parking': bool(offer.find('parking').text) if offer.find('parking') else 0,
+            'safe': bool(offer.find('safe').text) if offer.find('safe') else 0,
+            'water_heater': bool(offer.find('water-heater').text) if offer.find('water-heater') else 0,
 
-            'balcony': offer.find('balcony').text == 'true' if offer and offer.find('balcony') else False,
+            'balcony': bool(offer.find('balcony').text) if offer.find('balcony') else 0,
 
-            'television': offer.find('television').text == 'true' if offer and offer.find('television') else False,
-            'bathroom': offer.find('bathroom').text == 'true' if offer and offer.find('bathroom') else False,
-            'pet_friendly': offer.find('pet_friendly').text == 'true' if offer and offer.find(
-                'pet_friendly') else False,
-            'smoke': offer.find('smoke').text == 'true' if offer and offer.find('smoke') else False,
-            'romantic': offer.find('romantic').text == 'true' if offer and offer.find('romantic') else False,
-            'jacuzzi': offer.find('jacuzzi').text == 'true' if offer and offer.find('jacuzzi') else False,
-            'elevator': offer.find('elevator').text == 'true' if offer and offer.find('elevator') else False,
-            'sleeps': offer.find('sleeps').text == 'true' if offer and offer.find('sleeps') else False,
-            'rooms': offer.find('rooms').text == 'true' if offer and offer.find('rooms') else False,
+            'television': bool(offer.find('television').text) if offer.find('television') else 0,
+            'bathroom': bool(offer.find('bathroom').text) if offer.find('bathroom') else 0,
+            'pet_friendly': bool(offer.find('pet-friendly').text) if offer.find('pet-friendly') else False,
+            'smoke': bool(offer.find('smoke').text) if offer.find('smoke') else 0,
+            'romantic': bool(offer.find('romantic').text) if offer.find('romantic') else 0,
+            'jacuzzi': bool(offer.find('jacuzzi').text) if offer.find('jacuzzi') else 0,
+            'elevator': bool(offer.find('elevator').text) if offer.find('elevator') else 0,
+            'sleeps': str(offer.find('sleeps').text) if offer.find('sleeps') else 0,
+            'rooms': int(offer.find('rooms').text) if offer.find('rooms') else 0,
 
         }
 
