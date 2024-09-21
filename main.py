@@ -4,6 +4,9 @@ from telegram_bot_calendar import DetailedTelegramCalendar, LSTEP
 from dotenv import load_dotenv
 import os
 
+from connect import session
+from models import Location, Offer
+
 load_dotenv()
 
 # Инициализация бота
@@ -102,6 +105,40 @@ def ask_bedrooms(message):
                                       f"Даты: {user_data[message.chat.id]['start_date']} - {user_data[message.chat.id]['end_date']}\n"
                                       f"Сколько гостей: {user_data[message.chat.id]['guest']}\n"
                                       f"Спальных мест: {user_data[message.chat.id]['bedrooms']}")
+    chat_id = message.chat.id
+    city = user_data[chat_id]['city']
+    start_date = user_data[chat_id]['start_date']
+    end_date = user_data[chat_id]['end_date']
+    guest_count = user_data[chat_id]['guest']
+    bedrooms = user_data[chat_id]['bedrooms']
+
+    offers = find_offers(city, start_date, end_date, guest_count, bedrooms)
+
+    if offers:
+        # Отправляем список предложений пользователю
+        for offer in offers:
+            bot.send_message(chat_id,
+                             f"Предложение: {offer.description}\nЦена: {offer.price.value} {offer.price.currency}")
+    else:
+        bot.send_message(chat_id, "К сожалению, нет доступных предложений по вашему запросу.")
+
+
+def find_offers(city, start_date, end_date, guest_count, bedrooms):
+    # Поиск местоположения по городу
+    locations = session.query(Location).filter(Location.locality_name.ilike(f'%{city}%')).all()
+
+    if not locations:
+        return None  # Если нет предложений в этом городе
+
+    # Поиск предложений, удовлетворяющих условиям
+    offers = session.query(Offer).filter(
+        Offer.location_id.in_([loc.id for loc in locations]),  # Предложения по найденным локациям
+        Offer.sleeps >= guest_count,  # Предложения, где могут разместиться столько гостей
+        Offer.rooms >= bedrooms,  # Предложения с нужным количеством спален
+        Offer.available_on_file.is_(True)  # Только доступные предложения
+    ).all()
+
+    return offers
 
 
 if __name__ == "__main__":

@@ -1,124 +1,161 @@
 import uuid
-from sqlalchemy import Column, Integer, String, DateTime, Float, ForeignKey, UUID, Table, Boolean
-from sqlalchemy.orm import relationship
-from sqlalchemy.ext.declarative import declarative_base
-import datetime
+from sqlalchemy import create_engine, Column, Integer, String, Float, Text, Boolean, DateTime, ForeignKey, UUID
+from sqlalchemy.orm import declarative_base, relationship
+from sqlalchemy.ext.mutable import MutableList
+from sqlalchemy import JSON
 
 Base = declarative_base()
-
-# Association table for many-to-many relationship between Offer and Inventory (e.g., features like wi-fi, etc.)
-offer_inventory = Table(
-    'offer_inventory', Base.metadata,
-    Column('offer_id', Integer, ForeignKey('offer.id')),
-    Column('inventory_id', Integer, ForeignKey('inventory.id'))
-)
 
 
 class User(Base):
     __tablename__ = 'users'
 
     id = Column(Integer, primary_key=True)
-
-    # UUID для уникального идентификатора пользователя
     uuid = Column(UUID(as_uuid=True), default=uuid.uuid4, unique=True, nullable=False)
-
     telegram_id = Column(Integer, unique=True, nullable=False)
     username = Column(String(100), nullable=True)
     chat_id = Column(String(100), nullable=True)
     is_client = Column(Boolean, nullable=False, default=True)
-
-    # Внешний ключ для связи с Agency (делаем необязательным для отложенной связи)
-    agency_id = Column(Integer, ForeignKey('agency.id'), nullable=True)
-
-    # Связь с агентством (может быть установлена позже)
-    agency = relationship('Agency', back_populates='users')
-
-    # Поле для хранения реферала (ссылка на другого пользователя)
     referer_id = Column(Integer, ForeignKey('users.id'), nullable=True)
-
-    # Связь с тем, кто привел этого пользователя
     referer = relationship('User', remote_side=[id], backref='referred_users')
 
-
-class Agency(Base):
-    __tablename__ = 'agency'
-
-    id = Column(Integer, primary_key=True)
-    agency_name = Column(String(100), nullable=True)
-    agency_id = Column(Integer, nullable=False)
-
-    # Связь с пользователями
-    users = relationship('User', back_populates='agency')
-
-    # Связь с агентами
-    agents = relationship('Agent', back_populates='agency')
+    # Отношение "один ко многим" с XML_FEED
+    xml_feeds = relationship('XML_FEED', back_populates='user')
 
 
-class Agent(Base):
-    __tablename__ = 'agent'
+class XML_FEED(Base):
+    __tablename__ = 'xml_feed'
 
     id = Column(Integer, primary_key=True)
-    agency_id = Column(Integer, ForeignKey('agency.id'), nullable=False)
-    agent_name = Column(String(100), nullable=False)
-    agent_phone = Column(String(100), nullable=False)
-    agent_email = Column(String(100), nullable=False)
+    url = Column(String(255), nullable=False)  # Поле для хранения ссылки
+    user_id = Column(Integer, ForeignKey('users.id'))  # Внешний ключ на таблицу User
 
-    agency = relationship('Agency', back_populates='agents')
-    offers = relationship('Offer', back_populates='sales_agent')
+    # Отношение к User (многие к одному)
+    user = relationship('User', back_populates='xml_feeds')
 
 
-class Category(Base):
-    __tablename__ = 'category'
+class SalesAgent(Base):
+    __tablename__ = 'sales_agent'
 
     id = Column(Integer, primary_key=True)
-    category_name = Column(String(50), nullable=False)
-
-
-class Property(Base):
-    __tablename__ = 'property'
-
-    id = Column(Integer, primary_key=True)
-    property_type = Column(String(50), nullable=False)
-
-
-class Image(Base):
-    __tablename__ = 'image'
-
-    id = Column(Integer, primary_key=True)
-    offer_id = Column(Integer, ForeignKey('offer.id'), nullable=False)
-    url = Column(String, nullable=False)
-    is_main = Column(Integer, default=0)  # 0 for False, 1 for True
-
-    offer = relationship('Offer', back_populates='images')
+    name = Column(String(255))
+    phone = Column(String(20))
+    email = Column(String(255))
 
 
 class Offer(Base):
     __tablename__ = 'offer'
 
     id = Column(Integer, primary_key=True)
-    offer_type = Column(String(50), nullable=False)
-    property_id = Column(Integer, ForeignKey('property.id'), nullable=False)
-    category_id = Column(Integer, ForeignKey('category.id'), nullable=False)
-    creation = Column(DateTime, nullable=False)
-    last_update_date = Column(DateTime, nullable=True)
-    sales_agent_id = Column(Integer, ForeignKey('agent.id'), nullable=False)
-    price = Column(Float, nullable=False)
-    description = Column(String, nullable=True)
-    min_stay = Column(Integer, nullable=True)
-    location = Column(String(100), nullable=True)
-    area = Column(Float, nullable=True)
-    check_in_time = Column(String(50), nullable=True)
-    check_out_time = Column(String(50), nullable=True)
+    internal_id = Column(String(50), unique=True)
+    offer_type = Column(String(50))  # 'аренда'
+    property_type = Column(String(50))  # 'жилая'
+    category = Column(String(50))  # 'квартира'
+    url_to = Column(String(150), default=None)  # 'ссылка на '
+    creation_date = Column(DateTime)
+    last_update_date = Column(DateTime)
 
-    sales_agent = relationship('Agent', back_populates='offers')
-    property = relationship('Property')
-    category = relationship('Category')
-    inventories = relationship('Inventory', secondary=offer_inventory)
-    images = relationship('Image', back_populates='offer')
+    min_stay = Column(Integer)
+    agency_id = Column(Integer)
+    description = Column(Text)
+
+    sales_agent_id = Column(Integer, ForeignKey('sales_agent.id'))
+    price_id = Column(Integer, ForeignKey('price.id'), unique=True)  # Одно предложение - одна цена
+    location_id = Column(Integer, ForeignKey('location.id'), unique=True)  # Одно предложение - одно местоположение
+    area_id = Column(Integer, ForeignKey('area.id'), unique=True)  # Одно предложение - одна площадь
+
+    created_by = Column(Integer, ForeignKey('users.id'))  # Поле для указания создателя
+    created_at = Column(DateTime)  # Поле для хранения даты создания
+
+    # Удобства
+    washing_machine = Column(Boolean, default=False)
+    wi_fi = Column(Boolean, default=False)
+    tv = Column(Boolean, default=False)
+    air_conditioner = Column(Boolean, default=False)
+    kids_friendly = Column(Boolean, default=False)
+    party = Column(Boolean, default=False)
+    refrigerator = Column(Boolean, default=False)
+    phone = Column(Boolean, default=False)
+    stove = Column(Boolean, default=False)
+    dishwasher = Column(Boolean, default=False)
+    music_center = Column(Boolean, default=False)
+    microwave = Column(Boolean, default=False)
+    iron = Column(Boolean, default=False)
+    concierge = Column(Boolean, default=False)
+    parking = Column(Boolean, default=False)
+    safe = Column(Boolean, default=False)
+    water_heater = Column(Boolean, default=False)
+    television = Column(Boolean, default=False)
+    bathroom = Column(Boolean, default=False)
+    pet_friendly = Column(Boolean, default=False)
+    smoke = Column(Boolean, default=False)
+    romantic = Column(Boolean, default=False)
+    jacuzzi = Column(Boolean, default=False)
+    balcony = Column(Boolean, default=False)
+    elevator = Column(Boolean, default=False)
+    sleeps = Column(String(20))  # '2+2'
+    rooms = Column(Integer)
+
+    check_in_time_start = Column(String(5))  # '14:00'
+    check_in_time_end = Column(String(5))  # '22:00'
+    check_out_time_start = Column(String(5))  # '12:00'
+    check_out_time_end = Column(String(5))  # '12:00'
+
+    deposit_value = Column(Float)
+    deposit_currency = Column(String(10))
+
+    sales_agent = relationship("SalesAgent")
+    price = relationship("Price", uselist=False)  # Один к одному
+    location = relationship("Location", uselist=False)  # Один к одному
+    area = relationship("Area", uselist=False)  # Один к одному
+    creator = relationship("User", foreign_keys=[created_by])  # Связь с пользователем, создавшим запись
+    photos = relationship("Photo", back_populates="offer")  # Связь с фотографиями
+
+    available_on_file = Column(Boolean, default=True)
 
 
-class Inventory(Base):
-    __tablename__ = 'inventory'
+class Price(Base):
+    __tablename__ = 'price'
 
     id = Column(Integer, primary_key=True)
-    name = Column(String(100), nullable=False)
+    value = Column(Float)
+    deposit = Column(Float)
+    currency = Column(String(10))
+    deposit_currency = Column(String(10))
+    period = Column(String(20))
+
+
+class Location(Base):
+    __tablename__ = 'location'
+
+    id = Column(Integer, primary_key=True)
+    country = Column(String(100))
+    region = Column(String(100))
+    locality_name = Column(String(100))
+    address = Column(String(255))
+    latitude = Column(Float)
+    longitude = Column(Float)
+    sub_locality_name = Column(String(100))
+
+
+class Area(Base):
+    __tablename__ = 'area'
+
+    id = Column(Integer, primary_key=True)
+    value = Column(Float)
+    unit = Column(String(10))
+
+
+class Photo(Base):
+    __tablename__ = 'photo'
+
+    id = Column(Integer, primary_key=True)
+    offer_id = Column(Integer, ForeignKey('offer.id'))
+    is_main = Column(Boolean, default=False)
+    url = Column(String(255), nullable=False)  # Ссылка на изображение
+
+    offer = relationship("Offer", back_populates="photos")  # Связь с предложением
+
+# Пример создания базы данных
+# engine = create_engine('sqlite:///your_database.db')
+# Base.metadata.create_all(engine)
