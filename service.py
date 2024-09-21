@@ -153,7 +153,7 @@ def parse_and_save_offer(xml_data, bot, message):
             session.add(new_offer)
         else:
             # Обновление полей существующего предложения
-            existing_offer.type = offer_type
+            existing_offer.offer_type = offer_type
             existing_offer.property_type = property_type
             existing_offer.category = category
             existing_offer.description = description
