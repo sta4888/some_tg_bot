@@ -4,6 +4,7 @@ from sqlalchemy.orm import sessionmaker
 from connect import engine
 from models import Photo, Offer, User, SalesAgent, Price, Location, Area
 
+
 def parse_and_save_offer(xml_data, bot, message):
     internal_ids = []
     # Создаем сессию
@@ -111,66 +112,108 @@ def parse_and_save_offer(xml_data, bot, message):
             area = Area(value=area_value, unit=area_unit)
             session.add(area)
 
-        # Обработка удобств (amenities)
         amenities = {
-            'washing_machine': offer.find('amenities').find('washing-machine').text == 'true' if offer.find('amenities') and offer.find('amenities').find('washing-machine') else False,
-            'wi_fi': offer.find('amenities').find('wi-fi').text == 'true' if offer.find('amenities') and offer.find('amenities').find('wi-fi') else False,
-            'tv': offer.find('amenities').find('tv').text == 'true' if offer.find('amenities') and offer.find('amenities').find('tv') else False,
-            'air_conditioner': offer.find('amenities').find('air-conditioner').text == 'true' if offer.find('amenities') and offer.find('amenities').find('air-conditioner') else False,
-            'kids_friendly': offer.find('amenities').find('kids-friendly').text == 'true' if offer.find('amenities') and offer.find('amenities').find('kids-friendly') else False,
-            'party': offer.find('amenities').find('party').text == 'true' if offer.find('amenities') and offer.find('amenities').find('party') else False,
-            'refrigerator': offer.find('amenities').find('refrigerator').text == 'true' if offer.find('amenities') and offer.find('amenities').find('refrigerator') else False,
-            'phone': offer.find('amenities').find('phone').text == 'true' if offer.find('amenities') and offer.find('amenities').find('phone') else False,
-            'stove': offer.find('amenities').find('stove').text == 'true' if offer.find('amenities') and offer.find('amenities').find('stove') else False,
-            'dishwasher': offer.find('amenities').find('dishwasher').text == 'true' if offer.find('amenities') and offer.find('amenities').find('dishwasher') else False,
-            'music_center': offer.find('amenities').find('music-center').text == 'true' if offer.find('amenities') and offer.find('amenities').find('music-center') else False,
-            'microwave': offer.find('amenities').find('microwave').text == 'true' if offer.find('amenities') and offer.find('amenities').find('microwave') else False,
-            'iron': offer.find('amenities').find('iron').text == 'true' if offer.find('amenities') and offer.find('amenities').find('iron') else False,
-            'concierge': offer.find('amenities').find('concierge').text == 'true' if offer.find('amenities') and offer.find('amenities').find('concierge') else False,
-            'parking': offer.find('amenities').find('parking').text == 'true' if offer.find('amenities') and offer.find('amenities').find('parking') else False,
-            'safe': offer.find('amenities').find('safe').text == 'true' if offer.find('amenities') and offer.find('amenities').find('safe') else False,
-            'water_heater': offer.find('amenities').find('water-heater').text == 'true' if offer.find('amenities') and offer.find('amenities').find('water-heater') else False,
-            'balcony': offer.find('amenities').find('balcony').text == 'true' if offer.find('amenities') and offer.find('amenities').find('balcony') else False
+            'washing_machine': bool(offer.find('washing-machine').text) if offer.find('washing-machine') else 0,
+            'wi_fi': bool(offer.find('wi-fi').text) if offer.find('wi-fi') else 0,
+            'tv': bool(offer.find('tv').text) if offer and offer.find('tv') else 0,
+            'air_conditioner': bool(offer.find('air-conditioner').text) if offer.find('air-conditioner') else 0,
+            'kids_friendly': bool(offer.find('kids-friendly').text) if offer.find('kids-friendly') else 0,
+            'party': bool(offer.find('party').text) if offer and offer.find('party') else 0,
+            'refrigerator':  bool(offer.find('refrigerator').text) if offer.find('refrigerator') else 0,
+            'phone': bool(offer.find('phone').text) if offer.find('phone') else 0,
+            'stove': bool(offer.find('stove').text) if offer.find('stove') else 0,
+            'dishwasher': bool(offer.find('dishwasher').text) if offer.find('dishwasher') else 0,
+            'music_center': offer.find('music-center').text == 'true' if offer.find(
+                'amenities') and offer.find('music-center') else False,
+            'microwave': offer.find('microwave').text == 'true' if offer.find(
+                'amenities') and offer.find('microwave') else False,
+            'iron': offer.find('iron').text == 'true' if offer and offer.find(
+                'amenities').find('iron') else False,
+            'concierge': offer.find('concierge').text == 'true' if offer.find(
+                'amenities') and offer.find('concierge') else False,
+            'parking': offer.find('parking').text == 'true' if offer and offer.find(
+                'amenities').find('parking') else False,
+            'safe': offer.find('safe').text == 'true' if offer and offer.find(
+                'amenities').find('safe') else False,
+            'water_heater': offer.find('water-heater').text == 'true' if offer.find(
+                'amenities') and offer.find('water-heater') else False,
+
+            'balcony': offer.find('balcony').text == 'true' if offer and offer.find('balcony') else False,
+
+            'television': offer.find('television').text == 'true' if offer and offer.find('television') else False,
+            'bathroom': offer.find('bathroom').text == 'true' if offer and offer.find('bathroom') else False,
+            'pet_friendly': offer.find('pet_friendly').text == 'true' if offer and offer.find(
+                'pet_friendly') else False,
+            'smoke': offer.find('smoke').text == 'true' if offer and offer.find('smoke') else False,
+            'romantic': offer.find('romantic').text == 'true' if offer and offer.find('romantic') else False,
+            'jacuzzi': offer.find('jacuzzi').text == 'true' if offer and offer.find('jacuzzi') else False,
+            'elevator': offer.find('elevator').text == 'true' if offer and offer.find('elevator') else False,
+            'sleeps': offer.find('sleeps').text == 'true' if offer and offer.find('sleeps') else False,
+            'rooms': offer.find('rooms').text == 'true' if offer and offer.find('rooms') else False,
+
         }
-        # Создание нового предложения или обновление существующего
-        if not existing_offer:
-            new_offer = Offer(
-                internal_id=internal_id,
-                offer_type=offer_type,
-                property_type=property_type,
-                category=category,
-                description=description,
-                min_stay=min_stay,
-                creation_date=creation_date_str,
-                last_update_date=last_update_date_str,
-                sales_agent=sales_agent,
-                price=price,
-                location=location,
-                area=area,
-                **amenities
-            )
-            session.add(new_offer)
-        else:
-            # Обновление полей существующего предложения
-            existing_offer.offer_type = offer_type
-            existing_offer.property_type = property_type
-            existing_offer.category = category
-            existing_offer.description = description
-            existing_offer.min_stay = min_stay
-            existing_offer.creation_date = creation_date_str
-            existing_offer.last_update_date = last_update_date_str
-            existing_offer.sales_agent = sales_agent
-            existing_offer.price = price
-            existing_offer.location = location
-            existing_offer.area = area
 
-            for key, value in amenities.items():
-                setattr(existing_offer, key, value)
+        if existing_offer:
+            if existing_offer.created_by == user.id:
+                # Обновляем необходимые поля
+                existing_offer.offer_type = offer_type
+                existing_offer.property_type = property_type
+                existing_offer.category = category
+                existing_offer.creation_date = creation_date_str
+                existing_offer.last_update_date = last_update_date_str
+                existing_offer.description = description
+                existing_offer.min_stay = min_stay
+                existing_offer.updated_at = datetime.now()
+                for key, value in amenities.items():
+                    setattr(existing_offer, key, value)
 
-        internal_ids.append(internal_id)
+                # Обновляем фотографии
+                existing_offer.photos.clear()
+                for photo in offer.find_all('image'):
+                    photo_url = photo.text if photo else None
+                    photo_is_main = photo.get('main') if photo else None
+                    if photo_url:
+                        new_photo = Photo(url=photo_url, is_main=1 if photo_is_main else 0)
+                        existing_offer.photos.append(new_photo)
+                continue
+            else:
+                continue
+
+        internal_ids.append({'internal_id': internal_id, 'location_address': location_address})
+
+        # Создаем новое предложение
+        new_offer = Offer(
+            internal_id=internal_id,
+            offer_type=offer_type,
+            agency_id=agency_id,
+            property_type=property_type,
+            category=category,
+            creation_date=creation_date_str,
+            last_update_date=last_update_date_str,
+            description=description,
+            min_stay=min_stay,
+            created_at=datetime.now(),
+            created_by=user.id if user else None,
+            sales_agent=sales_agent,
+            price=price,
+            location=location,
+            area=area,  # Добавляем площадь
+            **amenities,
+        )
+
+        # Добавляем фотографии
+        for photo in offer.find_all('image'):
+            photo_url = photo.text if photo else None
+            photo_is_main = photo.get('main') if photo else None
+            if photo_url:
+                new_photo = Photo(url=photo_url, is_main=1 if photo_is_main else 0)
+                new_offer.photos.append(new_photo)
+
+        session.add(new_offer)
 
     session.commit()
     session.close()
 
-    return internal_ids
+    print(f"--internal_ids {internal_ids}")
 
+    return internal_ids

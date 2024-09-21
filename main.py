@@ -59,6 +59,7 @@ def handle_url_input(message):
 
         # Здесь происходит парсинг и сохранение предложений
         internal_ids = parse_and_save_offer(xml_data, bot, message)
+        print(internal_ids)
 
         if internal_ids:
             # Сохраняем ссылку в таблице XML_FEED
