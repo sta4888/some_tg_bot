@@ -1,6 +1,6 @@
 import telebot
 from connect import session
-from models import User, Offer
+from models import User, Offer, XML_FEED
 from dotenv import load_dotenv
 import os
 import requests  # Добавим библиотеку для HTTP-запросов
@@ -18,7 +18,7 @@ user_states = {}
 # Обработчик команды /start с приветствием для хоста
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
-    bot.reply_to(message, "Привет! Добро пожаловать в нашего бота.")
+    bot.send_message(message, "Привет! Добро пожаловать в нашего бота.")
 
     # Найдем пользователя или создадим нового
     user = session.query(User).filter_by(telegram_id=message.from_user.id).first()
@@ -34,9 +34,9 @@ def send_welcome(message):
         session.commit()
 
     if user.is_client:
-        bot.reply_to(message, "Привет! Вы зарегистрированы как пользователь.")
+        bot.send_message(message, "Привет! Вы зарегистрированы как пользователь.")
     else:
-        bot.reply_to(message, "Добро пожаловать, хост! Пожалуйста, отправьте ссылку на XML-файл.")
+        bot.send_message(message, "Добро пожаловать, хост! Пожалуйста, отправьте ссылку на XML-файл.")
 
     # Инициализируем состояние пользователя для обработки URL
     user_states[message.from_user.id] = {'url_input': True}
@@ -47,28 +47,35 @@ def handle_url_input(message):
     user = session.query(User).filter_by(telegram_id=message.from_user.id).first()
     url = message.text.strip()
 
+    if not user:
+        bot.reply_to(message, "Пользователь не найден.")
+        return
+
     try:
         # Пытаемся загрузить и обработать XML-файл
         response = requests.get(url)
         response.raise_for_status()
         xml_data = response.content.decode('utf-8')
 
+        # Здесь происходит парсинг и сохранение предложений
         internal_ids = parse_and_save_offer(xml_data, bot, message)
-        #
 
         if internal_ids:
+            # Сохраняем ссылку в таблице XML_FEED
+            new_feed = XML_FEED(url=url, user_id=user.id)
+            session.add(new_feed)
+            session.commit()
+
             bot.send_message(message.chat.id, f'спасибо! 👌\nДобавлено объектов: {len(internal_ids)}')
             user_states[message.from_user.id]['internal_ids'] = internal_ids
             user_states[message.from_user.id]['current_index'] = 0
-            bot.reply_to(message, f"Пожалуйста, введите URL для предложения с internal_id: {internal_ids[0]}")
+            bot.reply_to(message, f"Пожалуйста, введите URL для объекта с internal_id: {internal_ids[0]}")
         else:
             bot.reply_to(message, "В загруженном файле нет ни одного нового объекта.")
 
     except Exception as e:
+        session.rollback()  # В случае ошибки откатываем транзакцию
         bot.reply_to(message, f"Ошибка при загрузке файла: {str(e)}.")
-
-
-# Другие обработчики остаются без изменений
 
 
 # Обработка текстовых сообщений от пользователей для ввода URL
@@ -77,7 +84,6 @@ def handle_url_input(message):
 def request_url(message):
     user_states[message.from_user.id] = {'url_input': True}
     bot.reply_to(message, "Пожалуйста, введите ссылку на XML-файл.")
-
 
 
 # Обработка ответа на запрос обновления

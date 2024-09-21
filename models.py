@@ -19,6 +19,20 @@ class User(Base):
     referer_id = Column(Integer, ForeignKey('users.id'), nullable=True)
     referer = relationship('User', remote_side=[id], backref='referred_users')
 
+    # Отношение "один ко многим" с XML_FEED
+    xml_feeds = relationship('XML_FEED', back_populates='user')
+
+
+class XML_FEED(Base):
+    __tablename__ = 'xml_feed'
+
+    id = Column(Integer, primary_key=True)
+    url = Column(String(255), nullable=False)  # Поле для хранения ссылки
+    user_id = Column(Integer, ForeignKey('users.id'))  # Внешний ключ на таблицу User
+
+    # Отношение к User (многие к одному)
+    user = relationship('User', back_populates='xml_feeds')
+
 
 class SalesAgent(Base):
     __tablename__ = 'sales_agent'
@@ -27,36 +41,6 @@ class SalesAgent(Base):
     name = Column(String(255))
     phone = Column(String(20))
     email = Column(String(255))
-
-
-class Location(Base):
-    __tablename__ = 'location'
-
-    id = Column(Integer, primary_key=True)
-    country = Column(String(100))
-    region = Column(String(100))
-    locality_name = Column(String(100))
-    address = Column(String(255))
-    latitude = Column(Float)
-    longitude = Column(Float)
-    sub_locality_name = Column(String(100))
-
-
-class Price(Base):
-    __tablename__ = 'price'
-
-    id = Column(Integer, primary_key=True)
-    value = Column(Float)
-    currency = Column(String(10))
-    period = Column(String(20))
-
-
-class Area(Base):
-    __tablename__ = 'area'
-
-    id = Column(Integer, primary_key=True)
-    value = Column(Float)
-    unit = Column(String(10))
 
 
 class Offer(Base):
@@ -70,12 +54,11 @@ class Offer(Base):
     url_to = Column(String(150), default=None)  # 'ссылка на '
     creation_date = Column(DateTime)
     last_update_date = Column(DateTime)
+
     sales_agent_id = Column(Integer, ForeignKey('sales_agent.id'))
-    price_id = Column(Integer, ForeignKey('price.id'))
-    description = Column(Text)
-    min_stay = Column(Integer)
-    agency_id = Column(Integer)
-    location_id = Column(Integer, ForeignKey('location.id'))
+    price_id = Column(Integer, ForeignKey('price.id'), unique=True)  # Одно предложение - одна цена
+    location_id = Column(Integer, ForeignKey('location.id'), unique=True)  # Одно предложение - одно местоположение
+    area_id = Column(Integer, ForeignKey('area.id'), unique=True)  # Одно предложение - одна площадь
 
     created_by = Column(Integer, ForeignKey('users.id'))  # Поле для указания создателя
     created_at = Column(DateTime)  # Поле для хранения даты создания
@@ -108,7 +91,6 @@ class Offer(Base):
     elevator = Column(Boolean, default=False)
     sleeps = Column(String(20))  # '2+2'
     rooms = Column(Integer)
-    area_id = Column(Integer, ForeignKey('area.id'))
 
     check_in_time_start = Column(String(5))  # '14:00'
     check_in_time_end = Column(String(5))  # '22:00'
@@ -119,11 +101,43 @@ class Offer(Base):
     deposit_currency = Column(String(10))
 
     sales_agent = relationship("SalesAgent")
-    price = relationship("Price")
-    location = relationship("Location")
-    area = relationship("Area")
+    price = relationship("Price", uselist=False)  # Один к одному
+    location = relationship("Location", uselist=False)  # Один к одному
+    area = relationship("Area", uselist=False)  # Один к одному
     creator = relationship("User", foreign_keys=[created_by])  # Связь с пользователем, создавшим запись
     photos = relationship("Photo", back_populates="offer")  # Связь с фотографиями
+
+
+class Price(Base):
+    __tablename__ = 'price'
+
+    id = Column(Integer, primary_key=True)
+    value = Column(Float)
+    deposit = Column(Float)
+    currency = Column(String(10))
+    deposit_currency = Column(String(10))
+    period = Column(String(20))
+
+
+class Location(Base):
+    __tablename__ = 'location'
+
+    id = Column(Integer, primary_key=True)
+    country = Column(String(100))
+    region = Column(String(100))
+    locality_name = Column(String(100))
+    address = Column(String(255))
+    latitude = Column(Float)
+    longitude = Column(Float)
+    sub_locality_name = Column(String(100))
+
+
+class Area(Base):
+    __tablename__ = 'area'
+
+    id = Column(Integer, primary_key=True)
+    value = Column(Float)
+    unit = Column(String(10))
 
 
 class Photo(Base):
