@@ -2,13 +2,7 @@ from datetime import datetime
 from bs4 import BeautifulSoup
 from sqlalchemy.orm import sessionmaker
 from connect import engine
-from models import Photo, Offer, User
-
-from datetime import datetime
-from bs4 import BeautifulSoup
-from sqlalchemy.orm import sessionmaker
-from connect import engine
-from models import Photo, Offer, User, SalesAgent, Price, Location
+from models import Photo, Offer, User, SalesAgent, Price, Location, Area
 
 
 def parse_and_save_offer(xml_data, bot, message):
@@ -64,9 +58,11 @@ def parse_and_save_offer(xml_data, bot, message):
         price_period = offer.find('price').find('period').text if offer.find('price') and offer.find('price').find(
             'period') else None
 
-        deposit_value = float(offer.find('deposit').find('value').text) if offer.find('deposit') and offer.find('deposit').find(
+        deposit_value = float(offer.find('deposit').find('value').text) if offer.find('deposit') and offer.find(
+            'deposit').find(
             'value') else None
-        deposit_currency = offer.find('deposit').find('currency').text if offer.find('deposit') and offer.find('deposit').find(
+        deposit_currency = offer.find('deposit').find('currency').text if offer.find('deposit') and offer.find(
+            'deposit').find(
             'currency') else None
 
         if price_value and price_currency:
@@ -104,6 +100,17 @@ def parse_and_save_offer(xml_data, bot, message):
                     longitude=location_longitude
                 )
                 session.add(location)
+
+        # Обработка площади
+        area_value = float(offer.find('area').find('value').text) if offer.find('area') and offer.find('area').find(
+            'value') else None
+        area_unit = offer.find('area').find('unit').text if offer.find('area') and offer.find('area').find(
+            'unit') else None
+
+        area = None
+        if area_value and area_unit:
+            area = Area(value=area_value, unit=area_unit)
+            session.add(area)
 
         if existing_offer:
             if existing_offer.created_by == user.id:
@@ -146,7 +153,8 @@ def parse_and_save_offer(xml_data, bot, message):
             created_by=user.id if user else None,
             sales_agent=sales_agent,
             price=price,
-            location=location
+            location=location,
+            area=area  # Добавляем площадь
         )
 
         # Добавляем фотографии
