@@ -114,14 +114,6 @@ class Offer(Base):
     available_on_file = Column(Boolean, default=True)
 
 
-# class Sleeps(Base):
-#     __tablename__ = "sleeps"
-#
-#     one_sleep =
-#     two_sleep =
-#     for_persons =
-
-
 class Price(Base):
     __tablename__ = 'price'
 

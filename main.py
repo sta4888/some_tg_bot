@@ -187,7 +187,7 @@ def handle_bedrooms_selection(call):
                 amenities = [name for name, condition in amenities_dict.items() if condition]
 
                 # Преобразуем список удобств в строку
-                amenities_str = ", ".join(amenities) if amenities else "Удобства не указаны"
+                amenities_str = ", \n".join(amenities) if amenities else "Удобства не указаны"
 
                 # Отправляем главное фото, если оно есть
                 if main_photo:
@@ -197,7 +197,8 @@ def handle_bedrooms_selection(call):
                 bot.send_message(chat_id,
                                  f"Предложение: \n"
                                  f"Цена: {offer.price.value} {offer.price.currency}\n"
-                                 f"Удобства: {amenities_str}")
+                                 f"Удобства: {amenities_str}"
+                                 f"Депозит: {offer.price.deposit} {offer.price.deposit_currency}\n")
         else:
             bot.send_message(chat_id, "К сожалению, нет доступных предложений по вашему запросу.")
 
