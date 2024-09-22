@@ -1,4 +1,6 @@
 import datetime
+import re
+
 import telebot
 from sqlalchemy import distinct
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
@@ -109,7 +111,7 @@ def ask_guest(message):
         bot.register_next_step_handler(message, ask_guest)
 
 
-@bot.callback_query_handler(func=lambda call: call.data.isdigit())
+@bot.callback_query_handler(func=lambda call: re.match(r'^\d+(\+\d+)*$', call.data))
 def handle_bedrooms_selection(call):
     chat_id = call.message.chat.id
     bedrooms = call.data
