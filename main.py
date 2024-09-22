@@ -198,7 +198,10 @@ def handle_bedrooms_selection(call):
                 amenities_str = ", \n".join(amenities)
 
                 # Формируем сообщение с информацией о предложении
-                offer_message = f"Название: {offer.name}\nАдрес: {offer.address}\nЦена: {offer.price}\n\nУдобства:\n{amenities_str}"
+                offer_message = f"Предложение: \n" \
+                                f"Цена: {offer.price.value} {offer.price.currency}\n\n" \
+                                f"Удобства: {amenities_str}\n\n" \
+                                f"Депозит: {offer.price.deposit} {offer.price.deposit_currency}\n"
 
                 # Если есть главное фото, добавляем его в сообщение
                 if main_photo:
