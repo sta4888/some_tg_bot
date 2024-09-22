@@ -6,6 +6,7 @@ import telebot
 from sqlalchemy import distinct
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 from telegram_bot_calendar import DetailedTelegramCalendar, LSTEP
+from telebot.types import InputMediaPhoto
 from dotenv import load_dotenv
 import os
 
@@ -118,7 +119,6 @@ def ask_guest(message):
         bot.register_next_step_handler(message, ask_guest)
 
 
-@bot.callback_query_handler(func=lambda call: re.match(r'^\d+(\+\d+)*$', call.data))
 def handle_bedrooms_selection(call):
     chat_id = call.message.chat.id
 
@@ -161,6 +161,7 @@ def handle_bedrooms_selection(call):
             for offer in offers:
                 # Получаем главное фото (если есть)
                 main_photo = next((photo.url for photo in offer.photos if photo.is_main), None)
+                other_photos = [photo.url for photo in offer.photos if not photo.is_main]
 
                 # Словарь всех удобств с условием вывода только если значение True
                 amenities_dict = {
@@ -203,9 +204,20 @@ def handle_bedrooms_selection(call):
                                 f"Удобства: {amenities_str}\n\n" \
                                 f"Депозит: {offer.price.deposit} {offer.price.deposit_currency}\n"
 
-                # Если есть главное фото, добавляем его в сообщение
+                # Формируем галерею изображений
+                media_group = []
+
+                # Главное фото
                 if main_photo:
-                    bot.send_photo(chat_id, main_photo, caption=offer_message)
+                    media_group.append(InputMediaPhoto(main_photo, caption=offer_message))
+
+                # Остальные фото
+                for photo_url in other_photos:
+                    media_group.append(InputMediaPhoto(photo_url))
+
+                # Отправляем галерею
+                if media_group:
+                    bot.send_media_group(chat_id, media_group)
                 else:
                     bot.send_message(chat_id, offer_message)
         else:
