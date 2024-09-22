@@ -150,58 +150,37 @@ def handle_bedrooms_selection(call):
                 # Получаем главное фото (если есть)
                 main_photo = next((photo.url for photo in offer.photos if photo.is_main), None)
 
-                # Формируем строку с удобствами
-                amenities = []
-                if offer.washing_machine:
-                    amenities.append("Стиральная машина")
-                if offer.wi_fi:
-                    amenities.append("Wi-Fi")
-                if offer.tv:
-                    amenities.append("Телевизор")
-                if offer.air_conditioner:
-                    amenities.append("Кондиционер")
-                if offer.kids_friendly:
-                    amenities.append("Дружественно для детей")
-                if offer.party:
-                    amenities.append("Разрешены вечеринки")
-                if offer.refrigerator:
-                    amenities.append("Холодильник")
-                if offer.phone:
-                    amenities.append("Телефон")
-                if offer.stove:
-                    amenities.append("Плита")
-                if offer.dishwasher:
-                    amenities.append("Посудомоечная машина")
-                if offer.music_center:
-                    amenities.append("Музыкальный центр")
-                if offer.microwave:
-                    amenities.append("Микроволновка")
-                if offer.iron:
-                    amenities.append("Утюг")
-                if offer.concierge:
-                    amenities.append("Консьерж")
-                if offer.parking:
-                    amenities.append("Парковка")
-                if offer.safe:
-                    amenities.append("Сейф")
-                if offer.water_heater:
-                    amenities.append("Водонагреватель")
-                if offer.television:
-                    amenities.append("Телевидение")
-                if offer.bathroom:
-                    amenities.append("Ванная комната")
-                if offer.pet_friendly:
-                    amenities.append("Можно с животными")
-                if offer.smoke:
-                    amenities.append("Можно курить")
-                if offer.romantic:
-                    amenities.append("Романтическая атмосфера")
-                if offer.jacuzzi:
-                    amenities.append("Джакузи")
-                if offer.balcony:
-                    amenities.append("Балкон")
-                if offer.elevator:
-                    amenities.append("Лифт")
+                # Словарь всех удобств с условием вывода только если значение True
+                amenities_dict = {
+                    offer.washing_machine: "Стиральная машина",
+                    offer.wi_fi: "Wi-Fi",
+                    offer.tv: "Телевизор",
+                    offer.air_conditioner: "Кондиционер",
+                    offer.kids_friendly: "Дружественно для детей",
+                    offer.party: "Разрешены вечеринки",
+                    offer.refrigerator: "Холодильник",
+                    offer.phone: "Телефон",
+                    offer.stove: "Плита",
+                    offer.dishwasher: "Посудомоечная машина",
+                    offer.music_center: "Музыкальный центр",
+                    offer.microwave: "Микроволновка",
+                    offer.iron: "Утюг",
+                    offer.concierge: "Консьерж",
+                    offer.parking: "Парковка",
+                    offer.safe: "Сейф",
+                    offer.water_heater: "Водонагреватель",
+                    offer.television: "Телевидение",
+                    offer.bathroom: "Ванная комната",
+                    offer.pet_friendly: "Можно с животными",
+                    offer.smoke: "Можно курить",
+                    offer.romantic: "Романтическая атмосфера",
+                    offer.jacuzzi: "Джакузи",
+                    offer.balcony: "Балкон",
+                    offer.elevator: "Лифт"
+                }
+
+                # Формируем список удобств, только если они True
+                amenities = [name for condition, name in amenities_dict.items() if condition]
 
                 # Преобразуем список удобств в строку
                 amenities_str = ", ".join(amenities) if amenities else "Удобства не указаны"
@@ -217,10 +196,6 @@ def handle_bedrooms_selection(call):
                                  f"Удобства: {amenities_str}")
         else:
             bot.send_message(chat_id, "К сожалению, нет доступных предложений по вашему запросу.")
-    else:
-        # Если каких-то данных не хватает, сообщаем пользователю об этом
-        bot.send_message(chat_id,
-                         "Не хватает данных для поиска предложений. Пожалуйста, проверьте правильность введённой информации.")
 
 
 if __name__ == "__main__":
