@@ -1,5 +1,6 @@
 import datetime
 import telebot
+from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 from telegram_bot_calendar import DetailedTelegramCalendar, LSTEP
 from dotenv import load_dotenv
 import os
@@ -90,20 +91,41 @@ def ask_guest(message):
     if message.text.isdigit():
         user_data[message.chat.id]['guest'] = int(message.text)
         bot.send_message(message.chat.id, "Сколько раздельных спальных мест вам нужно?")
-        bot.register_next_step_handler(message, ask_bedrooms)
+
+        # Создание клавиатуры с кнопками
+        markup = InlineKeyboardMarkup(row_width=2)
+        markup.add(
+            InlineKeyboardButton("1", callback_data="1"),
+            InlineKeyboardButton("2", callback_data="2"),
+            InlineKeyboardButton("3", callback_data="3"),
+            InlineKeyboardButton("4", callback_data="4"),
+            InlineKeyboardButton("5", callback_data="5"),
+        )
+
+        # Отправка сообщения с клавиатурой
+        bot.send_message(message.chat.id, "Выберите количество раздельных спальных мест:", reply_markup=markup)
     else:
         bot.send_message(message.chat.id, "Пожалуйста, введите корректное число.")
         bot.register_next_step_handler(message, ask_guest)
 
 
-def ask_bedrooms(message):
-    user_data[message.chat.id]['bedrooms'] = message.text
-    bot.send_message(message.chat.id, "Спасибо! Вот ваши данные:")
-    bot.send_message(message.chat.id, f"Город: {user_data[message.chat.id]['city']}\n"
-                                      f"Даты: {user_data[message.chat.id]['start_date']} - {user_data[message.chat.id]['end_date']}\n"
-                                      f"Сколько гостей: {user_data[message.chat.id]['guest']}\n"
-                                      f"Спальных мест: {user_data[message.chat.id]['bedrooms']}")
-    chat_id = message.chat.id
+@bot.callback_query_handler(func=lambda call: call.data.isdigit())
+def handle_bedrooms_selection(call):
+    bedrooms = call.data
+    user_data[call.message.chat.id]['bedrooms'] = bedrooms
+
+    bot.edit_message_text(f"Вы выбрали {bedrooms} раздельных спальных мест.",
+                          call.message.chat.id,
+                          call.message.message_id)
+
+    bot.send_message(call.message.chat.id, "Спасибо! Вот ваши данные:")
+    bot.send_message(call.message.chat.id, f"Город: {user_data[call.message.chat.id]['city']}\n"
+                                           f"Даты: {user_data[call.message.chat.id]['start_date']} - {user_data[call.message.chat.id]['end_date']}\n"
+                                           f"Сколько гостей: {user_data[call.message.chat.id]['guest']}\n"
+                                           f"Спальных мест: {user_data[call.message.chat.id]['bedrooms']}")
+
+    # Получение предложений
+    chat_id = call.message.chat.id
     city = user_data[chat_id]['city']
     start_date = user_data[chat_id]['start_date']
     end_date = user_data[chat_id]['end_date']
@@ -113,7 +135,6 @@ def ask_bedrooms(message):
     offers = find_offers(city, start_date, end_date, guest_count, bedrooms)
 
     if offers:
-        # Отправляем список предложений пользователю
         for offer in offers:
             bot.send_message(chat_id,
                              f"Предложение: {offer.description}\nЦена: {offer.price.value} {offer.price.currency}")
