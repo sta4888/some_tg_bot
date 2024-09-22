@@ -54,6 +54,12 @@ def ask_start_date(message):
 
 @bot.callback_query_handler(func=DetailedTelegramCalendar.func())
 def handle_start_date(c):
+    chat_id = c.message.chat.id
+
+    # Проверяем, есть ли данные для пользователя в словаре
+    if chat_id not in user_data:
+        user_data[chat_id] = {}
+
     result, key, step = DetailedTelegramCalendar(min_date=datetime.date.today(), locale='ru').process(c.data)
     if not result and key:
         bot.edit_message_text(f"Выберите дату {LSTEP[step]}",
@@ -115,6 +121,11 @@ def ask_guest(message):
 @bot.callback_query_handler(func=lambda call: re.match(r'^\d+(\+\d+)*$', call.data))
 def handle_bedrooms_selection(call):
     chat_id = call.message.chat.id
+
+    # Проверяем, есть ли данные для пользователя в словаре
+    if chat_id not in user_data:
+        user_data[chat_id] = {}
+
     bedrooms = call.data
 
     # Сохраняем выбранное количество спальных мест
@@ -152,7 +163,6 @@ def handle_bedrooms_selection(call):
                 main_photo = next((photo.url for photo in offer.photos if photo.is_main), None)
 
                 # Словарь всех удобств с условием вывода только если значение True
-                # Модифицированный словарь с названием удобств как ключами и атрибутами offer как значениями
                 amenities_dict = {
                     "Стиральная машина": offer.washing_machine,
                     "Wi-Fi": offer.wi_fi,
@@ -181,27 +191,25 @@ def handle_bedrooms_selection(call):
                     "Лифт": offer.elevator
                 }
 
-                # pprint(amenities_dict)
-
                 # Формируем список удобств, только если они True
                 amenities = [name for name, condition in amenities_dict.items() if condition]
 
                 # Преобразуем список удобств в строку
-                amenities_str = ", \n".join(amenities) if amenities else "Удобства не указаны"
+                amenities_str = ", \n".join(amenities)
 
-                # Отправляем главное фото, если оно есть
+                # Формируем сообщение с информацией о предложении
+                offer_message = f"Название: {offer.name}\nАдрес: {offer.address}\nЦена: {offer.price}\n\nУдобства:\n{amenities_str}"
+
+                # Если есть главное фото, добавляем его в сообщение
                 if main_photo:
-                    bot.send_photo(chat_id, main_photo)
-
-                # Отправляем информацию о предложении
-                bot.send_message(chat_id,
-                                 f"Предложение: \n"
-                                 f"Цена: {offer.price.value} {offer.price.currency}\n\n"
-                                 f"Удобства: {amenities_str}\n\n"
-                                 f"Депозит: {offer.price.deposit} {offer.price.deposit_currency}\n")
+                    bot.send_photo(chat_id, main_photo, caption=offer_message)
+                else:
+                    bot.send_message(chat_id, offer_message)
         else:
-            bot.send_message(chat_id, "К сожалению, нет доступных предложений по вашему запросу.")
+            bot.send_message(chat_id, "Извините, нет доступных предложений на указанные даты.")
+    else:
+        bot.send_message(chat_id, "Пожалуйста, предоставьте все необходимые данные.")
 
 
-if __name__ == "__main__":
-    bot.polling()
+if __name__ == '__main__':
+    bot.infinity_polling()
