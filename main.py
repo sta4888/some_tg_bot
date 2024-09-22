@@ -220,8 +220,12 @@ def check_calendars():
     print(len(offers))
     for offer in offers:
         print(offer.id)
-        # Логика для проверки и обновления событий календаря url_to
-        parse_ical(offer.url_to, offer, session)  # fixme если мы и так передаем объект Offer то зачем мы отдельно отдаем ссылку на календарь офера?
+        if offer.url_to.startswith("http"):
+            # Логика для проверки и обновления событий календаря url_to
+            parse_ical(offer.url_to, offer,
+                       session)  # fixme если мы и так передаем объект Offer то зачем мы отдельно отдаем ссылку на календарь офера?
+        else:
+            continue
     session.close()
 
 
