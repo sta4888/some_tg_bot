@@ -93,7 +93,7 @@ class Offer(Base):
     jacuzzi = Column(Boolean, default=False)
     balcony = Column(Boolean, default=False)
     elevator = Column(Boolean, default=False)
-    sleeps = Column(String(20))  # '2+2'
+    sleeps = Column(String(20))  # '2+2'  не добавляется
     rooms = Column(Integer)
 
     check_in_time_start = Column(String(5))  # '14:00'
@@ -156,6 +156,18 @@ class Photo(Base):
 
     offer = relationship("Offer", back_populates="photos")  # Связь с предложением
 
-# Пример создания базы данных
-# engine = create_engine('sqlite:///your_database.db')
-# Base.metadata.create_all(engine)
+
+class Event(Base):
+    __tablename__ = 'events'
+
+    id = Column(Integer, primary_key=True)
+    offer_id = Column(Integer, ForeignKey('offer.id'), nullable=False)
+    offer = relationship('Offer', back_populates='events')
+
+    uid = Column(String(100), nullable=False)  # уникальный идентификатор события
+    start_time = Column(DateTime, nullable=False)  # дата начала
+    end_time = Column(DateTime, nullable=False)  # дата окончания
+    summary = Column(String(200))  # описание события
+
+    def __str__(self):
+        return f"{self.summary} ({self.start_time} - {self.end_time})"
