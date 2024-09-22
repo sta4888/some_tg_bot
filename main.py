@@ -217,7 +217,9 @@ def handle_bedrooms_selection(call):
 def check_calendars():
     session = Session()
     offers = session.query(Offer).all()
+    print(len(offers))
     for offer in offers:
+        print(offer.url_to)
         # Логика для проверки и обновления событий календаря url_to
         parse_ical(offer.url_to, offer, session)  # fixme если мы и так передаем объект Offer то зачем мы отдельно отдаем ссылку на календарь офера?
     session.close()
