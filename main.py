@@ -1,5 +1,6 @@
 import datetime
 import telebot
+from sqlalchemy import distinct
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 from telegram_bot_calendar import DetailedTelegramCalendar, LSTEP
 from dotenv import load_dotenv
@@ -92,15 +93,14 @@ def ask_guest(message):
         user_data[message.chat.id]['guest'] = int(message.text)
         bot.send_message(message.chat.id, "Сколько раздельных спальных мест вам нужно?")
 
-        # Создание клавиатуры с кнопками
+        # Получение уникальных значений поля 'sleeps' из таблицы Offer
+        unique_sleeps = session.query(distinct(Offer.sleeps)).all()
+        unique_sleeps = [sleep[0] for sleep in unique_sleeps if sleep[0]]  # Извлекаем значения и фильтруем None
+
+        # Создание клавиатуры с уникальными значениями 'sleeps'
         markup = InlineKeyboardMarkup(row_width=2)
-        markup.add(
-            InlineKeyboardButton("1", callback_data="1"),
-            InlineKeyboardButton("2", callback_data="2"),
-            InlineKeyboardButton("3", callback_data="3"),
-            InlineKeyboardButton("4", callback_data="4"),
-            InlineKeyboardButton("5", callback_data="5"),
-        )
+        for sleep in unique_sleeps:
+            markup.add(InlineKeyboardButton(sleep, callback_data=sleep))
 
         # Отправка сообщения с клавиатурой
         bot.send_message(message.chat.id, "Выберите количество раздельных спальных мест:", reply_markup=markup)
