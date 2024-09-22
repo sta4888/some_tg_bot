@@ -139,15 +139,82 @@ def handle_bedrooms_selection(call):
 
     # Проверка на наличие всех обязательных данных для поиска предложений
     if city and start_date and end_date and guest_count:
+        amenities = ['wi_fi', 'air_conditioner']
+
         # Получение предложений с помощью функции find_offers
-        offers = find_offers(city, start_date, end_date, guest_count, bedrooms)
+        offers = find_offers(city, start_date, end_date, guest_count, bedrooms, amenities)
 
         # Если предложения найдены, отправляем их пользователю
         if offers:
             for offer in offers:
+                # Получаем главное фото (если есть)
+                main_photo = next((photo.url for photo in offer.photos if photo.is_main), None)
+
+                # Формируем строку с удобствами
+                amenities = []
+                if offer.washing_machine:
+                    amenities.append("Стиральная машина")
+                if offer.wi_fi:
+                    amenities.append("Wi-Fi")
+                if offer.tv:
+                    amenities.append("Телевизор")
+                if offer.air_conditioner:
+                    amenities.append("Кондиционер")
+                if offer.kids_friendly:
+                    amenities.append("Дружественно для детей")
+                if offer.party:
+                    amenities.append("Разрешены вечеринки")
+                if offer.refrigerator:
+                    amenities.append("Холодильник")
+                if offer.phone:
+                    amenities.append("Телефон")
+                if offer.stove:
+                    amenities.append("Плита")
+                if offer.dishwasher:
+                    amenities.append("Посудомоечная машина")
+                if offer.music_center:
+                    amenities.append("Музыкальный центр")
+                if offer.microwave:
+                    amenities.append("Микроволновка")
+                if offer.iron:
+                    amenities.append("Утюг")
+                if offer.concierge:
+                    amenities.append("Консьерж")
+                if offer.parking:
+                    amenities.append("Парковка")
+                if offer.safe:
+                    amenities.append("Сейф")
+                if offer.water_heater:
+                    amenities.append("Водонагреватель")
+                if offer.television:
+                    amenities.append("Телевидение")
+                if offer.bathroom:
+                    amenities.append("Ванная комната")
+                if offer.pet_friendly:
+                    amenities.append("Можно с животными")
+                if offer.smoke:
+                    amenities.append("Можно курить")
+                if offer.romantic:
+                    amenities.append("Романтическая атмосфера")
+                if offer.jacuzzi:
+                    amenities.append("Джакузи")
+                if offer.balcony:
+                    amenities.append("Балкон")
+                if offer.elevator:
+                    amenities.append("Лифт")
+
+                # Преобразуем список удобств в строку
+                amenities_str = ", ".join(amenities) if amenities else "Удобства не указаны"
+
+                # Отправляем главное фото, если оно есть
+                if main_photo:
+                    bot.send_photo(chat_id, main_photo)
+
+                # Отправляем информацию о предложении
                 bot.send_message(chat_id,
-                                 f"Предложение: {offer.description}\n"
-                                 f"Цена: {offer.price.value} {offer.price.currency}")
+                                 f"Предложение: \n"
+                                 f"Цена: {offer.price.value} {offer.price.currency}\n"
+                                 f"Удобства: {amenities_str}")
         else:
             bot.send_message(chat_id, "К сожалению, нет доступных предложений по вашему запросу.")
     else:
