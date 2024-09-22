@@ -19,7 +19,7 @@ def find_offers(city, start_date, end_date, guest_count, bedrooms, amenities=Non
     query = session.query(Offer).options(joinedload(Offer.photos)).filter(
         Offer.location_id.in_([loc.id for loc in locations]),  # Предложения по найденным локациям
         Offer.available_on_file.is_(True),  # Только доступные предложения
-        Offer.rooms >= bedrooms,  # Учитываем количество спален
+        # Offer.rooms >= bedrooms,  # Учитываем количество спален
         Offer.sleeps >= guest_count  # Учитываем количество гостей
     )
 
