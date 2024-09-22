@@ -159,8 +159,9 @@ def handle_bedrooms_selection(call):
         # Если предложения найдены, отправляем их пользователю
         if offers:
             for offer in offers:
-                # Получаем главное фото (если есть)
-                main_photo = next((photo.url for photo in offer.photos if photo.is_main), offer.photos[0])
+                # Получаем главное фото (если есть) или первое фото, если главное отсутствует
+                main_photo = next((photo.url for photo in offer.photos if photo.is_main),
+                                  offer.photos[0].url if offer.photos else None)
 
                 # Словарь всех удобств с условием вывода только если значение True
                 amenities_dict = {
