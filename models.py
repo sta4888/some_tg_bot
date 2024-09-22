@@ -110,6 +110,8 @@ class Offer(Base):
     area = relationship("Area", uselist=False)  # Один к одному
     creator = relationship("User", foreign_keys=[created_by])  # Связь с пользователем, создавшим запись
     photos = relationship("Photo", back_populates="offer")  # Связь с фотографиями
+    # Связь с событиями
+    events = relationship('Event', back_populates='offer')
 
     available_on_file = Column(Boolean, default=True)
 
