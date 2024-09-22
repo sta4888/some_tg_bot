@@ -181,7 +181,7 @@ def handle_bedrooms_selection(call):
                     "Лифт": offer.elevator
                 }
 
-                pprint(amenities_dict)
+                # pprint(amenities_dict)
 
                 # Формируем список удобств, только если они True
                 amenities = [name for name, condition in amenities_dict.items() if condition]
@@ -196,8 +196,8 @@ def handle_bedrooms_selection(call):
                 # Отправляем информацию о предложении
                 bot.send_message(chat_id,
                                  f"Предложение: \n"
-                                 f"Цена: {offer.price.value} {offer.price.currency}\n"
-                                 f"Удобства: {amenities_str}"
+                                 f"Цена: {offer.price.value} {offer.price.currency}\n\n"
+                                 f"Удобства: {amenities_str}\n\n"
                                  f"Депозит: {offer.price.deposit} {offer.price.deposit_currency}\n")
         else:
             bot.send_message(chat_id, "К сожалению, нет доступных предложений по вашему запросу.")
