@@ -160,7 +160,7 @@ def handle_bedrooms_selection(call):
         if offers:
             for offer in offers:
                 # Получаем главное фото (если есть)
-                main_photo = next((photo.url for photo in offer.photos if photo.is_main), None)
+                main_photo = next((photo.url for photo in offer.photos if photo.is_main), offer.photos[0])
 
                 # Словарь всех удобств с условием вывода только если значение True
                 amenities_dict = {
