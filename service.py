@@ -1,8 +1,7 @@
-from sqlalchemy import and_
-from sqlalchemy.orm import aliased
+from sqlalchemy.orm import joinedload
 
 from connect import session
-from models import Location, Offer, Photo
+from models import Location, Offer
 
 
 def find_offers(city, start_date, end_date, guest_count, bedrooms, amenities=None):
@@ -16,23 +15,12 @@ def find_offers(city, start_date, end_date, guest_count, bedrooms, amenities=Non
     for location in locations:
         print(location.locality_name)
 
-    # Создание алиаса для модели Photo
-    main_photo = aliased(Photo)
-
-    # Основной запрос для предложений с фильтрацией
-    query = session.query(
-        Offer, main_photo.url  # Получаем предложение и URL главной фотографии
-    ).outerjoin(
-        main_photo,  # Присоединяем таблицу фото
-        and_(
-            main_photo.offer_id == Offer.id,
-            main_photo.is_main.is_(True)  # Только главное фото
-        )
-    ).filter(
-        Offer.location_id.in_([loc.id for loc in locations]),
-        Offer.available_on_file.is_(True),
-        Offer.rooms >= bedrooms,
-        Offer.sleeps >= guest_count
+    # Начало фильтрации предложений
+    query = session.query(Offer).options(joinedload(Offer.photos)).filter(
+        Offer.location_id.in_([loc.id for loc in locations]),  # Предложения по найденным локациям
+        Offer.available_on_file.is_(True),  # Только доступные предложения
+        Offer.rooms >= bedrooms,  # Учитываем количество спален
+        Offer.sleeps >= guest_count  # Учитываем количество гостей
     )
 
     # Учитываем выбранные удобства, если они переданы
