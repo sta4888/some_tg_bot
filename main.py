@@ -1,5 +1,6 @@
 import datetime
 import re
+from pprint import pprint
 
 import telebot
 from sqlalchemy import distinct
@@ -151,36 +152,39 @@ def handle_bedrooms_selection(call):
                 main_photo = next((photo.url for photo in offer.photos if photo.is_main), None)
 
                 # Словарь всех удобств с условием вывода только если значение True
+                # Модифицированный словарь с названием удобств как ключами и атрибутами offer как значениями
                 amenities_dict = {
-                    offer.washing_machine: "Стиральная машина",
-                    offer.wi_fi: "Wi-Fi",
-                    offer.tv: "Телевизор",
-                    offer.air_conditioner: "Кондиционер",
-                    offer.kids_friendly: "Дружественно для детей",
-                    offer.party: "Разрешены вечеринки",
-                    offer.refrigerator: "Холодильник",
-                    offer.phone: "Телефон",
-                    offer.stove: "Плита",
-                    offer.dishwasher: "Посудомоечная машина",
-                    offer.music_center: "Музыкальный центр",
-                    offer.microwave: "Микроволновка",
-                    offer.iron: "Утюг",
-                    offer.concierge: "Консьерж",
-                    offer.parking: "Парковка",
-                    offer.safe: "Сейф",
-                    offer.water_heater: "Водонагреватель",
-                    offer.television: "Телевидение",
-                    offer.bathroom: "Ванная комната",
-                    offer.pet_friendly: "Можно с животными",
-                    offer.smoke: "Можно курить",
-                    offer.romantic: "Романтическая атмосфера",
-                    offer.jacuzzi: "Джакузи",
-                    offer.balcony: "Балкон",
-                    offer.elevator: "Лифт"
+                    "Стиральная машина": offer.washing_machine,
+                    "Wi-Fi": offer.wi_fi,
+                    "Телевизор": offer.tv,
+                    "Кондиционер": offer.air_conditioner,
+                    "Дружественно для детей": offer.kids_friendly,
+                    "Разрешены вечеринки": offer.party,
+                    "Холодильник": offer.refrigerator,
+                    "Телефон": offer.phone,
+                    "Плита": offer.stove,
+                    "Посудомоечная машина": offer.dishwasher,
+                    "Музыкальный центр": offer.music_center,
+                    "Микроволновка": offer.microwave,
+                    "Утюг": offer.iron,
+                    "Консьерж": offer.concierge,
+                    "Парковка": offer.parking,
+                    "Сейф": offer.safe,
+                    "Водонагреватель": offer.water_heater,
+                    "Телевидение": offer.television,
+                    "Ванная комната": offer.bathroom,
+                    "Можно с животными": offer.pet_friendly,
+                    "Можно курить": offer.smoke,
+                    "Романтическая атмосфера": offer.romantic,
+                    "Джакузи": offer.jacuzzi,
+                    "Балкон": offer.balcony,
+                    "Лифт": offer.elevator
                 }
 
+                pprint(amenities_dict)
+
                 # Формируем список удобств, только если они True
-                amenities = [name for condition, name in amenities_dict.items() if condition]
+                amenities = [name for name, condition in amenities_dict.items() if condition]
 
                 # Преобразуем список удобств в строку
                 amenities_str = ", ".join(amenities) if amenities else "Удобства не указаны"
