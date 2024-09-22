@@ -20,7 +20,7 @@ def find_offers(city, start_date, end_date, guest_count, bedrooms, amenities=Non
         Offer.location_id.in_([loc.id for loc in locations]),  # Предложения по найденным локациям
         Offer.available_on_file.is_(True),  # Только доступные предложения
         # Offer.rooms >= bedrooms,  # Учитываем количество спален
-        Offer.sleeps >= guest_count  # Учитываем количество гостей
+        Offer.sleeps >= bedrooms  # Учитываем количество гостей
     )
 
     # Учитываем выбранные удобства, если они переданы
