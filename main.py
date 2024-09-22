@@ -6,13 +6,12 @@ import telebot
 from sqlalchemy import distinct
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 from telegram_bot_calendar import DetailedTelegramCalendar, LSTEP
-from telebot.types import InputMediaPhoto
 from dotenv import load_dotenv
 import os
 
-from connect import session
+from connect import session, Session
 from models import Location, Offer
-from service import find_offers
+from service import find_offers, parse_ical
 
 load_dotenv()
 
@@ -119,6 +118,7 @@ def ask_guest(message):
         bot.register_next_step_handler(message, ask_guest)
 
 
+@bot.callback_query_handler(func=lambda call: re.match(r'^\d+(\+\d+)*$', call.data))
 def handle_bedrooms_selection(call):
     chat_id = call.message.chat.id
 
@@ -161,7 +161,6 @@ def handle_bedrooms_selection(call):
             for offer in offers:
                 # Получаем главное фото (если есть)
                 main_photo = next((photo.url for photo in offer.photos if photo.is_main), None)
-                other_photos = [photo.url for photo in offer.photos if not photo.is_main]
 
                 # Словарь всех удобств с условием вывода только если значение True
                 amenities_dict = {
@@ -204,20 +203,9 @@ def handle_bedrooms_selection(call):
                                 f"Удобства: {amenities_str}\n\n" \
                                 f"Депозит: {offer.price.deposit} {offer.price.deposit_currency}\n"
 
-                # Формируем галерею изображений
-                media_group = []
-
-                # Главное фото
+                # Если есть главное фото, добавляем его в сообщение
                 if main_photo:
-                    media_group.append(InputMediaPhoto(main_photo, caption=offer_message))
-
-                # Остальные фото
-                for photo_url in other_photos:
-                    media_group.append(InputMediaPhoto(photo_url))
-
-                # Отправляем галерею
-                if media_group:
-                    bot.send_media_group(chat_id, media_group)
+                    bot.send_photo(chat_id, main_photo, caption=offer_message)
                 else:
                     bot.send_message(chat_id, offer_message)
         else:
@@ -226,5 +214,15 @@ def handle_bedrooms_selection(call):
         bot.send_message(chat_id, "Пожалуйста, предоставьте все необходимые данные.")
 
 
+def check_calendars():
+    session = Session()
+    offers = session.query(Offer).all()
+    for offer in offers:
+        # Логика для проверки и обновления событий календаря url_to
+        parse_ical(offer.url_to, offer, session)  # fixme если мы и так передаем объект Offer то зачем мы отдельно отдаем ссылку на календарь офера?
+    session.close()
+
+
 if __name__ == '__main__':
+    check_calendars()
     bot.infinity_polling()
