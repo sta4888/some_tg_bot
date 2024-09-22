@@ -111,35 +111,47 @@ def ask_guest(message):
 
 @bot.callback_query_handler(func=lambda call: call.data.isdigit())
 def handle_bedrooms_selection(call):
+    chat_id = call.message.chat.id
     bedrooms = call.data
-    user_data[call.message.chat.id]['bedrooms'] = bedrooms
 
+    # Сохраняем выбранное количество спальных мест
+    user_data[chat_id]['bedrooms'] = bedrooms
+
+    # Редактируем предыдущее сообщение, чтобы отразить выбор пользователя
     bot.edit_message_text(f"Вы выбрали {bedrooms} раздельных спальных мест.",
-                          call.message.chat.id,
+                          chat_id,
                           call.message.message_id)
 
-    bot.send_message(call.message.chat.id, "Спасибо! Вот ваши данные:")
-    bot.send_message(call.message.chat.id, f"Город: {user_data[call.message.chat.id]['city']}\n"
-                                           f"Даты: {user_data[call.message.chat.id]['start_date']} - {user_data[call.message.chat.id]['end_date']}\n"
-                                           f"Сколько гостей: {user_data[call.message.chat.id]['guest']}\n"
-                                           f"Спальных мест: {user_data[call.message.chat.id]['bedrooms']}")
+    # Отправляем сообщение с собранными данными
+    bot.send_message(chat_id, "Спасибо! Вот ваши данные:")
+    bot.send_message(chat_id, f"Город: {user_data[chat_id].get('city', 'Не указано')}\n"
+                              f"Даты: {user_data[chat_id].get('start_date', 'Не указано')} - {user_data[chat_id].get('end_date', 'Не указано')}\n"
+                              f"Количество гостей: {user_data[chat_id].get('guest', 'Не указано')}\n"
+                              f"Спальных мест: {user_data[chat_id].get('bedrooms', 'Не указано')}")
 
-    # Получение предложений
-    chat_id = call.message.chat.id
-    city = user_data[chat_id]['city']
-    start_date = user_data[chat_id]['start_date']
-    end_date = user_data[chat_id]['end_date']
-    guest_count = user_data[chat_id]['guest']
-    bedrooms = user_data[chat_id]['bedrooms']
+    # Получаем значения для поиска предложений
+    city = user_data[chat_id].get('city')
+    start_date = user_data[chat_id].get('start_date')
+    end_date = user_data[chat_id].get('end_date')
+    guest_count = user_data[chat_id].get('guest')
 
-    offers = find_offers(city, start_date, end_date, guest_count, bedrooms)
+    # Проверка на наличие всех обязательных данных для поиска предложений
+    if city and start_date and end_date and guest_count:
+        # Получение предложений с помощью функции find_offers
+        offers = find_offers(city, start_date, end_date, guest_count, bedrooms)
 
-    if offers:
-        for offer in offers:
-            bot.send_message(chat_id,
-                             f"Предложение: {offer.description}\nЦена: {offer.price.value} {offer.price.currency}")
+        # Если предложения найдены, отправляем их пользователю
+        if offers:
+            for offer in offers:
+                bot.send_message(chat_id,
+                                 f"Предложение: {offer.description}\n"
+                                 f"Цена: {offer.price.value} {offer.price.currency}")
+        else:
+            bot.send_message(chat_id, "К сожалению, нет доступных предложений по вашему запросу.")
     else:
-        bot.send_message(chat_id, "К сожалению, нет доступных предложений по вашему запросу.")
+        # Если каких-то данных не хватает, сообщаем пользователю об этом
+        bot.send_message(chat_id,
+                         "Не хватает данных для поиска предложений. Пожалуйста, проверьте правильность введённой информации.")
 
 
 if __name__ == "__main__":
