@@ -17,6 +17,9 @@ def find_offers(city, start_date, end_date, guest_count, bedrooms, amenities=Non
 
     for location in locations:
         print(location.locality_name)
+    print("########################################")
+    print(start_date, end_date, guest_count, bedrooms, amenities)
+    print("########################################")
 
     # Начало фильтрации предложений
     query = session.query(Offer).options(joinedload(Offer.photos)).filter(
