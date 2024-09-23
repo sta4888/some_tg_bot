@@ -1,4 +1,6 @@
 import telebot
+from telebot import types
+
 from connect import session
 from models import User, Offer, XML_FEED
 from dotenv import load_dotenv
@@ -15,10 +17,15 @@ bot = telebot.TeleBot(API_TOKEN)
 user_states = {}
 
 
-# Обработчик команды /start с приветствием для хоста
+# Команда /start с клавиатурой
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
-    bot.send_message(message.chat.id, "Привет! Добро пожаловать в нашего бота.")
+    # Создаем клавиатуру
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    ref_link_btn = types.KeyboardButton("СГЕНЕРИРОВАТЬ РЕФЕРАЛЬНУЮ ССЫЛКУ")
+    markup.add(ref_link_btn)
+
+    bot.send_message(message.chat.id, "Привет! Добро пожаловать в нашего бота.", reply_markup=markup)
 
     # Найдем пользователя или создадим нового
     user = session.query(User).filter_by(telegram_id=message.from_user.id).first()
@@ -40,6 +47,22 @@ def send_welcome(message):
 
     # Инициализируем состояние пользователя для обработки URL
     user_states[message.from_user.id] = {'url_input': True}
+
+
+# Обработка нажатия кнопки "СГЕНЕРИРОВАТЬ РЕФЕРАЛЬНУЮ ССЫЛКУ"
+@bot.message_handler(func=lambda message: message.text == "СГЕНЕРИРОВАТЬ РЕФЕРАЛЬНУЮ ССЫЛКУ")
+def handle_referral_link(message):
+    telegram_user_id = message.from_user.id
+
+    # Найдем пользователя по telegram_id
+    user = session.query(User).filter_by(telegram_id=telegram_user_id).first()
+
+    if user:
+        # Генерируем реферальную ссылку с UUID пользователя
+        ref_link = f"https://t.me/RPMbookingBot?start={user.id}"
+        bot.send_message(message.chat.id, f"Ваша реферальная ссылка: {ref_link}")
+    else:
+        bot.send_message(message.chat.id, "Вы не зарегистрированы.")
 
 
 @bot.message_handler(func=lambda message: 'https://realtycalendar.ru/xml_feed' in message.text)
