@@ -223,7 +223,7 @@ def qr_generate(qr_data: str, pdf_file: str, uuid_user: str) -> None:
     image_file = f"{os.getcwd()}/{uuid_user}.png"
     qrcode.save(
         image_file,
-        scale=3,
+        scale=2,
         border=None,
         dark="darkblue",
     )
