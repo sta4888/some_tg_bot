@@ -89,7 +89,7 @@ def handle_referral_link(message):
 
     if user:
         # Генерируем реферальную ссылку с UUID пользователя
-        ref_link = f"https://t.me/your_bot?start={user.uuid}"
+        ref_link = f"https://t.me/VgostiBot2_bot?start={user.uuid}"
         bot.send_message(message.chat.id, f"Ваша реферальная ссылка: {ref_link}")
     else:
         bot.send_message(message.chat.id, "Вы не зарегистрированы.")
