@@ -37,11 +37,11 @@ def send_welcome(message):
 
     # Если пользователь новый, создаем его
     if user is None:
-        referrer = None
+        referer = None
 
         # Если есть реферальный UUID, найдем пользователя-реферера
         if referrer_uuid:
-            referrer = session.query(User).filter_by(uuid=referrer_uuid).first()
+            referer = session.query(User).filter_by(uuid=referrer_uuid).first()
 
         # Создаем нового пользователя с реферальной информацией (если есть)
         user = User(
@@ -49,15 +49,15 @@ def send_welcome(message):
             username=message.from_user.username,
             chat_id=message.chat.id,
             is_client=False,  # По умолчанию не хост
-            referrer=referrer  # Сохраняем реферера, если он есть
+            referer=referer  # Сохраняем реферера, если он есть
         )
 
         session.add(user)
 
         # Если есть реферер, увеличим его счетчик приглашений
-        if referrer:
-            referrer.invited_count += 1
-            session.add(referrer)
+        if referer:
+            referer.invited_count += 1
+            session.add(referer)
 
         session.commit()
 
