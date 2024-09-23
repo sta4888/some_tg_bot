@@ -19,14 +19,26 @@ from reportlab.pdfgen import canvas
 def find_offers(city, start_date, end_date, guest_count, bedrooms, amenities=None):
     # Поиск местоположения по городу
     locations = session.query(Location).filter(Location.locality_name.ilike(f'%{city}%')).all()
+    print(f"--locations {locations}")
+
+    end_date = datetime.strptime(end_date, '%Y-%m-%d')
+    start_date = datetime.strptime(start_date, '%Y-%m-%d')
+
     if not locations:
         return None  # Если нет предложений в этом городе
+
+    for location in locations:
+        print(location.locality_name)
+    print("########################################")
+    print(start_date, end_date, guest_count, bedrooms, amenities)
+    print("########################################")
 
     # Начало фильтрации предложений
     query = session.query(Offer).options(joinedload(Offer.photos)).filter(
         Offer.location_id.in_([loc.id for loc in locations]),  # Предложения по найденным локациям
         Offer.available_on_file.is_(True),  # Только доступные предложения
-        Offer.sleeps == bedrooms  # Учитываем количество спален
+        # Offer.rooms >= bedrooms,  # Учитываем количество спален
+        Offer.sleeps == bedrooms  # Учитываем количество гостей
     )
 
     # Учитываем выбранные удобства, если они переданы
@@ -35,24 +47,33 @@ def find_offers(city, start_date, end_date, guest_count, bedrooms, amenities=Non
             query = query.filter(getattr(Offer, amenity).is_(True))
 
     offers = query.all()
+    print("########################################")
+    print(f"--offers {offers}")
+    print("########################################")
 
     # Фильтруем предложения по датам
     valid_offers = []
     for offer in offers:
+        print("########################################")
+        print(f"--offer {offer}")
+        print("########################################")
         # Получаем события, связанные с предложением
         events = session.query(Event).filter(Event.offer_id == offer.id).all()
+        # Проверка на наличие пересечений дат
+        print("########################################")
+        print(f"--events {events}")
+        print("########################################")
+
+        # Создаем объекты datetime
 
         is_valid = True
-        for event in events:
-            # Преобразование строк в datetime
-            event_start = datetime.strptime(event.start_time, "%Y-%m-%d") if isinstance(event.start_time,
-                                                                                        str) else event.start_time
-            event_end = datetime.strptime(event.end_time, "%Y-%m-%d") if isinstance(event.end_time,
-                                                                                    str) else event.end_time
-
-            # Проверка пересечения диапазонов
-            if (start_date <= event_end and end_date >= event_start):
-                is_valid = False  # Диапазоны пересекаются
+        for event in events:  # 10 10 - 14 09   10 01 - 10 04
+            date1 = datetime.strptime(event.start_time, '%Y-%m-%d')
+            date2 = datetime.strptime(event.end_time, '%Y-%m-%d')
+            print(f"end_date - {end_date}\ndate1 - {date1}\nstart_date - {start_date}\ndate2 - {date2}")
+            print(f"end_date - {end_date <= date1}\tstart_date - {start_date >= date2}")
+            if not (end_date <= date1 and start_date >= date2):
+                is_valid = False
                 break
 
         if is_valid:
