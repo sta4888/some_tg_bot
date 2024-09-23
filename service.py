@@ -54,20 +54,16 @@ def find_offers(city, start_date, end_date, guest_count, bedrooms, amenities=Non
     # Фильтруем предложения по датам
     valid_offers = []
     for offer in offers:
-        print("########################################")
-        print(f"--offer {offer}")
-        print("########################################")
         # Получаем события, связанные с предложением
         events = session.query(Event).filter(Event.offer_id == offer.id).all()
         # Проверка на наличие пересечений дат
-        print("########################################")
-        print(f"--events {events}")
-        print("########################################")
 
         # Создаем объекты datetime
 
         is_valid = True
         for event in events:  # 10 10 - 14 09   10 01 - 10 04
+            print(end_date, event.start_time)
+            print(start_date, event.end_time)
             if not (end_date <= event.start_time and start_date >= event.end_time):
                 is_valid = False
                 break
