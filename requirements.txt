@@ -6,3 +6,8 @@ python-dotenv
 beautifulsoup4
 lxml
 python-telegram-bot-calendar
+reportlab
+qrcode[pil]
+PyPDF2
+segno
+python3-segno

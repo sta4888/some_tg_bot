@@ -230,6 +230,9 @@ def check_calendars():
     session.close()
 
 
+# qr_generate("example.com", "guest.pdf")
+
+
 if __name__ == '__main__':
     check_calendars()
     bot.infinity_polling()
