@@ -1,6 +1,7 @@
 import telebot
-from telebot import types
 
+from uuid import UUID
+from telebot import types
 from connect import session
 from models import User, Offer, XML_FEED
 from dotenv import load_dotenv
@@ -17,29 +18,58 @@ bot = telebot.TeleBot(API_TOKEN)
 user_states = {}
 
 
-# Команда /start с клавиатурой
+# Обработчик команды /start
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
+    # Извлекаем реферальный UUID, если он был передан
+    command = message.text.split()
+    referrer_uuid = None
+
+    if len(command) > 1:
+        try:
+            referrer_uuid = UUID(command[1])  # Парсим переданный UUID
+        except ValueError:
+            bot.send_message(message.chat.id, "Неверная реферальная ссылка.")
+            referrer_uuid = None
+
+    # Найдем пользователя по telegram_id
+    user = session.query(User).filter_by(telegram_id=message.from_user.id).first()
+
+    # Если пользователь новый, создаем его
+    if user is None:
+        referrer = None
+
+        # Если есть реферальный UUID, найдем пользователя-реферера
+        if referrer_uuid:
+            referrer = session.query(User).filter_by(uuid=referrer_uuid).first()
+
+        # Создаем нового пользователя с реферальной информацией (если есть)
+        user = User(
+            telegram_id=message.from_user.id,
+            username=message.from_user.username,
+            chat_id=message.chat.id,
+            is_client=False,  # По умолчанию не хост
+            referrer=referrer  # Сохраняем реферера, если он есть
+        )
+
+        session.add(user)
+
+        # Если есть реферер, увеличим его счетчик приглашений
+        if referrer:
+            referrer.invited_count += 1
+            session.add(referrer)
+
+        session.commit()
+
     # Создаем клавиатуру
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
     ref_link_btn = types.KeyboardButton("СГЕНЕРИРОВАТЬ РЕФЕРАЛЬНУЮ ССЫЛКУ")
     markup.add(ref_link_btn)
 
+    # Отправляем приветственное сообщение с клавиатурой
     bot.send_message(message.chat.id, "Привет! Добро пожаловать в нашего бота.", reply_markup=markup)
 
-    # Найдем пользователя или создадим нового
-    user = session.query(User).filter_by(telegram_id=message.from_user.id).first()
-
-    if user is None:
-        user = User(
-            telegram_id=message.from_user.id,
-            username=message.from_user.username,
-            chat_id=message.chat.id,
-            is_client=False  # По умолчанию не хост
-        )
-        session.add(user)
-        session.commit()
-
+    # Логика приветствия для разных типов пользователей
     if user.is_client:
         bot.send_message(message.chat.id, "Привет! Вы зарегистрированы как пользователь.")
     else:
@@ -59,7 +89,7 @@ def handle_referral_link(message):
 
     if user:
         # Генерируем реферальную ссылку с UUID пользователя
-        ref_link = f"https://t.me/RPMbookingBot?start={user.id}"
+        ref_link = f"https://t.me/your_bot?start={user.uuid}"
         bot.send_message(message.chat.id, f"Ваша реферальная ссылка: {ref_link}")
     else:
         bot.send_message(message.chat.id, "Вы не зарегистрированы.")
