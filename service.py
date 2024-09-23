@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import icalendar
 import requests
 from sqlalchemy import and_
@@ -17,23 +19,14 @@ from reportlab.pdfgen import canvas
 def find_offers(city, start_date, end_date, guest_count, bedrooms, amenities=None):
     # Поиск местоположения по городу
     locations = session.query(Location).filter(Location.locality_name.ilike(f'%{city}%')).all()
-    print(f"--locations {locations}")
-
     if not locations:
         return None  # Если нет предложений в этом городе
-
-    for location in locations:
-        print(location.locality_name)
-    print("########################################")
-    print(start_date, end_date, guest_count, bedrooms, amenities)
-    print("########################################")
 
     # Начало фильтрации предложений
     query = session.query(Offer).options(joinedload(Offer.photos)).filter(
         Offer.location_id.in_([loc.id for loc in locations]),  # Предложения по найденным локациям
         Offer.available_on_file.is_(True),  # Только доступные предложения
-        # Offer.rooms >= bedrooms,  # Учитываем количество спален
-        Offer.sleeps == bedrooms  # Учитываем количество гостей
+        Offer.sleeps == bedrooms  # Учитываем количество спален
     )
 
     # Учитываем выбранные удобства, если они переданы
@@ -48,11 +41,18 @@ def find_offers(city, start_date, end_date, guest_count, bedrooms, amenities=Non
     for offer in offers:
         # Получаем события, связанные с предложением
         events = session.query(Event).filter(Event.offer_id == offer.id).all()
-        # Проверка на наличие пересечений дат
+
         is_valid = True
-        for event in events:# 10 10 - 14 09
-            if not (end_date <= event.start_time and start_date >= event.end_time):
-                is_valid = False
+        for event in events:
+            # Преобразование строк в datetime
+            event_start = datetime.strptime(event.start_time, "%Y-%m-%d") if isinstance(event.start_time,
+                                                                                        str) else event.start_time
+            event_end = datetime.strptime(event.end_time, "%Y-%m-%d") if isinstance(event.end_time,
+                                                                                    str) else event.end_time
+
+            # Проверка пересечения диапазонов
+            if (start_date <= event_end and end_date >= event_start):
+                is_valid = False  # Диапазоны пересекаются
                 break
 
         if is_valid:
