@@ -68,11 +68,7 @@ def find_offers(city, start_date, end_date, guest_count, bedrooms, amenities=Non
 
         is_valid = True
         for event in events:  # 10 10 - 14 09   10 01 - 10 04
-            date1 = datetime.strptime(event.start_time, '%Y-%m-%d')
-            date2 = datetime.strptime(event.end_time, '%Y-%m-%d')
-            print(f"end_date - {end_date}\ndate1 - {date1}\nstart_date - {start_date}\ndate2 - {date2}")
-            print(f"end_date - {end_date <= date1}\tstart_date - {start_date >= date2}")
-            if not (end_date <= date1 and start_date >= date2):
+            if not (end_date <= event.start_time and start_date >= event.end_time):
                 is_valid = False
                 break
 
