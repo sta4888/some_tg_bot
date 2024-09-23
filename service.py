@@ -43,7 +43,22 @@ def find_offers(city, start_date, end_date, guest_count, bedrooms, amenities=Non
 
     offers = query.all()
 
-    return offers
+    # Фильтруем предложения по датам
+    valid_offers = []
+    for offer in offers:
+        # Получаем события, связанные с предложением
+        events = session.query(Event).filter(Event.offer_id == offer.id).all()
+        # Проверка на наличие пересечений дат
+        is_valid = True
+        for event in events:
+            if not (end_date <= event.start_time or start_date >= event.end_time):
+                is_valid = False
+                break
+
+        if is_valid:
+            valid_offers.append(offer)
+
+    return valid_offers
 
 
 def parse_ical(ical_url, offer, session: Session):
