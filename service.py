@@ -47,13 +47,22 @@ def find_offers(city, start_date, end_date, guest_count, bedrooms, amenities=Non
             query = query.filter(getattr(Offer, amenity).is_(True))
 
     offers = query.all()
+    print("########################################")
+    print(offers)
+    print("########################################")
 
     # Фильтруем предложения по датам
     valid_offers = []
     for offer in offers:
+        print("########################################")
+        print(offer)
+        print("########################################")
         # Получаем события, связанные с предложением
         events = session.query(Event).filter(Event.offer_id == offer.id).all()
         # Проверка на наличие пересечений дат
+        print("########################################")
+        print(events)
+        print("########################################")
 
         # Создаем объекты datetime
 
