@@ -7,7 +7,7 @@ from models import User, Offer, XML_FEED
 from dotenv import load_dotenv
 import os
 import requests  # Добавим библиотеку для HTTP-запросов
-from service import parse_and_save_offer
+from service import parse_and_save_offer, qr_generate
 
 load_dotenv()
 
@@ -90,6 +90,7 @@ def handle_referral_link(message):
     if user:
         # Генерируем реферальную ссылку с UUID пользователя
         ref_link = f"https://t.me/VgostiBot2_bot?start={user.uuid}"
+        qr_generate(ref_link, "pdfs/host.pdf")
         bot.send_message(message.chat.id, f"Ваша реферальная ссылка: {ref_link}")
     else:
         bot.send_message(message.chat.id, "Вы не зарегистрированы.")
