@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import icalendar
 import requests
 from sqlalchemy import and_
@@ -18,6 +20,9 @@ def find_offers(city, start_date, end_date, guest_count, bedrooms, amenities=Non
     # Поиск местоположения по городу
     locations = session.query(Location).filter(Location.locality_name.ilike(f'%{city}%')).all()
     print(f"--locations {locations}")
+
+    end_date = datetime.strptime(end_date, '%Y-%m-%d')
+    start_date = datetime.strptime(start_date, '%Y-%m-%d')
 
     if not locations:
         return None  # Если нет предложений в этом городе
@@ -49,9 +54,14 @@ def find_offers(city, start_date, end_date, guest_count, bedrooms, amenities=Non
         # Получаем события, связанные с предложением
         events = session.query(Event).filter(Event.offer_id == offer.id).all()
         # Проверка на наличие пересечений дат
+
+        # Создаем объекты datetime
+
         is_valid = True
-        for event in events:# 10 10 - 14 09
-            if not (end_date <= event.start_time and start_date >= event.end_time):
+        for event in events:# 10 10 - 14 09   10 01 - 10 04
+            date1 = datetime.strptime(event.start_time, '%Y-%m-%d')
+            date2 = datetime.strptime(event.end_time, '%Y-%m-%d')
+            if not (end_date <= date1 and start_date >= date2):
                 is_valid = False
                 break
 
