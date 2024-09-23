@@ -22,6 +22,9 @@ class User(Base):
     # Отношение "один ко многим" с XML_FEED
     xml_feeds = relationship('XML_FEED', back_populates='user')
 
+    # Новое поле для учета приглашенных пользователей
+    invited_count = Column(Integer, default=0)
+
 
 class XML_FEED(Base):
     __tablename__ = 'xml_feed'
