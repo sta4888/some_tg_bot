@@ -229,7 +229,7 @@ def qr_generate(qr_data: str, pdf_file: str, uuid_user: str) -> None:
     )
     output_pdf = f'{os.getcwd()}/pdfs/created/{uuid_user}.pdf'
 
-    insert_image_to_pdf(pdf_file, output_pdf, image_file, 90, 26)
+    insert_image_to_pdf(pdf_file, output_pdf, image_file, 92, 26)
 
 
 def insert_image_to_pdf(existing_pdf, output_pdf, image_path, x, y):
