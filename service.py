@@ -220,14 +220,14 @@ def parse_and_save_offer(xml_data, bot, message):
 
 def qr_generate(qr_data: str, pdf_file: str, uuid_user: str) -> None:
     qrcode = segno.make_qr(qr_data)
-    image_file = f"{os.getcwd()}{uuid_user}.png"
+    image_file = f"{os.getcwd()}/{uuid_user}.png"
     qrcode.save(
         image_file,
         scale=3,
         border=None,
         dark="darkblue",
     )
-    output_pdf = f'{os.getcwd()}pdfs/created/{uuid_user}.pdf'
+    output_pdf = f'{os.getcwd()}/pdfs/created/{uuid_user}.pdf'
 
     insert_image_to_pdf(pdf_file, output_pdf, image_file, 90, 26)
 
