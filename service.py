@@ -27,17 +27,10 @@ def find_offers(city, start_date, end_date, guest_count, bedrooms, amenities=Non
     if not locations:
         return None  # Если нет предложений в этом городе
 
-    for location in locations:
-        print(location.locality_name)
-    print("########################################")
-    print(start_date, end_date, guest_count, bedrooms, amenities)
-    print("########################################")
-
     # Начало фильтрации предложений
     query = session.query(Offer).options(joinedload(Offer.photos)).filter(
         Offer.location_id.in_([loc.id for loc in locations]),  # Предложения по найденным локациям
         Offer.available_on_file.is_(True),  # Только доступные предложения
-        # Offer.rooms >= bedrooms,  # Учитываем количество спален
         Offer.sleeps == bedrooms  # Учитываем количество гостей
     )
 
@@ -47,26 +40,21 @@ def find_offers(city, start_date, end_date, guest_count, bedrooms, amenities=Non
             query = query.filter(getattr(Offer, amenity).is_(True))
 
     offers = query.all()
-    print("########################################")
     print(f"--offers {offers}")
-    print("########################################")
 
     # Фильтруем предложения по датам
     valid_offers = []
     for offer in offers:
         # Получаем события, связанные с предложением
         events = session.query(Event).filter(Event.offer_id == offer.id).all()
-        # Проверка на наличие пересечений дат
 
-        # Создаем объекты datetime
-
-        is_valid = False
-        for event in events:  # 10 10 - 14 09   10 01 - 10 04
-            print(end_date, event.start_time)
-            print(start_date, event.end_time)
-            if (end_date <= event.start_time and start_date >= event.end_time):
-                is_valid = True
-                continue
+        is_valid = True
+        for event in events:
+            # Проверяем, пересекаются ли даты
+            if not (end_date <= event.start_time or start_date >= event.end_time):
+                # Если даты пересекаются, то оффер не подходит
+                is_valid = False
+                break
 
         if is_valid:
             valid_offers.append(offer)
