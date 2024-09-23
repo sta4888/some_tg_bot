@@ -156,6 +156,8 @@ def handle_bedrooms_selection(call):
         # Получение предложений с помощью функции find_offers
         offers = find_offers(city, start_date, end_date, guest_count, bedrooms, amenities)
 
+        print(f"--offers {offers}")
+
         # Если предложения найдены, отправляем их пользователю
         if offers:
             for offer in offers:
