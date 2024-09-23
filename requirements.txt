@@ -7,3 +7,6 @@ beautifulsoup4
 lxml
 icalendar
 requests
+segno
+PyPDF2
+reportlab

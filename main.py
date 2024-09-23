@@ -92,10 +92,10 @@ def handle_referral_link(message):
         ref_link = f"https://t.me/VgostiBot2_bot?start={user.uuid}"
 
         # Генерация QR-кода (здесь предполагается, что у вас есть функция qr_generate)
-        qr_generate(ref_link, "pdfs/host.pdf", f"{user.uuid}")
+        qr_generate(ref_link, f"{os.getcwd()}pdfs/host.pdf", f"{user.uuid}")
 
         # Путь к PDF файлу
-        pdf_path = f"pdfs/created/{user.uuid}.pdf"
+        pdf_path = f"{os.getcwd()}pdfs/created/{user.uuid}.pdf"
 
         # Проверяем, существует ли файл по указанному пути
         if os.path.exists(pdf_path):
