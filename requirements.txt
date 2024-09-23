@@ -10,4 +10,3 @@ reportlab
 qrcode[pil]
 PyPDF2
 segno
-python3-segno

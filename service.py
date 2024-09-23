@@ -50,8 +50,8 @@ def find_offers(city, start_date, end_date, guest_count, bedrooms, amenities=Non
         events = session.query(Event).filter(Event.offer_id == offer.id).all()
         # Проверка на наличие пересечений дат
         is_valid = True
-        for event in events:
-            if not (end_date <= event.start_time or start_date >= event.end_time):
+        for event in events:# 10 10 - 14 09
+            if not (end_date <= event.start_time and start_date >= event.end_time):
                 is_valid = False
                 break
 
