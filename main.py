@@ -90,8 +90,24 @@ def handle_referral_link(message):
     if user:
         # Генерируем реферальную ссылку с UUID пользователя
         ref_link = f"https://t.me/VgostiBot2_bot?start={user.uuid}"
-        qr_generate(ref_link, "pdfs/host.pdf")
-        bot.send_message(message.chat.id, f"Ваша реферальная ссылка: {ref_link}")
+
+        # Генерация QR-кода (здесь предполагается, что у вас есть функция qr_generate)
+        qr_generate(ref_link, "pdfs/host.pdf", f"{user.uuid}")
+
+        # Путь к PDF файлу
+        pdf_path = f"pdfs/created/{user.uuid}.pdf"
+
+        # Проверяем, существует ли файл по указанному пути
+        if os.path.exists(pdf_path):
+            # Отправляем PDF файл пользователю
+            with open(pdf_path, 'rb') as pdf_file:
+                bot.send_document(message.chat.id, pdf_file)
+
+            # Отправляем сообщение с реферальной ссылкой
+            bot.send_message(message.chat.id, f"Ваша реферальная ссылка: {ref_link}")
+        else:
+            # Если файл не найден, отправляем сообщение об ошибке
+            bot.send_message(message.chat.id, "Не удалось найти PDF файл. Попробуйте позже.")
     else:
         bot.send_message(message.chat.id, "Вы не зарегистрированы.")
 
