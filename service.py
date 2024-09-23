@@ -60,13 +60,13 @@ def find_offers(city, start_date, end_date, guest_count, bedrooms, amenities=Non
 
         # Создаем объекты datetime
 
-        is_valid = True
+        is_valid = False
         for event in events:  # 10 10 - 14 09   10 01 - 10 04
             print(end_date, event.start_time)
             print(start_date, event.end_time)
-            if not (end_date <= event.start_time and start_date >= event.end_time):
-                is_valid = False
-                break
+            if (end_date <= event.start_time and start_date >= event.end_time):
+                is_valid = True
+                continue
 
         if is_valid:
             valid_offers.append(offer)
