@@ -256,6 +256,7 @@ def edit_offer(message):
 # Обработка выбора оффера для редактирования
 @bot.callback_query_handler(func=lambda call: call.data.startswith("edit_offer_"))
 def handle_offer_selection(call):
+    print(call.data)
     internal_id = call.data.split("_")[2]
     offer = session.query(Offer).filter_by(internal_id=internal_id).first()
 
