@@ -268,6 +268,8 @@ def get_referral_chain(user, level=1, max_levels=6):
         # Проверяем, активна ли подписка (если есть записи в таблице подписок)
         latest_subscription = session.query(Subscription).filter_by(user_id=referral.id).order_by(
             Subscription.end_date.desc()).first()
+
+        print(f"--latest_subscription {latest_subscription}")
         has_active_subscription = False
         if latest_subscription and latest_subscription.end_date >= datetime.utcnow():
             has_active_subscription = True
