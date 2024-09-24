@@ -266,11 +266,11 @@ def handle_offer_selection(call):
     if offer and offer.creator.telegram_id == call.from_user.id:
         # Отправляем текущее состояние оффера
         offer_details = f"Текущий оффер:\nID: {offer.internal_id}\nURL: {offer.url_to}\nОписание: {offer.description}"
-        bot.edit_message_text(
-            chat_id=call.message.chat.id,
-            message_id=call.message.message_id,
-            text=offer_details
-        )
+        # bot.edit_message_text(
+        #     chat_id=call.message.chat.id,
+        #     message_id=call.message.message_id,
+        #     text=offer_details
+        # )
 
         # Запрашиваем, что именно редактировать с помощью inline-кнопок
         markup = types.InlineKeyboardMarkup()
@@ -283,7 +283,7 @@ def handle_offer_selection(call):
         bot.edit_message_text(
             chat_id=call.message.chat.id,
             message_id=call.message.message_id,
-            text="Что вы хотите изменить?",
+            text=f"{offer_details}\n\nЧто вы хотите изменить?",
             reply_markup=markup
         )
 
