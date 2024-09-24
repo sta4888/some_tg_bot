@@ -261,7 +261,7 @@ def get_referral_chain(user, level=1, max_levels=6):
     if not user or level > max_levels:
         return []
 
-    referrals = session.query(User).filter_by(referrer=user).all()
+    referrals = session.query(User).filter_by(referer=user).all()
     chain = []
 
     for referral in referrals:
