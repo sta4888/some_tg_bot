@@ -269,13 +269,16 @@ def get_referral_chain(user, level=1, max_levels=6):
         latest_subscription = session.query(Subscription).filter_by(user_id=referral.id).order_by(
             Subscription.end_date.desc()).first()
 
-        print(f"--latest_subscription {latest_subscription}")
-        has_active_subscription = False
-        print(latest_subscription.end_date, ":", datetime.utcnow())
-        print(latest_subscription.end_date >= datetime.utcnow())
-        print(latest_subscription.end_date.date() >= datetime.utcnow().date())
-        if latest_subscription.end_date.date() >= datetime.utcnow().date():
-            has_active_subscription = True
+        if latest_subscription:
+            # Получаем обе даты в виде объектов типа `date` для корректного сравнения
+            subscription_end_date = latest_subscription.end_date.date()
+            current_date = datetime.utcnow().date()
+
+            print(subscription_end_date, ":", current_date)
+            print(subscription_end_date >= current_date)  # Сравнение по дате
+
+            if subscription_end_date >= current_date:
+                has_active_subscription = True
 
         # Добавляем реферала в цепочку с нужной информацией
         chain.append({
