@@ -263,7 +263,7 @@ def handle_offer_selection(call):
     print(f"--offer {offer}")
     print(f"--offer {offer.created_by == call.from_user.id}")
 
-    if offer and offer.created_by == call.from_user.id:
+    if offer:
         # Отправляем текущее состояние оффера
         offer_details = f"Текущий оффер:\nID: {offer.internal_id}\nURL: {offer.url_to}\nОписание: {offer.description}"
         bot.send_message(call.message.chat.id, offer_details)
