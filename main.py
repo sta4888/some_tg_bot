@@ -261,6 +261,7 @@ def handle_offer_selection(call):
     print(internal_id)
     offer = session.query(Offer).filter_by(internal_id=str(internal_id)).first()
     print(f"--offer {offer}")
+    print(f"--offer {offer.created_by == call.from_user.id}")
 
     if offer and offer.created_by == call.from_user.id:
         # Отправляем текущее состояние оффера
