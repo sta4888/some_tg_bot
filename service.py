@@ -273,7 +273,8 @@ def get_referral_chain(user, level=1, max_levels=6):
         has_active_subscription = False
         print(latest_subscription.end_date, ":", datetime.utcnow())
         print(latest_subscription.end_date >= datetime.utcnow())
-        if latest_subscription and latest_subscription.end_date.date() >= datetime.utcnow().date():
+        print(latest_subscription.end_date.date() >= datetime.utcnow().date())
+        if latest_subscription.end_date.date() >= datetime.utcnow().date():
             has_active_subscription = True
 
         # Добавляем реферала в цепочку с нужной информацией
