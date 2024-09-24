@@ -202,6 +202,8 @@ def handle_bedrooms_selection(call):
 
                 # Формируем сообщение с информацией о предложении
                 offer_message = f"Предложение: \n" \
+                                f"{offer.location.region}, {offer.location.locality_name}\n" \
+                                f"Адрес: {offer.location.address}\n" \
                                 f"Цена: {offer.price.value} {offer.price.currency}\n\n" \
                                 f"Удобства: {amenities_str}\n\n" \
                                 f"Депозит: {offer.price.deposit} {offer.price.deposit_currency}\n"
