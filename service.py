@@ -275,6 +275,7 @@ def get_referral_chain(user, level=1, max_levels=6):
         # Добавляем реферала в цепочку с нужной информацией
         chain.append({
             "first_name": referral.first_name,
+            "telegram_id": referral.telegram_id,
             "level": level,
             "has_active_subscription": has_active_subscription,
         })

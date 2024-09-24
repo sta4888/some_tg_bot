@@ -219,7 +219,7 @@ def handle_allrefstats(message):
             for referral_info in all_referrals:
                 subscription_status = "Подписка активна" if referral_info[
                     "has_active_subscription"] else "Подписка не активна"
-                message_text += f"Имя: {referral_info['first_name']}, Уровень: {referral_info['level']}, {subscription_status}\n"
+                message_text += f"telegram_id: {referral_info['telegram_id']} Имя: {referral_info['first_name']}, Уровень: {referral_info['level']}, {subscription_status}\n"
         else:
             message_text = "У вас нет рефералов."
 
