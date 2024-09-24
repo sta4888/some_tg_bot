@@ -201,6 +201,25 @@ def handle_update_confirmation(message):
         bot.reply_to(message, "Обновление данных отменено.")
 
 
+# Команда для получения рефералов до 6 уровня
+@bot.message_handler(commands=['allrefstats'])
+def handle_allrefstats(message):
+    telegram_user_id = message.from_user.id
+
+    # Ищем пользователя по telegram_id
+    user = session.query(User).filter_by(telegram_id=telegram_user_id).first()
+
+    if user:
+        # Получаем всех рефералов до 6 уровня
+        all_referrals = get_referral_chain(user)
+        referral_count = len(all_referrals)
+
+        # Создаем сообщение со статистикой
+        bot.send_message(message.chat.id, f"Количество рефералов до 6 уровня: {referral_count}")
+    else:
+        bot.send_message(message.chat.id, "Вы не зарегистрированы.")
+
+
 # Обработка текстовых сообщений от пользователей для ввода URL
 @bot.message_handler(func=lambda message: message.from_user.id in user_states and 'update_existing' not in user_states[
     message.from_user.id])
@@ -234,25 +253,6 @@ def handle_url_input(message):
             bot.reply_to(message, "Все ссылки успешно обновлены.")
     else:
         bot.reply_to(message, f"Предложение с internal_id {internal_id} не найдено.")
-
-
-# Команда для получения рефералов до 6 уровня
-@bot.message_handler(commands=['allrefstats'])
-def handle_allrefstats(message):
-    telegram_user_id = message.from_user.id
-
-    # Ищем пользователя по telegram_id
-    user = session.query(User).filter_by(telegram_id=telegram_user_id).first()
-
-    if user:
-        # Получаем всех рефералов до 6 уровня
-        all_referrals = get_referral_chain(user)
-        referral_count = len(all_referrals)
-
-        # Создаем сообщение со статистикой
-        bot.send_message(message.chat.id, f"Количество рефералов до 6 уровня: {referral_count}")
-    else:
-        bot.send_message(message.chat.id, "Вы не зарегистрированы.")
 
 
 if __name__ == "__main__":
