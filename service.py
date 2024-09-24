@@ -8,7 +8,7 @@ from bs4 import BeautifulSoup
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from sqlalchemy.orm import sessionmaker
-from connect import engine
+from connect import engine, session
 from models import Photo, Offer, User, SalesAgent, Price, Location, Area
 
 
@@ -255,3 +255,17 @@ def insert_image_to_pdf(existing_pdf, output_pdf, image_path, x, y):
     # Write to the output PDF
     with open(output_pdf, "wb") as output_file:
         pdf_writer.write(output_file)
+
+
+def get_referral_chain(user, level=1, max_levels=6):
+    if not user or level > max_levels:
+        return []
+
+    referrals = session.query(User).filter_by(referrer=user).all()
+    chain = []
+
+    for referral in referrals:
+        chain.append(referral)
+        chain.extend(get_referral_chain(referral, level + 1, max_levels))
+
+    return chain

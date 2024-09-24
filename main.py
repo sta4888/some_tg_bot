@@ -7,7 +7,7 @@ from models import User, Offer, XML_FEED
 from dotenv import load_dotenv
 import os
 import requests  # Добавим библиотеку для HTTP-запросов
-from service import parse_and_save_offer, qr_generate
+from service import parse_and_save_offer, qr_generate, get_referral_chain
 
 load_dotenv()
 
@@ -234,6 +234,25 @@ def handle_url_input(message):
             bot.reply_to(message, "Все ссылки успешно обновлены.")
     else:
         bot.reply_to(message, f"Предложение с internal_id {internal_id} не найдено.")
+
+
+# Команда для получения рефералов до 6 уровня
+@bot.message_handler(commands=['allrefstats'])
+def handle_allrefstats(message):
+    telegram_user_id = message.from_user.id
+
+    # Ищем пользователя по telegram_id
+    user = session.query(User).filter_by(telegram_id=telegram_user_id).first()
+
+    if user:
+        # Получаем всех рефералов до 6 уровня
+        all_referrals = get_referral_chain(user)
+        referral_count = len(all_referrals)
+
+        # Создаем сообщение со статистикой
+        bot.send_message(message.chat.id, f"Количество рефералов до 6 уровня: {referral_count}")
+    else:
+        bot.send_message(message.chat.id, "Вы не зарегистрированы.")
 
 
 if __name__ == "__main__":
