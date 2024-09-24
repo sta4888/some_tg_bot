@@ -210,6 +210,7 @@ def handle_bedrooms_selection(call):
                 if main_photo:
                     bot.send_photo(chat_id, main_photo, caption=offer_message)
                 else:
+                    bot.send_location(chat_id, offer.location.latitude, offer.location.longitude)
                     bot.send_message(chat_id, offer_message)
         else:
             bot.send_message(chat_id, "Извините, нет доступных предложений на указанные даты.")
