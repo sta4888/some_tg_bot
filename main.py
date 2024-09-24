@@ -209,6 +209,7 @@ def handle_bedrooms_selection(call):
                 # Если есть главное фото, добавляем его в сообщение
                 if main_photo:
                     bot.send_photo(chat_id, main_photo, caption=offer_message)
+                    bot.send_location(chat_id, offer.location.latitude, offer.location.longitude)
                 else:
                     bot.send_location(chat_id, offer.location.latitude, offer.location.longitude)
                     bot.send_message(chat_id, offer_message)
