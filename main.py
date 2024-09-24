@@ -243,6 +243,10 @@ def edit_offer(message):
         bot.send_message(message.chat.id, "У вас нет офферов для редактирования.")
         return
 
+    # Инициализируем состояние пользователя, если оно еще не существует
+    if message.from_user.id not in user_states:
+        user_states[message.from_user.id] = {}
+
     # Отправляем пользователю список офферов с кнопками
     markup = types.InlineKeyboardMarkup()
     for offer in offers:
@@ -261,11 +265,9 @@ def handle_offer_selection(call):
     print(internal_id)
     offer = session.query(Offer).filter_by(internal_id=str(internal_id)).first()
     print(f"--offer {offer}")
-    print(f"--offer {offer.created_by == call.from_user.id}")
-    print(f"--offer {offer.creator.telegram_id}")
-    print(f"--offer {call.from_user.id}")
+    print(f"--offer {offer.creator.telegram_id == call.from_user.id}")
 
-    if offer: # fixme было так  and offer.created_by == call.from_user.id нужно проверить
+    if offer and offer.creator.telegram_id == call.from_user.id:
         # Отправляем текущее состояние оффера
         offer_details = f"Текущий оффер:\nID: {offer.internal_id}\nURL: {offer.url_to}\nОписание: {offer.description}"
         bot.send_message(call.message.chat.id, offer_details)
