@@ -260,27 +260,102 @@ def edit_offer(message):
 # Обработка выбора оффера для редактирования
 @bot.callback_query_handler(func=lambda call: call.data.startswith("edit_offer_"))
 def handle_offer_selection(call):
-    print(call.data)
     internal_id = call.data.split("_")[2]
-    print(internal_id)
     offer = session.query(Offer).filter_by(internal_id=str(internal_id)).first()
-    print(f"--offer {offer}")
-    print(f"--offer {offer.creator.telegram_id == call.from_user.id}")
 
     if offer and offer.creator.telegram_id == call.from_user.id:
         # Отправляем текущее состояние оффера
         offer_details = f"Текущий оффер:\nID: {offer.internal_id}\nURL: {offer.url_to}\nОписание: {offer.description}"
-        bot.send_message(call.message.chat.id, offer_details)
+        bot.edit_message_text(
+            chat_id=call.message.chat.id,
+            message_id=call.message.message_id,
+            text=offer_details
+        )
 
-        # Запрашиваем, что именно редактировать
-        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        markup.add("Изменить URL", "Изменить описание", "Отмена")
-        bot.send_message(call.message.chat.id, "Что вы хотите изменить?", reply_markup=markup)
+        # Запрашиваем, что именно редактировать с помощью inline-кнопок
+        markup = types.InlineKeyboardMarkup()
+        markup.add(
+            types.InlineKeyboardButton(text="Изменить URL", callback_data=f"edit_url_{offer.internal_id}"),
+            types.InlineKeyboardButton(text="Изменить описание", callback_data=f"edit_description_{offer.internal_id}"),
+            types.InlineKeyboardButton(text="Отмена", callback_data="cancel_edit")
+        )
+
+        bot.edit_message_text(
+            chat_id=call.message.chat.id,
+            message_id=call.message.message_id,
+            text="Что вы хотите изменить?",
+            reply_markup=markup
+        )
 
         # Сохраняем оффер для дальнейшего редактирования
-        user_states[call.from_user.id]['offer_to_edit'] = offer
+        user_states[call.from_user.id] = {'offer_to_edit': offer}
     else:
         bot.send_message(call.message.chat.id, "Ошибка: Оффер не найден или не принадлежит вам.")
+
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith("edit_url_"))
+def handle_edit_url(call):
+    internal_id = call.data.split("_")[2]
+    offer = user_states[call.from_user.id]['offer_to_edit']
+
+    if offer and offer.internal_id == internal_id:
+        # Запрос нового URL
+        bot.edit_message_text(
+            chat_id=call.message.chat.id,
+            message_id=call.message.message_id,
+            text="Введите новый URL:"
+        )
+        user_states[call.from_user.id]['editing_field'] = 'url'
+    else:
+        bot.send_message(call.message.chat.id, "Ошибка при редактировании оффера.")
+
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith("edit_description_"))
+def handle_edit_description(call):
+    internal_id = call.data.split("_")[2]
+    offer = user_states[call.from_user.id]['offer_to_edit']
+
+    if offer and offer.internal_id == internal_id:
+        # Запрос нового описания
+        bot.edit_message_text(
+            chat_id=call.message.chat.id,
+            message_id=call.message.message_id,
+            text="Введите новое описание:"
+        )
+        user_states[call.from_user.id]['editing_field'] = 'description'
+    else:
+        bot.send_message(call.message.chat.id, "Ошибка при редактировании оффера.")
+
+
+# Обработка отмены
+@bot.callback_query_handler(func=lambda call: call.data == "cancel_edit")
+def handle_cancel_edit(call):
+    bot.edit_message_text(
+        chat_id=call.message.chat.id,
+        message_id=call.message.message_id,
+        text="Редактирование оффера отменено."
+    )
+    user_states.pop(call.from_user.id, None)  # Удаляем состояние пользователя
+
+
+@bot.message_handler(
+    func=lambda message: message.from_user.id in user_states and 'editing_field' in user_states[message.from_user.id])
+def handle_new_value(message):
+    user_id = message.from_user.id
+    offer = user_states[user_id]['offer_to_edit']
+    field_to_edit = user_states[user_id]['editing_field']
+    new_value = message.text.strip()
+
+    # Обновляем значение в зависимости от выбранного поля
+    if field_to_edit == 'url':
+        offer.url_to = new_value
+        bot.send_message(message.chat.id, f"URL для оффера {offer.internal_id} обновлен на: {new_value}")
+    elif field_to_edit == 'description':
+        offer.description = new_value
+        bot.send_message(message.chat.id, f"Описание для оффера {offer.internal_id} обновлено на: {new_value}")
+
+    session.commit()  # Сохраняем изменения в базе данных
+    del user_states[user_id]  # Удаляем состояние пользователя после завершения редактирования
 
 
 # Обработка выбора действия редактирования
