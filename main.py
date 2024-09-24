@@ -262,7 +262,7 @@ def handle_offer_selection(call):
     offer = session.query(Offer).filter_by(internal_id=str(internal_id)).first()
     print(f"--offer {offer}")
     print(f"--offer {offer.created_by == call.from_user.id}")
-    print(f"--offer {offer.created_by}")
+    print(f"--offer {offer.creator.telegram_id}")
     print(f"--offer {call.from_user.id}")
 
     if offer: # fixme было так  and offer.created_by == call.from_user.id нужно проверить
