@@ -228,6 +228,111 @@ def handle_allrefstats(message):
         bot.send_message(message.chat.id, "Вы не зарегистрированы.")
 
 
+# Обработка команды для редактирования оффера
+@bot.message_handler(commands=['edit_offer'])
+def edit_offer(message):
+    user = session.query(User).filter_by(telegram_id=message.from_user.id).first()
+
+    if not user:
+        bot.send_message(message.chat.id, "Вы не зарегистрированы.")
+        return
+
+    # Получаем все офферы, созданные пользователем
+    offers = session.query(Offer).filter_by(created_by=user.id).all()
+    if not offers:
+        bot.send_message(message.chat.id, "У вас нет офферов для редактирования.")
+        return
+
+    # Отправляем пользователю список офферов с кнопками
+    markup = types.InlineKeyboardMarkup()
+    for offer in offers:
+        button = types.InlineKeyboardButton(text=f"Оффер {offer.internal_id}",
+                                            callback_data=f"edit_offer_{offer.internal_id}")
+        markup.add(button)
+
+    bot.send_message(message.chat.id, "Выберите оффер для редактирования:", reply_markup=markup)
+
+
+# Обработка выбора оффера для редактирования
+@bot.callback_query_handler(func=lambda call: call.data.startswith("edit_offer_"))
+def handle_offer_selection(call):
+    internal_id = call.data.split("_")[2]
+    offer = session.query(Offer).filter_by(internal_id=internal_id).first()
+
+    if offer and offer.created_by == call.from_user.id:
+        # Отправляем текущее состояние оффера
+        offer_details = f"Текущий оффер:\nID: {offer.internal_id}\nURL: {offer.url_to}\nОписание: {offer.description}"
+        bot.send_message(call.message.chat.id, offer_details)
+
+        # Запрашиваем, что именно редактировать
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        markup.add("Изменить URL", "Изменить описание", "Отмена")
+        bot.send_message(call.message.chat.id, "Что вы хотите изменить?", reply_markup=markup)
+
+        # Сохраняем оффер для дальнейшего редактирования
+        user_states[call.from_user.id]['offer_to_edit'] = offer
+    else:
+        bot.send_message(call.message.chat.id, "Ошибка: Оффер не найден или не принадлежит вам.")
+
+
+# Обработка выбора действия редактирования
+@bot.message_handler(
+    func=lambda message: message.from_user.id in user_states and 'offer_to_edit' in user_states[message.from_user.id])
+def handle_edit_choice(message):
+    user_id = message.from_user.id
+    offer = user_states[user_id]['offer_to_edit']
+
+    if message.text == "Изменить URL":
+        bot.send_message(message.chat.id, "Введите новый URL для этого оффера:")
+        user_states[user_id]['editing_url'] = True
+    elif message.text == "Изменить описание":
+        bot.send_message(message.chat.id, "Введите новое описание для этого оффера:")
+        user_states[user_id]['editing_description'] = True
+    elif message.text == "Отмена":
+        del user_states[user_id]  # Удаляем состояние редактирования
+        bot.send_message(message.chat.id, "Редактирование отменено.")
+    else:
+        bot.send_message(message.chat.id, "Неизвестная команда.")
+
+
+# Обработка нового значения URL
+@bot.message_handler(
+    func=lambda message: message.from_user.id in user_states and 'editing_url' in user_states[message.from_user.id])
+def handle_new_url_input(message):
+    user_id = message.from_user.id
+    new_url = message.text.strip()
+    offer = user_states[user_id]['offer_to_edit']
+
+    # Обновляем URL оффера
+    offer.url_to = new_url
+    session.commit()  # Сохраняем изменения в базе данных
+
+    bot.send_message(message.chat.id,
+                     f"URL для оффера с internal_id {offer.internal_id} успешно обновлен на: {new_url}")
+
+    # Удаляем состояние редактирования
+    del user_states[user_id]
+
+
+# Обработка нового значения описания
+@bot.message_handler(func=lambda message: message.from_user.id in user_states and 'editing_description' in user_states[
+    message.from_user.id])
+def handle_new_description_input(message):
+    user_id = message.from_user.id
+    new_description = message.text.strip()
+    offer = user_states[user_id]['offer_to_edit']
+
+    # Обновляем описание оффера
+    offer.description = new_description
+    session.commit()  # Сохраняем изменения в базе данных
+
+    bot.send_message(message.chat.id,
+                     f"Описание для оффера с internal_id {offer.internal_id} успешно обновлено на: {new_description}")
+
+    # Удаляем состояние редактирования
+    del user_states[user_id]
+
+
 # Обработка текстовых сообщений от пользователей для ввода URL
 @bot.message_handler(func=lambda message: message.from_user.id in user_states and 'update_existing' not in user_states[
     message.from_user.id])
