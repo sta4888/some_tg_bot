@@ -1,4 +1,6 @@
 import uuid
+from datetime import datetime
+
 from sqlalchemy import create_engine, Column, Integer, String, Float, Text, Boolean, DateTime, ForeignKey, UUID
 from sqlalchemy.orm import declarative_base, relationship
 from sqlalchemy.ext.mutable import MutableList
@@ -13,7 +15,9 @@ class User(Base):
     id = Column(Integer, primary_key=True)
     uuid = Column(UUID(as_uuid=True), default=uuid.uuid4, unique=True, nullable=False)
     telegram_id = Column(Integer, unique=True, nullable=False)
-    username = Column(String(100), nullable=True)
+    username = Column(String(100), nullable=True, default="")
+    first_name = Column(String(100), nullable=True, default="")
+    second_name = Column(String(100), nullable=True, default="")
     chat_id = Column(String(100), nullable=True)
     is_client = Column(Boolean, nullable=False, default=True)
     referer_id = Column(Integer, ForeignKey('users.id'), nullable=True)
@@ -21,6 +25,58 @@ class User(Base):
 
     # Отношение "один ко многим" с XML_FEED
     xml_feeds = relationship('XML_FEED', back_populates='user')
+
+    # Новое поле для учета приглашенных пользователей
+    invited_count = Column(Integer, default=0)
+
+    payments = relationship("Payment", back_populates="user")
+    payouts = relationship("Payout", back_populates="user")
+    subscriptions = relationship("Subscription", back_populates="user")
+
+
+class Payment(Base):
+    __tablename__ = 'payments'
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)  # Связь с пользователем
+    amount = Column(Float, nullable=False)  # Сумма оплаты
+    payment_date = Column(DateTime, default=datetime.utcnow)  # Дата оплаты
+
+    # Связь с пользователем
+    user = relationship("User", back_populates="payments")
+
+    def __repr__(self):
+        return f"<Payment(user_id={self.user_id}, amount={self.amount}, payment_date={self.payment_date})>"
+
+
+class Payout(Base):
+    __tablename__ = 'payouts'
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)  # Связь с пользователем
+    amount = Column(Float, nullable=False)  # Сумма выплаты
+    payout_date = Column(DateTime, default=datetime.utcnow)  # Дата выплаты
+
+    # Связь с пользователем
+    user = relationship("User", back_populates="payouts")
+
+    def __repr__(self):
+        return f"<Payout(user_id={self.user_id}, amount={self.amount}, payout_date={self.payout_date})>"
+
+
+class Subscription(Base):
+    __tablename__ = 'subscriptions'
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)  # Связь с пользователем
+    start_date = Column(DateTime, nullable=False)  # Дата начала подписки
+    end_date = Column(DateTime, nullable=False)  # Дата окончания подписки
+
+    # Связь с пользователем
+    user = relationship("User", back_populates="subscriptions")
+
+    def __repr__(self):
+        return f"<Subscription(user_id={self.user_id}, start_date={self.start_date}, end_date={self.end_date})>"
 
 
 class XML_FEED(Base):
