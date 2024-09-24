@@ -9,7 +9,7 @@ from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from sqlalchemy.orm import sessionmaker
 from connect import engine, session
-from models import Photo, Offer, User, SalesAgent, Price, Location, Area
+from models import Photo, Offer, User, SalesAgent, Price, Location, Area, Subscription
 
 
 def parse_and_save_offer(xml_data, bot, message):
@@ -265,7 +265,21 @@ def get_referral_chain(user, level=1, max_levels=6):
     chain = []
 
     for referral in referrals:
-        chain.append(referral)
+        # Проверяем, активна ли подписка (если есть записи в таблице подписок)
+        latest_subscription = session.query(Subscription).filter_by(user_id=referral.id).order_by(
+            Subscription.end_date.desc()).first()
+        has_active_subscription = False
+        if latest_subscription and latest_subscription.end_date >= datetime.utcnow():
+            has_active_subscription = True
+
+        # Добавляем реферала в цепочку с нужной информацией
+        chain.append({
+            "first_name": referral.first_name,
+            "level": level,
+            "has_active_subscription": has_active_subscription,
+        })
+
+        # Рекурсивно добавляем рефералов следующего уровня
         chain.extend(get_referral_chain(referral, level + 1, max_levels))
 
     return chain

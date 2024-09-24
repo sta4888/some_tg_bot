@@ -206,16 +206,24 @@ def handle_update_confirmation(message):
 def handle_allrefstats(message):
     telegram_user_id = message.from_user.id
 
-    # Ищем пользователя по telegram_id
+    # Ищем пользователя по telegram_user_id
     user = session.query(User).filter_by(telegram_id=telegram_user_id).first()
 
     if user:
-        # Получаем всех рефералов до 6 уровня
+        # Получаем реферальную цепочку
         all_referrals = get_referral_chain(user)
-        referral_count = len(all_referrals)
 
-        # Создаем сообщение со статистикой
-        bot.send_message(message.chat.id, f"Количество рефералов до 6 уровня: {referral_count}")
+        # Формируем сообщение с деталями
+        if all_referrals:
+            message_text = "Рефералы до 6 уровня:\n"
+            for referral_info in all_referrals:
+                subscription_status = "Подписка активна" if referral_info[
+                    "has_active_subscription"] else "Подписка не активна"
+                message_text += f"Имя: {referral_info['first_name']}, Уровень: {referral_info['level']}, {subscription_status}\n"
+        else:
+            message_text = "У вас нет рефералов."
+
+        bot.send_message(message.chat.id, message_text)
     else:
         bot.send_message(message.chat.id, "Вы не зарегистрированы.")
 
