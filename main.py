@@ -258,7 +258,7 @@ def edit_offer(message):
 def handle_offer_selection(call):
     print(call.data)
     internal_id = call.data.split("_")[2]
-    offer = session.query(Offer).filter_by(internal_id=internal_id).first()
+    offer = session.query(Offer).filter_by(internal_id=str(internal_id)).first()
 
     if offer and offer.created_by == call.from_user.id:
         # Отправляем текущее состояние оффера
