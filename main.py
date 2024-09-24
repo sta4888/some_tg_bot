@@ -118,107 +118,154 @@ def ask_guest(message):
         bot.register_next_step_handler(message, ask_guest)
 
 
+from telebot import types
+
+# Удобства с эмодзи
+AMENITIES_EMOJI = {
+    "Стиральная машина": "🧺",
+    "Wi-Fi": "📶",
+    "Телевизор": "📺",
+    "Кондиционер": "❄️",
+    "Дружественно для детей": "👶",
+    "Разрешены вечеринки": "🎉",
+    "Холодильник": "🧊",
+    "Телефон": "📞",
+    "Плита": "🍳",
+    "Посудомоечная машина": "🍽️",
+    "Музыкальный центр": "🎵",
+    "Микроволновка": "🍲",
+    "Утюг": "🧼",
+    "Консьерж": "👨‍✈️",
+    "Парковка": "🚗",
+    "Сейф": "🔒",
+    "Водонагреватель": "💧",
+    "Телевидение": "📡",
+    "Ванная комната": "🛁",
+    "Можно с животными": "🐕",
+    "Можно курить": "🚬",
+    "Романтическая атмосфера": "💖",
+    "Джакузи": "🛀",
+    "Балкон": "🏞️",
+    "Лифт": "🛗"
+}
+
+
 @bot.callback_query_handler(func=lambda call: re.match(r'^\d+(\+\d+)*$', call.data))
 def handle_bedrooms_selection(call):
     chat_id = call.message.chat.id
 
-    # Проверяем, есть ли данные для пользователя в словаре
     if chat_id not in user_data:
         user_data[chat_id] = {}
 
     bedrooms = call.data
-
-    # Сохраняем выбранное количество спальных мест
     user_data[chat_id]['bedrooms'] = bedrooms
 
-    # Редактируем предыдущее сообщение, чтобы отразить выбор пользователя
     bot.edit_message_text(f"Вы выбрали {bedrooms} раздельных спальных мест.",
                           chat_id,
                           call.message.message_id)
 
-    # Отправляем сообщение с собранными данными
     bot.send_message(chat_id, "Спасибо! Вот ваши данные:")
     bot.send_message(chat_id, f"Город: {user_data[chat_id].get('city', 'Не указано')}\n"
                               f"Даты: {user_data[chat_id].get('start_date', 'Не указано')} - {user_data[chat_id].get('end_date', 'Не указано')}\n"
                               f"Количество гостей: {user_data[chat_id].get('guest', 'Не указано')}\n"
                               f"Спальных мест: {user_data[chat_id].get('bedrooms', 'Не указано')}")
 
-    # Получаем значения для поиска предложений
     city = user_data[chat_id].get('city')
     start_date = user_data[chat_id].get('start_date')
     end_date = user_data[chat_id].get('end_date')
     guest_count = user_data[chat_id].get('guest')
 
-    # Проверка на наличие всех обязательных данных для поиска предложений
     if city and start_date and end_date and guest_count:
         amenities = ['wi_fi', 'air_conditioner']
 
-        # Получение предложений с помощью функции find_offers
         offers = find_offers(city, start_date, end_date, guest_count, bedrooms, amenities)
 
-        print(f"--offers {offers}")
-
-        # Если предложения найдены, отправляем их пользователю
         if offers:
-            for offer in offers:
-                # Получаем главное фото (если есть) или первое фото, если главное отсутствует
-                main_photo = next((photo.url for photo in offer.photos if photo.is_main),
-                                  offer.photos[0].url if offer.photos else None)
-
-                # Словарь всех удобств с условием вывода только если значение True
-                amenities_dict = {
-                    "Стиральная машина": offer.washing_machine,
-                    "Wi-Fi": offer.wi_fi,
-                    "Телевизор": offer.tv,
-                    "Кондиционер": offer.air_conditioner,
-                    "Дружественно для детей": offer.kids_friendly,
-                    "Разрешены вечеринки": offer.party,
-                    "Холодильник": offer.refrigerator,
-                    "Телефон": offer.phone,
-                    "Плита": offer.stove,
-                    "Посудомоечная машина": offer.dishwasher,
-                    "Музыкальный центр": offer.music_center,
-                    "Микроволновка": offer.microwave,
-                    "Утюг": offer.iron,
-                    "Консьерж": offer.concierge,
-                    "Парковка": offer.parking,
-                    "Сейф": offer.safe,
-                    "Водонагреватель": offer.water_heater,
-                    "Телевидение": offer.television,
-                    "Ванная комната": offer.bathroom,
-                    "Можно с животными": offer.pet_friendly,
-                    "Можно курить": offer.smoke,
-                    "Романтическая атмосфера": offer.romantic,
-                    "Джакузи": offer.jacuzzi,
-                    "Балкон": offer.balcony,
-                    "Лифт": offer.elevator
-                }
-
-                # Формируем список удобств, только если они True
-                amenities = [name for name, condition in amenities_dict.items() if condition]
-
-                # Преобразуем список удобств в строку
-                amenities_str = ", \n".join(amenities)
-
-                # Формируем сообщение с информацией о предложении
-                offer_message = f"Предложение: \n" \
-                                f"{offer.location.region}, {offer.location.locality_name}\n" \
-                                f"Адрес: {offer.location.address}\n" \
-                                f"Цена: {offer.price.value} {offer.price.currency}\n\n" \
-                                f"Удобства: {amenities_str}\n\n" \
-                                f"Депозит: {offer.price.deposit} {offer.price.deposit_currency}\n"
-
-                # Если есть главное фото, добавляем его в сообщение
-                if main_photo:
-                    bot.send_photo(chat_id, main_photo, caption=offer_message)
-                    bot.send_location(chat_id, offer.location.latitude, offer.location.longitude)
-                else:
-                    bot.send_location(chat_id, offer.location.latitude, offer.location.longitude)
-                    bot.send_message(chat_id, offer_message)
+            # Сохраняем предложения в user_data
+            user_data[chat_id]['offers'] = offers
+            user_data[chat_id]['current_offer_index'] = 0
+            send_offer_message(chat_id)
         else:
             bot.send_message(chat_id, "Извините, нет доступных предложений на указанные даты.")
     else:
         bot.send_message(chat_id, "Пожалуйста, предоставьте все необходимые данные.")
+
+
+# Отправляем текущее предложение
+def send_offer_message(chat_id):
+    current_offer_index = user_data[chat_id]['current_offer_index']
+    offers = user_data[chat_id]['offers']
+    offer = offers[current_offer_index]
+
+    main_photo = next((photo.url for photo in offer.photos if photo.is_main),
+                      offer.photos[0].url if offer.photos else None)
+
+    amenities_dict = {
+        "Стиральная машина": offer.washing_machine,
+        "Wi-Fi": offer.wi_fi,
+        "Телевизор": offer.tv,
+        "Кондиционер": offer.air_conditioner,
+        "Дружественно для детей": offer.kids_friendly,
+        "Разрешены вечеринки": offer.party,
+        "Холодильник": offer.refrigerator,
+        "Телефон": offer.phone,
+        "Плита": offer.stove,
+        "Посудомоечная машина": offer.dishwasher,
+        "Музыкальный центр": offer.music_center,
+        "Микроволновка": offer.microwave,
+        "Утюг": offer.iron,
+        "Консьерж": offer.concierge,
+        "Парковка": offer.parking,
+        "Сейф": offer.safe,
+        "Водонагреватель": offer.water_heater,
+        "Телевидение": offer.television,
+        "Ванная комната": offer.bathroom,
+        "Можно с животными": offer.pet_friendly,
+        "Можно курить": offer.smoke,
+        "Романтическая атмосфера": offer.romantic,
+        "Джакузи": offer.jacuzzi,
+        "Балкон": offer.balcony,
+        "Лифт": offer.elevator
+    }
+
+    # Фильтруем удобства, оставляем только те, которые True, и добавляем эмодзи
+    amenities = [f"{AMENITIES_EMOJI.get(name)} {name}" for name, condition in amenities_dict.items() if condition]
+
+    amenities_str = ", \n".join(amenities)
+
+    offer_message = f"Предложение: \n" \
+                    f"{offer.location.region}, {offer.location.locality_name}\n" \
+                    f"Адрес: {offer.location.address}\n" \
+                    f"Цена: {offer.price.value} {offer.price.currency}\n\n" \
+                    f"Удобства: {amenities_str}\n\n" \
+                    f"Депозит: {offer.price.deposit} {offer.price.deposit_currency}\n"
+
+    # Формируем кнопки для навигации
+    markup = types.InlineKeyboardMarkup()
+    next_button = types.InlineKeyboardButton("Далее", callback_data="next_offer")
+    markup.add(next_button)
+
+    # Отправляем сообщение с предложением
+    if main_photo:
+        bot.send_photo(chat_id, main_photo, caption=offer_message, reply_markup=markup)
+        bot.send_location(chat_id, offer.location.latitude, offer.location.longitude)
+    else:
+        bot.send_location(chat_id, offer.location.latitude, offer.location.longitude)
+        bot.send_message(chat_id, offer_message, reply_markup=markup)
+
+
+# Обработчик кнопки "Далее"
+@bot.callback_query_handler(func=lambda call: call.data == "next_offer")
+def handle_next_offer(call):
+    chat_id = call.message.chat.id
+    current_offer_index = user_data[chat_id]['current_offer_index']
+    offers = user_data[chat_id]['offers']
+
+    if current_offer_index + 1 < len(offers):
+        user_data[chat_id]['current_offer_index'] += 1
+        send_offer_message(chat_id)
+    else:
+        bot.send_message(chat_id, "Это было последнее предложение.")
 
 
 def check_calendars():
