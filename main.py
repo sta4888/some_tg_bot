@@ -18,6 +18,14 @@ bot = telebot.TeleBot(API_TOKEN)
 user_states = {}
 ITEMS_PER_PAGE = 5
 
+# Пример булевых полей
+BOOLEAN_FIELDS = [
+    'washing_machine', 'wi_fi', 'tv', 'air_conditioner', 'kids_friendly', 'party', 'refrigerator',
+    'phone', 'stove', 'dishwasher', 'music_center', 'microwave', 'iron', 'concierge', 'parking',
+    'safe', 'water_heater', 'television', 'bathroom', 'pet_friendly', 'smoke', 'romantic',
+    'jacuzzi', 'balcony', 'elevator'
+]
+
 
 # Обработчик команды /start
 @bot.message_handler(commands=['start'])
@@ -340,6 +348,8 @@ def handle_offer_selection(call):
             types.InlineKeyboardButton(text="спальных мест", callback_data=f"edit_sleeps_{offer.internal_id}"),
             types.InlineKeyboardButton(text="Отмена", callback_data="cancel_edit")
         )
+        # Отправляем список удобств с кнопками
+        markup = create_boolean_buttons(offer)
 
         bot.edit_message_text(
             chat_id=call.message.chat.id,
@@ -352,6 +362,40 @@ def handle_offer_selection(call):
         user_states[call.from_user.id] = {'offer_to_edit': offer}
     else:
         bot.send_message(call.message.chat.id, "Ошибка: Оффер не найден или не принадлежит вам.")
+
+
+def create_boolean_buttons(offer):
+    markup = types.InlineKeyboardMarkup()
+
+    # Для каждого булевого поля создаем кнопку
+    for field in BOOLEAN_FIELDS:
+        field_value = getattr(offer, field)
+        field_display = f"{field.replace('_', ' ').capitalize()} {'✅' if field_value else '❌'}"
+        button = types.InlineKeyboardButton(text=field_display, callback_data=f"toggle_{field}")
+        markup.add(button)
+
+    return markup
+
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith('toggle_'))
+def handle_toggle_field(call):
+    field = call.data.split('_')[1]
+    user_id = call.from_user.id
+    offer_id = user_states[user_id]['offer_id']
+
+    # Загружаем оффер из базы данных
+    offer = session.query(Offer).filter_by(id=offer_id).first()
+
+    # Переключаем значение поля
+    current_value = getattr(offer, field)
+    setattr(offer, field, not current_value)
+
+    # Сохраняем изменения в базе данных
+    session.commit()
+
+    # Обновляем кнопки с учетом изменения
+    markup = create_boolean_buttons(offer)
+    bot.edit_message_reply_markup(call.message.chat.id, call.message.message_id, reply_markup=markup)
 
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("edit_url_"))
