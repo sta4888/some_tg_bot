@@ -406,6 +406,7 @@ def handle_toggle_field(call):
     # Загружаем оффер из базы данных
     offer = session.query(Offer).filter_by(internal_id=offer_id).first()
     print(2)
+    print(field)
     # Переключаем значение поля
     current_value = getattr(offer, field)
     print(current_value)
