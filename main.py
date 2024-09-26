@@ -18,8 +18,10 @@ bot = telebot.TeleBot(API_TOKEN)
 
 # Словарь для хранения состояния пользователей
 user_states = {}
-ITEMS_PER_PAGE = 5
+
+# Количество кнопок на одной строке и на одной странице
 BUTTONS_PER_ROW = 3
+ITEMS_PER_PAGE = 9  # 9 кнопок на странице, 3 строки по 3 кнопки
 
 # Пример булевых полей
 BOOLEAN_FIELDS = [
@@ -318,13 +320,10 @@ def handle_pagination(call):
     bot.edit_message_reply_markup(call.message.chat.id, call.message.message_id, reply_markup=markup)
 
 
-# Количество кнопок на одной строке и на одной странице
-BUTTONS_PER_ROW = 3
-ITEMS_PER_PAGE = 9  # 9 кнопок на странице, 3 строки по 3 кнопки
 
 # Пример булевых полей
 BOOLEAN_FIELDS = {
-    'washing_machine': 'Стиральная машина', 'wi_fi': 'wi-fi', 'tv': 'Телевизор', 'air_conditioner': 'Кондиционер',
+    'washing_machine': 'Стиральная машина', 'wi-fi': 'wi-fi', 'tv': 'Телевизор', 'air_conditioner': 'Кондиционер',
     'kids_friendly': 'Можно с детьми', 'party': 'Для вечеринок', 'refrigerator': 'Холодильник',
     'phone': 'Телефон', 'stove': 'Плита', 'dishwasher': 'Посудомоечная машина', 'music_center': 'Музыкальный центр',
     'microwave': 'Микроволновая печь', 'iron': 'Утюг', 'concierge': 'Консьерж', 'parking': 'Парковка',
