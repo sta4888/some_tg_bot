@@ -332,7 +332,7 @@ def handle_offer_details(call):
     urls_to_check = [photo.url for photo in offer.photos if str(photo.url).startswith('http')]
     valid_urls = asyncio.run(check_media_links(urls_to_check))
 
-    for num, url in enumerate(valid_urls):
+    for num, url in enumerate(valid_urls[:7]):
         if num == 0:
             media_group.append(InputMediaPhoto(media=url, caption=offer_message))
         else:
@@ -343,7 +343,7 @@ def handle_offer_details(call):
 
     # Отправляем медиагруппу
     if media_group:
-        media_messages = bot.send_media_group(chat_id, media_group[:10])
+        media_messages = bot.send_media_group(chat_id, media_group)
 
     # Формируем кнопки для возврата к просмотру
     markup = types.InlineKeyboardMarkup()
