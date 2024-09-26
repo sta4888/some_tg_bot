@@ -320,15 +320,7 @@ def handle_offer_details(call):
 
     # Формируем сообщение с основными данными о предложении
     offer_message = f"Подробнее о предложении:\n" \
-                    f"Адрес: {offer.location.address}\n" \
-                    f"Цена: {offer.price.value} {offer.price.currency}\n" \
-                    f"Депозит: {offer.price.deposit} {offer.price.deposit_currency}\n\n" \
-                    f"Удобства:\n" \
-                    f"Стиральная машина: {'Да' if offer.washing_machine else 'Нет'}\n" \
-                    f"Wi-Fi: {'Да' if offer.wi_fi else 'Нет'}\n" \
-                    f"Кондиционер: {'Да' if offer.air_conditioner else 'Нет'}\n" \
-                    f"Телевизор: {'Да' if offer.tv else 'Нет'}\n" \
-                    f"Описание: {offer.description}\n\n"
+                    f"Описание: {offer.description[:4000]}\n\n"
 
 
     # Подготовка медиагруппы для отправки
