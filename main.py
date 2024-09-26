@@ -1,13 +1,15 @@
 import telebot
 
 from uuid import UUID
-from telebot import types
 from connect import session
 from models import User, Offer, XML_FEED
 from dotenv import load_dotenv
 import os
 import requests  # Добавим библиотеку для HTTP-запросов
 from service import parse_and_save_offer, qr_generate, get_referral_chain
+
+from math import ceil
+from telebot import types
 
 load_dotenv()
 
@@ -237,16 +239,6 @@ def handle_allrefstats(message):
         bot.send_message(message.chat.id, "Вы не зарегистрированы.")
 
 
-from math import ceil
-from telebot import types
-
-# Количество кнопок на одной странице
-ITEMS_PER_PAGE = 5
-
-# Состояние пользователя для пагинации
-user_states = {}
-
-
 @bot.message_handler(commands=['edit_offer'])
 def edit_offer(message):
     user = session.query(User).filter_by(telegram_id=message.from_user.id).first()
@@ -341,15 +333,16 @@ def handle_offer_selection(call):
         # )
 
         # Запрашиваем, что именно редактировать с помощью inline-кнопок
-        markup = types.InlineKeyboardMarkup()
+        # markup = types.InlineKeyboardMarkup()
+        # markup
+        # Отправляем список удобств с кнопками
+        markup = create_boolean_buttons(offer)
         markup.add(
             types.InlineKeyboardButton(text="URL", callback_data=f"edit_url_{offer.internal_id}"),
             types.InlineKeyboardButton(text="описание", callback_data=f"edit_description_{offer.internal_id}"),
             types.InlineKeyboardButton(text="спальных мест", callback_data=f"edit_sleeps_{offer.internal_id}"),
             types.InlineKeyboardButton(text="Отмена", callback_data="cancel_edit")
         )
-        # Отправляем список удобств с кнопками
-        markup = create_boolean_buttons(offer)
 
         bot.edit_message_text(
             chat_id=call.message.chat.id,
@@ -493,6 +486,7 @@ def handle_edit_choice(message):
     elif message.text == "Изменить описание":
         bot.send_message(message.chat.id, "Введите новое описание для этого оффера:")
         user_states[user_id]['editing_description'] = True
+        # fixme дописать про редактирование спальных мест
     elif message.text == "Отмена":
         del user_states[user_id]  # Удаляем состояние редактирования
         bot.send_message(message.chat.id, "Редактирование отменено.")
