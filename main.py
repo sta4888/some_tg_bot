@@ -334,7 +334,7 @@ def handle_offer_details(call):
 
     for num, url in enumerate(valid_urls):
         if num == 0:
-            InputMediaPhoto(media=url, caption=offer_message)
+            media_group.append(InputMediaPhoto(media=url, caption=offer_message))
         else:
             media_group.append(InputMediaPhoto(media=url))
 
@@ -343,7 +343,7 @@ def handle_offer_details(call):
 
     # Отправляем медиагруппу
     if media_group:
-        media_messages = bot.send_media_group(chat_id, media_group[:7])
+        media_messages = bot.send_media_group(chat_id, media_group[:10])
 
     # Формируем кнопки для возврата к просмотру
     markup = types.InlineKeyboardMarkup()
