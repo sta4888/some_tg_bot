@@ -19,6 +19,7 @@ bot = telebot.TeleBot(API_TOKEN)
 # Словарь для хранения состояния пользователей
 user_states = {}
 ITEMS_PER_PAGE = 5
+BUTTONS_PER_ROW = 3
 
 # Пример булевых полей
 BOOLEAN_FIELDS = [
@@ -319,10 +320,10 @@ def handle_pagination(call):
 
 # Пример булевых полей
 BOOLEAN_FIELDS = [
-    'washing_machine', 'wi_fi', 'tv', 'air_conditioner', 'kids_friendly', 'party', 'refrigerator',
-    'phone', 'stove', 'dishwasher', 'music_center', 'microwave', 'iron', 'concierge', 'parking',
-    'safe', 'water_heater', 'television', 'bathroom', 'pet_friendly', 'smoke', 'romantic',
-    'jacuzzi', 'balcony', 'elevator'
+    'Стиральная машина', 'wi-fi', 'Телевизор', 'Кондиционер', 'Можно с детьми', 'Для вечеринок', 'холодильник',
+    'телефон', 'плита', 'посудомойка', 'музыкальный центр', 'микроволновая печь', 'утюг', 'консьерж', 'стоянка',
+    'сейф', 'нагреватель воды', 'television', 'домашние животные', 'курение', 'романтический',
+    'джакузи', 'балкон', 'лифт'
 ]
 
 
@@ -361,23 +362,37 @@ def handle_offer_selection(call):
 def create_boolean_buttons(offer, page=0):
     markup = types.InlineKeyboardMarkup()
 
+    # ITEMS_PER_PAGE
+    # BUTTONS_PER_ROW
+
     # Определяем индекс начала и конца кнопок на текущей странице
     start_index = page * ITEMS_PER_PAGE
     end_index = start_index + ITEMS_PER_PAGE
     fields_on_page = BOOLEAN_FIELDS[start_index:end_index]
 
-    # Для каждого поля на текущей странице создаем кнопку
-    for field in fields_on_page:
+    # Создаем кнопки в три колонки (по 3 кнопки в строке)
+    row = []
+    for i, field in enumerate(fields_on_page):
         field_value = getattr(offer, field)
         field_display = f"{field.replace('_', ' ').capitalize()} {'✅' if field_value else '❌'}"
         button = types.InlineKeyboardButton(text=field_display, callback_data=f"toggle_{field}")
-        markup.add(button)
+        row.append(button)
+
+        # Если собрались 3 кнопки в строке или это последняя кнопка на странице, добавляем строку в разметку
+        if (i + 1) % BUTTONS_PER_ROW == 0 or i == len(fields_on_page) - 1:
+            markup.add(*row)
+            row = []
 
     # Добавляем кнопки для пагинации, если это не первая и не последняя страница
+    navigation_buttons = []
     if page > 0:
-        markup.add(types.InlineKeyboardButton(text="⬅️ Назад", callback_data=f"page_{page - 1}"))
+        navigation_buttons.append(types.InlineKeyboardButton(text="⬅️ Назад", callback_data=f"page_{page - 1}"))
     if end_index < len(BOOLEAN_FIELDS):
-        markup.add(types.InlineKeyboardButton(text="Вперед ➡️", callback_data=f"page_{page + 1}"))
+        navigation_buttons.append(types.InlineKeyboardButton(text="Вперед ➡️", callback_data=f"page_{page + 1}"))
+
+    # Добавляем пагинационные кнопки, если они есть
+    if navigation_buttons:
+        markup.add(*navigation_buttons)
 
     return markup
 
