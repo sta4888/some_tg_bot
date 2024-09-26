@@ -10,3 +10,4 @@ reportlab
 qrcode[pil]
 PyPDF2
 segno
+httpx

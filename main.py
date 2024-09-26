@@ -1,7 +1,9 @@
+import asyncio
 import datetime
 import re
 from pprint import pprint
 
+import httpx
 import telebot
 from sqlalchemy import distinct
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, InputMediaPhoto
@@ -192,6 +194,24 @@ def handle_bedrooms_selection(call):
 
 
 # Отправляем текущее предложение
+async def check_url(client, url):
+    try:
+        response = await client.head(url)
+        return response.status_code >= 200 and response.status_code < 300
+    except Exception as e:
+        print(f"Ошибка при проверке URL {url}: {e}")
+        return False
+
+
+async def check_media_links(urls):
+    valid_urls = []
+    async with httpx.AsyncClient() as client:
+        tasks = [check_url(client, url) for url in urls]
+        results = await asyncio.gather(*tasks)
+        valid_urls = [url for url, is_valid in zip(urls, results) if is_valid]
+    return valid_urls
+
+
 def send_offer_message(chat_id):
     current_offer_index = user_data[chat_id]['current_offer_index']
     offers = user_data[chat_id]['offers']
@@ -228,9 +248,7 @@ def send_offer_message(chat_id):
         "Лифт": offer.elevator
     }
 
-    # Фильтруем удобства, оставляем только те, которые True, и добавляем эмодзи
     amenities = [f"{AMENITIES_EMOJI.get(name)} {name}" for name, condition in amenities_dict.items() if condition]
-
     amenities_str = ", \n".join(amenities)
 
     offer_message = f"Предложение: \n" \
@@ -240,24 +258,21 @@ def send_offer_message(chat_id):
                     f"Удобства: {amenities_str}\n\n" \
                     f"Депозит: {offer.price.deposit} {offer.price.deposit_currency}\n"
 
-    # Формируем кнопки для навигации
     markup = types.InlineKeyboardMarkup()
     next_button = types.InlineKeyboardButton("Далее", callback_data="next_offer")
     markup.add(next_button)
 
-    print(f"--main_photo {main_photo}")
-    print(f"--main_photo[1] {offer.photos[1].url}")
     # Подготовка медиагруппы для отправки
     media_group = []
     if main_photo:
         media_group.append(InputMediaPhoto(media=main_photo, caption=offer_message))
 
     # Добавляем остальные фото в медиагруппу
-    for photo in offer.photos:
-        print(f"--photo.url {photo.url}")
-        if photo.url != main_photo and str(photo.url).startswith('http'):  # Исключаем основное фото
-            print(f"!!! --photo.url {photo.url}")
-            media_group.append(InputMediaPhoto(media=photo.url))
+    urls_to_check = [photo.url for photo in offer.photos if str(photo.url).startswith('http')]
+    valid_urls = asyncio.run(check_media_links(urls_to_check))
+
+    for url in valid_urls:
+        media_group.append(InputMediaPhoto(media=url))
 
     # Отправляем сообщение с предложением
     if main_photo:
