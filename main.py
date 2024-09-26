@@ -337,7 +337,7 @@ def create_boolean_buttons(offer, page=0):
     for i, (field, display_name) in enumerate(fields_on_page):
         field_value = getattr(offer, field)
         field_display = f"{display_name} {'✅' if field_value else '❌'}"
-        button = types.InlineKeyboardButton(text=field_display, callback_data=f"toggle_{field}")
+        button = types.InlineKeyboardButton(text=field_display, callback_data=f"toggle_{field}_{page}")
         row.append(button)
 
         if (i + 1) % BUTTONS_PER_ROW == 0 or i == len(fields_on_page) - 1:
@@ -386,7 +386,7 @@ def handle_offer_selection(call):
     if offer and offer.creator.telegram_id == call.from_user.id:
         # Показываем кнопки редактирования
         update_offer_buttons(call, offer)
-        user_states[call.from_user.id] = {'offer_to_edit': offer}
+        user_states[call.from_user.id] = {'offer_to_edit': offer, 'current_page': 0}  # Инициализация текущей страницы
     else:
         bot.send_message(call.message.chat.id, "Ошибка: Оффер не найден или не принадлежит вам.")
 
@@ -394,7 +394,8 @@ def handle_offer_selection(call):
 # Обработка переключения булевого поля
 @bot.callback_query_handler(func=lambda call: call.data.startswith('toggle_'))
 def handle_toggle_field(call):
-    field = call.data.replace('toggle_', '')
+    field, page = call.data.replace('toggle_', '')
+    page = int(page)  # Преобразуем страницу в целое число
     user_id = call.from_user.id
     offer_id = user_states[user_id]['offer_to_edit'].internal_id
 
@@ -408,8 +409,8 @@ def handle_toggle_field(call):
     # Сохраняем изменения в базе данных
     session.commit()
 
-    # Обновляем кнопки с учетом изменения
-    update_offer_buttons(call, offer)
+    # Обновляем кнопки с учетом изменения, оставаясь на той же странице
+    update_offer_buttons(call, offer, page)
 
 
 # Обработка пагинации
