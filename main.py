@@ -245,9 +245,12 @@ def send_offer_message(chat_id):
     next_button = types.InlineKeyboardButton("Далее", callback_data="next_offer")
     markup.add(next_button)
 
+    print(f"--main_photo {main_photo}")
+    print(f"--main_photo[1] {offer.photos[1].url}")
+
     # Отправляем сообщение с предложением
     if main_photo:
-        bot.send_photo(chat_id, [main_photo, offer.photos[1].url], caption=offer_message, reply_markup=markup)
+        bot.send_photo(chat_id, [main_photo], caption=offer_message, reply_markup=markup)
         bot.send_location(chat_id, offer.location.latitude, offer.location.longitude)
     else:
         bot.send_location(chat_id, offer.location.latitude, offer.location.longitude)
