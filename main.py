@@ -214,6 +214,8 @@ async def check_media_links(urls):
     return valid_urls
 
 
+################################################################################################
+
 # Отправляем текущее предложение и сохраняем message_id
 def send_offer_message(chat_id):
     current_offer_index = user_data[chat_id]['current_offer_index']
@@ -332,9 +334,21 @@ def handle_offer_details(call):
     return_button = types.InlineKeyboardButton("Вернуться к просмотру", callback_data="back_to_offers")
     markup.add(return_button)
 
+    # Удаляем сообщение с предложением и отправляем подробности
+    bot.delete_message(chat_id, call.message.message_id)
     bot.send_message(chat_id, details_message, reply_markup=markup)
 
 
+# Обработчик кнопки "Вернуться к просмотру"
+@bot.callback_query_handler(func=lambda call: call.data == "back_to_offers")
+def handle_back_to_offers(call):
+    chat_id = call.message.chat.id
+    # Возвращаемся к просмотру текущего оффера
+    send_offer_message(chat_id)
+    bot.delete_message(chat_id, call.message.message_id)  # Удаляем сообщение с подробностями
+
+
+################################################################################################
 # Обработчик кнопки "Вернуться к просмотру"
 @bot.callback_query_handler(func=lambda call: call.data == "back_to_offers")
 def handle_back_to_offers(call):
