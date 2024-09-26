@@ -294,28 +294,30 @@ def contact_host(call):
     current_offer_index = user_data[chat_id]['current_offer_index']
     offer = user_data[chat_id]['offers'][current_offer_index]
     print("--offer", offer)
+    print("--user", offer.user.uuid)
+    print("--username", offer.user.username)
     print("--#--#--", user_data[chat_id])
 
-    # host = offer.host  # Предположим, что у предложения есть хост, связанный с моделью User
+    host = offer.user  # Предположим, что у предложения есть хост, связанный с моделью User
 
-    # # Если у хоста есть username в Telegram, то используем его
-    # if host.username:
-    #     host_chat_link = f"tg://resolve?domain={host.username}"
-    # else:
-    #     # Иначе используем chat_id для перехода в личный чат
-    #     host_chat_link = f"tg://user?id={host.telegram_id}"
-    #
-    # # Отправляем сообщение пользователю с ссылкой на чат с хостом
-    # bot.send_message(chat_id, f"Свяжитесь с хостом по следующей ссылке: {host_chat_link}")
-    #
-    # # Отправляем хосту сообщение с оффером
-    # offer_message = f"Пользователь интересуется вашим предложением: \n" \
-    #                 f"{offer.location.region}, {offer.location.locality_name}\n" \
-    #                 f"Адрес: {offer.location.address}\n" \
-    #                 f"Цена: {offer.price.value} {offer.price.currency}\n\n"
-    #
-    # bot.send_message(host.telegram_id, f"У вас новый запрос от пользователя {call.from_user.first_name}")
-    # bot.send_message(host.telegram_id, offer_message)
+    # Если у хоста есть username в Telegram, то используем его
+    if host.username:
+        host_chat_link = f"tg://resolve?domain={host.username}"
+    else:
+        # Иначе используем chat_id для перехода в личный чат
+        host_chat_link = f"tg://user?id={host.telegram_id}"
+
+    # Отправляем сообщение пользователю с ссылкой на чат с хостом
+    bot.send_message(chat_id, f"Свяжитесь с хостом по следующей ссылке: {host_chat_link}")
+
+    # Отправляем хосту сообщение с оффером
+    offer_message = f"Пользователь интересуется вашим предложением: \n" \
+                    f"{offer.location.region}, {offer.location.locality_name}\n" \
+                    f"Адрес: {offer.location.address}\n" \
+                    f"Цена: {offer.price.value} {offer.price.currency}\n\n"
+
+    bot.send_message(host.telegram_id, f"У вас новый запрос от пользователя {call.from_user.first_name}")
+    bot.send_message(host.telegram_id, offer_message)
 
 
 # Обработчик кнопки "Назад"
