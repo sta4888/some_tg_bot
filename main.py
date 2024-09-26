@@ -394,7 +394,7 @@ def handle_offer_selection(call):
 # Обработка переключения булевого поля
 @bot.callback_query_handler(func=lambda call: call.data.startswith('toggle_'))
 def handle_toggle_field(call):
-    field, page = call.data.replace('toggle_', '')
+    field, page = call.data.replace('toggle_', '').rsplit('_', 1)
     page = int(page)  # Преобразуем страницу в целое число
     user_id = call.from_user.id
     offer_id = user_states[user_id]['offer_to_edit'].internal_id
