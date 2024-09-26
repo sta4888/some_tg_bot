@@ -318,43 +318,79 @@ def handle_offer_details(call):
     current_offer_index = user_data[chat_id]['current_offer_index']
     offer = user_data[chat_id]['offers'][current_offer_index]
 
-    print("offer.description", len(offer.description))
+    # Удаляем предыдущее сообщение с предложением
+    bot.delete_message(chat_id, call.message.message_id)
 
-    # Формируем сообщение с основными данными о предложении
-    offer_message = f"Подробнее о предложении:\n" \
-                    f"Описание: {offer.description}\n\n"
-
-    print("offer_message", len(offer_message))
-
-    # Подготовка медиагруппы для отправки
+    # 1. Отправляем медиагруппу с фотографиями
     media_group = []
-    # Проверяем и добавляем остальные фото в медиагруппу
     urls_to_check = [photo.url for photo in offer.photos if str(photo.url).startswith('http')]
     valid_urls = asyncio.run(check_media_links(urls_to_check))
 
-    for num, url in enumerate(valid_urls[:7]):
-        if num == 0:
-            media_group.append(InputMediaPhoto(media=url, caption=offer_message))
-        else:
-            media_group.append(InputMediaPhoto(media=url))
+    for url in valid_urls[:7]:
+        media_group.append(InputMediaPhoto(media=url))
 
-    # Удаляем сообщение с предложением
-    bot.delete_message(chat_id, call.message.message_id)
-
-    # Отправляем медиагруппу
     if media_group:
         media_messages = bot.send_media_group(chat_id, media_group)
+        # Сохраняем ID сообщений с медиафайлами
+        user_data[chat_id]['last_media_messages'] = [msg.message_id for msg in media_messages]
 
-    # Формируем кнопки для возврата к просмотру
+    # 2. Отправляем сообщение с удобствами
+    amenities_dict = {
+        "Стиральная машина": offer.washing_machine,
+        "Wi-Fi": offer.wi_fi,
+        "Телевизор": offer.tv,
+        "Кондиционер": offer.air_conditioner,
+        "Дружественно для детей": offer.kids_friendly,
+        "Разрешены вечеринки": offer.party,
+        "Холодильник": offer.refrigerator,
+        "Телефон": offer.phone,
+        "Плита": offer.stove,
+        "Посудомоечная машина": offer.dishwasher,
+        "Музыкальный центр": offer.music_center,
+        "Микроволновка": offer.microwave,
+        "Утюг": offer.iron,
+        "Консьерж": offer.concierge,
+        "Парковка": offer.parking,
+        "Сейф": offer.safe,
+        "Водонагреватель": offer.water_heater,
+        "Телевидение": offer.television,
+        "Ванная комната": offer.bathroom,
+        "Можно с животными": offer.pet_friendly,
+        "Можно курить": offer.smoke,
+        "Романтическая атмосфера": offer.romantic,
+        "Джакузи": offer.jacuzzi,
+        "Балкон": offer.balcony,
+        "Лифт": offer.elevator
+    }
+
+    amenities = [f"{AMENITIES_EMOJI.get(name)} {name}" for name, condition in amenities_dict.items() if condition]
+    amenities_str = ", ".join(amenities)
+
+    amenities_message = f"Удобства: {amenities_str}"
+    amenities_msg = bot.send_message(chat_id, amenities_message)
+
+    # 3. Отправляем сообщение с описанием
+    description_message = f"Описание: {offer.description}"
+    description_msg = bot.send_message(chat_id, description_message)
+
+    # 4. Отправляем сообщение с локацией
+    location_message = f"Локация: {offer.location.region}, {offer.location.locality_name}\nАдрес: {offer.location.address}"
+    location_msg = bot.send_message(chat_id, location_message)
+
+    # Сохраняем ID сообщений для последующего удаления
+    user_data[chat_id]['last_details_messages'] = [
+        amenities_msg.message_id,
+        description_msg.message_id,
+        location_msg.message_id
+    ]
+
+    # Добавляем кнопку для возврата к просмотру
     markup = types.InlineKeyboardMarkup()
     return_button = types.InlineKeyboardButton("Вернуться к просмотру", callback_data="back_to_offers")
     markup.add(return_button)
 
-    # Отправляем сообщение с кнопками и сохраняем ID сообщений
+    # Отправляем сообщение с кнопками
     buttons_message = bot.send_message(chat_id, "Выберите действие:", reply_markup=markup)
-
-    # Сохраняем ID сообщений для последующего удаления
-    user_data[chat_id]['last_media_messages'] = [msg.message_id for msg in media_messages]
     user_data[chat_id]['last_buttons_message'] = buttons_message.message_id
 
 
@@ -363,24 +399,19 @@ def handle_offer_details(call):
 def handle_back_to_offers(call):
     chat_id = call.message.chat.id
 
-    # Удаляем последнее сообщение с кнопками
+    # Удаляем сообщение с кнопками
     bot.delete_message(chat_id, user_data[chat_id]['last_buttons_message'])
 
-    # Удаляем все сообщения медиагруппы
+    # Удаляем все сообщения с медиафайлами
     for msg_id in user_data[chat_id]['last_media_messages']:
         bot.delete_message(chat_id, msg_id)
 
-    # Возвращаемся к просмотру текущего оффера
-    send_offer_message(chat_id)
+    # Удаляем сообщения с удобствами, описанием и локацией
+    for msg_id in user_data[chat_id]['last_details_messages']:
+        bot.delete_message(chat_id, msg_id)
 
-
-# Обработчик кнопки "Вернуться к просмотру"
-@bot.callback_query_handler(func=lambda call: call.data == "back_to_offers")
-def handle_back_to_offers(call):
-    chat_id = call.message.chat.id
-    # Возвращаемся к просмотру текущего оффера
+    # Возвращаемся к просмотру текущего предложения
     send_offer_message(chat_id)
-    bot.delete_message(chat_id, call.message.message_id)  # Удаляем сообщение с подробностями
 
 
 ################################################################################################
