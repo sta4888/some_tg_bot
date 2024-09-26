@@ -215,7 +215,6 @@ async def check_media_links(urls):
 
 
 ################################################################################################
-
 # Отправляем текущее предложение и сохраняем message_id
 def send_offer_message(chat_id):
     current_offer_index = user_data[chat_id]['current_offer_index']
@@ -272,8 +271,15 @@ def send_offer_message(chat_id):
     back_button = types.InlineKeyboardButton("Назад", callback_data="previous_offer")
     details_button = types.InlineKeyboardButton("Подробнее", callback_data="offer_details")
 
-    # Добавляем кнопку для связи с хостом
-    contact_host_button = types.InlineKeyboardButton("Связь с хостом", callback_data="contact_host")
+    # Формируем ссылку на чат с хостом
+    host = session.query(User).get(offer.created_by)  # Предполагается, что у предложения есть поле host
+    if host.username:
+        host_chat_link = f"tg://resolve?domain={host.username}"
+    else:
+        host_chat_link = f"tg://user?id={host.telegram_id}"
+
+    # Добавляем кнопку для связи с хостом с ссылкой
+    contact_host_button = types.InlineKeyboardButton("Связь с хостом", url=host_chat_link)
 
     markup.add(back_button, next_button, details_button)
     markup.add(contact_host_button)
