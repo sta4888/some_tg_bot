@@ -287,7 +287,7 @@ def send_offer_message(chat_id):
         # bot.send_location(chat_id, offer.location.latitude, offer.location.longitude)
         # Отправляем медиагруппу
         if media_group:
-            bot.send_media_group(chat_id, media_group[:2])
+            bot.send_media_group(chat_id, media_group[:3])
     else:
         bot.send_location(chat_id, offer.location.latitude, offer.location.longitude)
         bot.send_message(chat_id, offer_message, reply_markup=markup)
