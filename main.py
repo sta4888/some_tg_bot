@@ -2,7 +2,7 @@ import telebot
 
 from uuid import UUID
 from connect import session
-from models import User, Offer, XML_FEED
+from models import User, Offer, XML_FEED, Photo, SalesAgent
 from dotenv import load_dotenv
 import os
 import requests  # Добавим библиотеку для HTTP-запросов
@@ -366,7 +366,11 @@ def update_offer_buttons(call, offer, page=0):
         types.InlineKeyboardButton(text="URL", callback_data=f"edit_url_{offer.internal_id}"),
         types.InlineKeyboardButton(text="описание", callback_data=f"edit_description_{offer.internal_id}"),
         types.InlineKeyboardButton(text="спальных мест", callback_data=f"edit_sleeps_{offer.internal_id}"),
-        types.InlineKeyboardButton(text="Отмена", callback_data="cancel_edit")
+        types.InlineKeyboardButton(text="Изменить цену", callback_data=f"edit_price_{offer.internal_id}"),
+        types.InlineKeyboardButton(text="Изменить агента", callback_data=f"edit_sales_agent_{offer.internal_id}"),
+        types.InlineKeyboardButton(text="Изменить площадь", callback_data=f"edit_area_{offer.internal_id}"),
+        types.InlineKeyboardButton(text="Изменить фото", callback_data=f"edit_photos_{offer.internal_id}"),
+        types.InlineKeyboardButton(text="Отмена", callback_data="cancel_edit"),
     )
 
     bot.edit_message_text(
@@ -375,6 +379,73 @@ def update_offer_buttons(call, offer, page=0):
         text=offer_details + "\n\nЧто вы хотите изменить?",
         reply_markup=markup
     )
+
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith("edit_price_"))
+def handle_edit_price(call):
+    internal_id = call.data.split("_")[2]
+    offer = session.query(Offer).filter_by(internal_id=str(internal_id)).first()
+
+    if offer:
+        bot.send_message(call.message.chat.id,
+                         "Введите новую цену и валюту в формате 'значение валюта' (например, '1000 USD').")
+        user_states[call.from_user.id] = {'offer_to_edit': offer, 'edit_type': 'price'}
+    else:
+        bot.send_message(call.message.chat.id, "Ошибка: Оффер не найден.")
+
+
+def get_agents():
+    return session.query(SalesAgent).all()
+
+
+# Обработка редактирования агента
+@bot.callback_query_handler(func=lambda call: call.data.startswith("edit_sales_agent_"))
+def handle_edit_sales_agent(call):
+    internal_id = call.data.split("_")[2]
+    offer = session.query(Offer).filter_by(internal_id=str(internal_id)).first()
+
+    if offer:
+        # Предположим, что у вас есть функция для получения списка агентов
+        agents = get_agents()  # Замените на вашу функцию
+        markup = types.InlineKeyboardMarkup()
+        for agent in agents:
+            markup.add(
+                types.InlineKeyboardButton(text=agent.name, callback_data=f"set_agent_{agent.id}_{offer.internal_id}"))
+        bot.send_message(call.message.chat.id, "Выберите агента:", reply_markup=markup)
+    else:
+        bot.send_message(call.message.chat.id, "Ошибка: Оффер не найден.")
+
+
+# Обработка редактирования площади
+@bot.callback_query_handler(func=lambda call: call.data.startswith("edit_area_"))
+def handle_edit_area(call):
+    internal_id = call.data.split("_")[2]
+    offer = session.query(Offer).filter_by(internal_id=str(internal_id)).first()
+
+    if offer:
+        bot.send_message(call.message.chat.id,
+                         "Введите новую площадь в формате 'значение единица' (например, '50 m2').")
+        user_states[call.from_user.id] = {'offer_to_edit': offer, 'edit_type': 'area'}
+    else:
+        bot.send_message(call.message.chat.id, "Ошибка: Оффер не найден.")
+
+
+# Обработка редактирования фотографий
+@bot.callback_query_handler(func=lambda call: call.data.startswith("edit_photos_"))
+def handle_edit_photos(call):
+    internal_id = call.data.split("_")[2]
+    offer = session.query(Offer).filter_by(internal_id=str(internal_id)).first()
+
+    if offer:
+        # Предположим, что у вас есть функция для получения списка фотографий
+        markup = types.InlineKeyboardMarkup()
+        for photo in offer.photos:
+            markup.add(types.InlineKeyboardButton(text="Удалить " + photo.url,
+                                                  callback_data=f"delete_photo_{photo.id}_{offer.internal_id}"))
+        markup.add(types.InlineKeyboardButton(text="Добавить фото", callback_data=f"add_photo_{offer.internal_id}"))
+        bot.send_message(call.message.chat.id, "Выберите фото для удаления или добавьте новое:", reply_markup=markup)
+    else:
+        bot.send_message(call.message.chat.id, "Ошибка: Оффер не найден.")
 
 
 # Обработка выбора оффера для редактирования
@@ -487,6 +558,77 @@ def handle_cancel_edit(call):
         text="Редактирование оффера отменено."
     )
     user_states.pop(call.from_user.id, None)  # Удаляем состояние пользователя
+
+
+@bot.message_handler(func=lambda message: message.from_user.id in user_states)
+def handle_text(message):
+    user_id = message.from_user.id
+    offer = user_states[user_id].get('offer_to_edit')
+    edit_type = user_states[user_id].get('edit_type')
+
+    if edit_type == 'price':
+        try:
+            value, currency = message.text.split()
+            value = float(value)
+            offer.price.value = value
+            offer.price.currency = currency
+            session.commit()
+            bot.send_message(user_id, "Цена успешно обновлена.")
+        except Exception as e:
+            bot.send_message(user_id,
+                             "Ошибка при обновлении цены. Убедитесь, что вы ввели данные в правильном формате.")
+        finally:
+            del user_states[user_id]  # Удаляем состояние пользователя после завершения
+
+    elif edit_type == 'area':
+        try:
+            value, unit = message.text.split()
+            value = float(value)
+            offer.area.value = value
+            offer.area.unit = unit
+            session.commit()
+            bot.send_message(user_id, "Площадь успешно обновлена.")
+        except Exception as e:
+            bot.send_message(user_id,
+                             "Ошибка при обновлении площади. Убедитесь, что вы ввели данные в правильном формате.")
+        finally:
+            del user_states[user_id]  # Удаляем состояние пользователя после завершения
+
+
+# Обработка выбора агента
+@bot.callback_query_handler(func=lambda call: call.data.startswith("set_agent_"))
+def handle_set_agent(call):
+    agent_id, internal_id = call.data.split("_")[2:4]
+    offer = session.query(Offer).filter_by(internal_id=str(internal_id)).first()
+
+    if offer:
+        offer.sales_agent_id = agent_id
+        session.commit()
+        bot.send_message(call.message.chat.id, "Агент успешно обновлён.")
+    else:
+        bot.send_message(call.message.chat.id, "Ошибка: Оффер не найден.")
+
+
+# Обработка добавления и удаления фотографий
+@bot.callback_query_handler(func=lambda call: call.data.startswith("add_photo_"))
+def handle_add_photo(call):
+    internal_id = call.data.split("_")[2]
+    # Здесь можно реализовать логику для загрузки нового фото (например, через URL или файл)
+    # Необходимо добавить код для обработки загрузки фото
+
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith("delete_photo_"))
+def handle_delete_photo(call):
+    photo_id, internal_id = call.data.split("_")[2:4]
+    offer = session.query(Offer).filter_by(internal_id=str(internal_id)).first()
+    photo = session.query(Photo).filter_by(id=photo_id).first()
+
+    if offer and photo:
+        session.delete(photo)
+        session.commit()
+        bot.send_message(call.message.chat.id, "Фото успешно удалено.")
+    else:
+        bot.send_message(call.message.chat.id, "Ошибка: Фото не найдено.")
 
 
 @bot.message_handler(
