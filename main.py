@@ -318,16 +318,21 @@ def handle_pagination(call):
     bot.edit_message_reply_markup(call.message.chat.id, call.message.message_id, reply_markup=markup)
 
 
+# Количество кнопок на одной строке и на одной странице
+BUTTONS_PER_ROW = 3
+ITEMS_PER_PAGE = 9  # 9 кнопок на странице, 3 строки по 3 кнопки
+
 # Пример булевых полей
-BOOLEAN_FIELDS = [
-    'Стиральная машина', 'wi-fi', 'Телевизор', 'Кондиционер', 'Можно с детьми', 'Для вечеринок', 'холодильник',
-    'телефон', 'плита', 'посудомойка', 'музыкальный центр', 'микроволновая печь', 'утюг', 'консьерж', 'стоянка',
-    'сейф', 'нагреватель воды', 'television', 'домашние животные', 'курение', 'романтический',
-    'джакузи', 'балкон', 'лифт'
-]
+BOOLEAN_FIELDS = {
+    'washing_machine': 'Стиральная машина', 'wi_fi': 'wi-fi', 'tv': 'Телевизор', 'air_conditioner': 'Кондиционер',
+    'kids_friendly': 'Можно с детьми', 'party': 'Для вечеринок', 'refrigerator': 'Холодильник',
+    'phone': 'Телефон', 'stove': 'Плита', 'dishwasher': 'Посудомоечная машина', 'music_center': 'Музыкальный центр',
+    'microwave': 'Микроволновая печь', 'iron': 'Утюг', 'concierge': 'Консьерж', 'parking': 'Парковка',
+    'safe': 'Сейф', 'water_heater': 'Нагреватель воды', 'pet_friendly': 'Домашние животные', 'smoke': 'Курение',
+    'romantic': 'Романтический', 'jacuzzi': 'Джакузи', 'balcony': 'Балкон', 'elevator': 'Лифт'
+}
 
 
-# Обработка выбора оффера для редактирования
 # Обработка выбора оффера для редактирования
 @bot.callback_query_handler(func=lambda call: call.data.startswith("edit_offer_"))
 def handle_offer_selection(call):
@@ -337,7 +342,6 @@ def handle_offer_selection(call):
     if offer and offer.creator.telegram_id == call.from_user.id:
         # Отправляем текущее состояние оффера
         offer_details = f"Текущий оффер:\nID: {offer.internal_id}\nURL: {offer.url_to}\nОписание: {offer.description}"
-        # Начинаем с первой страницы (page=0)
         markup = create_boolean_buttons(offer, page=0)
         markup.add(
             types.InlineKeyboardButton(text="URL", callback_data=f"edit_url_{offer.internal_id}"),
@@ -362,19 +366,16 @@ def handle_offer_selection(call):
 def create_boolean_buttons(offer, page=0):
     markup = types.InlineKeyboardMarkup()
 
-    # ITEMS_PER_PAGE
-    # BUTTONS_PER_ROW
-
     # Определяем индекс начала и конца кнопок на текущей странице
     start_index = page * ITEMS_PER_PAGE
     end_index = start_index + ITEMS_PER_PAGE
-    fields_on_page = BOOLEAN_FIELDS[start_index:end_index]
+    fields_on_page = list(BOOLEAN_FIELDS.items())[start_index:end_index]
 
     # Создаем кнопки в три колонки (по 3 кнопки в строке)
     row = []
-    for i, field in enumerate(fields_on_page):
+    for i, (field, display_name) in enumerate(fields_on_page):
         field_value = getattr(offer, field)
-        field_display = f"{field.replace('_', ' ').capitalize()} {'✅' if field_value else '❌'}"
+        field_display = f"{display_name} {'✅' if field_value else '❌'}"
         button = types.InlineKeyboardButton(text=field_display, callback_data=f"toggle_{field}")
         row.append(button)
 
