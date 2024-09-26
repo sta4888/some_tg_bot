@@ -197,6 +197,7 @@ def send_offer_message(chat_id):
     offers = user_data[chat_id]['offers']
     offer = offers[current_offer_index]
 
+    # Получаем основной фото
     main_photo = next((photo.url for photo in offer.photos if photo.is_main),
                       offer.photos[0].url if offer.photos else None)
 
@@ -230,7 +231,6 @@ def send_offer_message(chat_id):
 
     # Фильтруем удобства, оставляем только те, которые True, и добавляем эмодзи
     amenities = [f"{AMENITIES_EMOJI.get(name)} {name}" for name, condition in amenities_dict.items() if condition]
-
     amenities_str = ", \n".join(amenities)
 
     offer_message = f"Предложение: \n" \
@@ -245,13 +245,18 @@ def send_offer_message(chat_id):
     next_button = types.InlineKeyboardButton("Далее", callback_data="next_offer")
     markup.add(next_button)
 
-    # Отправляем сообщение с предложением
-    if main_photo:
-        bot.send_photo(chat_id, main_photo, caption=offer_message, reply_markup=markup)
-        bot.send_location(chat_id, offer.location.latitude, offer.location.longitude)
-    else:
-        bot.send_location(chat_id, offer.location.latitude, offer.location.longitude)
-        bot.send_message(chat_id, offer_message, reply_markup=markup)
+    # Собираем изображения для отправки в галерее
+    media = [types.InputMediaPhoto(photo.url) for photo in offer.photos]
+
+    # Отправляем галерею изображений
+    if media:
+        bot.send_media_group(chat_id, media)
+
+    # Отправляем сообщение с информацией о предложении
+    bot.send_message(chat_id, offer_message, reply_markup=markup)
+
+    # Отправляем местоположение, если нужно
+    bot.send_location(chat_id, offer.location.latitude, offer.location.longitude)
 
 
 # Обработчик кнопки "Далее"
