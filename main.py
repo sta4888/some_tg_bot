@@ -16,6 +16,7 @@ bot = telebot.TeleBot(API_TOKEN)
 
 # Словарь для хранения состояния пользователей
 user_states = {}
+ITEMS_PER_PAGE = 5
 
 
 # Обработчик команды /start
@@ -228,7 +229,16 @@ def handle_allrefstats(message):
         bot.send_message(message.chat.id, "Вы не зарегистрированы.")
 
 
-# Обработка команды для редактирования оффера
+from math import ceil
+from telebot import types
+
+# Количество кнопок на одной странице
+ITEMS_PER_PAGE = 5
+
+# Состояние пользователя для пагинации
+user_states = {}
+
+
 @bot.message_handler(commands=['edit_offer'])
 def edit_offer(message):
     user = session.query(User).filter_by(telegram_id=message.from_user.id).first()
@@ -243,18 +253,68 @@ def edit_offer(message):
         bot.send_message(message.chat.id, "У вас нет офферов для редактирования.")
         return
 
-    # Инициализируем состояние пользователя, если оно еще не существует
+    # Инициализируем состояние пользователя для пагинации
     if message.from_user.id not in user_states:
         user_states[message.from_user.id] = {}
 
-    # Отправляем пользователю список офферов с кнопками
+    # Устанавливаем текущую страницу в 1, если не указано иное
+    user_states[message.from_user.id]['page'] = 1
+
+    # Отправляем список офферов с пагинацией
+    markup = paginate_buttons(offers, page=1)
+    bot.send_message(message.chat.id, "Выберите оффер для редактирования:", reply_markup=markup)
+
+
+def paginate_buttons(offers, page=1):
     markup = types.InlineKeyboardMarkup()
-    for offer in offers:
-        button = types.InlineKeyboardButton(text=f"Оффер {offer.internal_id}",
-                                            callback_data=f"edit_offer_{offer.internal_id}")
+
+    # Определяем стартовый и конечный индексы для текущей страницы
+    start_index = (page - 1) * ITEMS_PER_PAGE
+    end_index = start_index + ITEMS_PER_PAGE
+
+    # Создаем кнопки для офферов на текущей странице
+    for offer in offers[start_index:end_index]:
+        button = types.InlineKeyboardButton(
+            text=f"Объект {offer.internal_id} {offer.location.address}",
+            callback_data=f"edit_offer_{offer.internal_id}"
+        )
         markup.add(button)
 
-    bot.send_message(message.chat.id, "Выберите оффер для редактирования:", reply_markup=markup)
+    # Добавляем кнопки "Назад" и "Вперед" для переключения страниц
+    total_pages = ceil(len(offers) / ITEMS_PER_PAGE)
+
+    pagination_buttons = []
+    if page > 1:
+        pagination_buttons.append(
+            types.InlineKeyboardButton(
+                text="⬅️ Назад", callback_data=f"prev_page_{page - 1}"
+            )
+        )
+    if page < total_pages:
+        pagination_buttons.append(
+            types.InlineKeyboardButton(
+                text="Вперед ➡️", callback_data=f"next_page_{page + 1}"
+            )
+        )
+
+    if pagination_buttons:
+        markup.add(*pagination_buttons)
+
+    return markup
+
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith(('prev_page_', 'next_page_')))
+def handle_pagination(call):
+    page = int(call.data.split('_')[-1])  # Определяем номер страницы из callback_data
+    user = session.query(User).filter_by(telegram_id=call.from_user.id).first()
+    offers = session.query(Offer).filter_by(created_by=user.id).all()
+
+    # Обновляем страницу пользователя в user_states
+    user_states[call.from_user.id]['page'] = page
+
+    # Обновляем кнопки с офферами для новой страницы
+    markup = paginate_buttons(offers, page=page)
+    bot.edit_message_reply_markup(call.message.chat.id, call.message.message_id, reply_markup=markup)
 
 
 # Обработка выбора оффера для редактирования
