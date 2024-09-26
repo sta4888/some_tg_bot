@@ -326,7 +326,7 @@ def handle_offer_details(call):
     urls_to_check = [photo.url for photo in offer.photos if str(photo.url).startswith('http')]
     valid_urls = asyncio.run(check_media_links(urls_to_check))
 
-    for url in valid_urls[:7]:
+    for url in valid_urls[:10]:
         media_group.append(InputMediaPhoto(media=url))
 
     if media_group:
@@ -366,8 +366,7 @@ def handle_offer_details(call):
     amenities = [f"{AMENITIES_EMOJI.get(name)} {name}" for name, condition in amenities_dict.items() if condition]
     amenities_str = ", ".join(amenities)
 
-    amenities_message = f"Удобства: {amenities_str}"
-    amenities_msg = bot.send_message(chat_id, amenities_message)
+
 
     # 3. Отправляем сообщение с описанием
     description_message = f"Описание: {offer.description}"
@@ -375,7 +374,10 @@ def handle_offer_details(call):
 
     # 4. Отправляем сообщение с локацией
     location_message = f"Локация: {offer.location.region}, {offer.location.locality_name}\nАдрес: {offer.location.address}"
-    location_msg = bot.send_message(chat_id, location_message)
+    location_msg = bot.send_location(chat_id, offer.location.latitude, offer.location.longitude)
+
+    amenities_message = f"Удобства: {amenities_str}\n {location_message}"
+    amenities_msg = bot.send_message(chat_id, amenities_message)
 
     # Сохраняем ID сообщений для последующего удаления
     user_data[chat_id]['last_details_messages'] = [
