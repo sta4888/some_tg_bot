@@ -4,7 +4,7 @@ from pprint import pprint
 
 import telebot
 from sqlalchemy import distinct
-from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
+from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, InputMediaPhoto
 from telegram_bot_calendar import DetailedTelegramCalendar, LSTEP
 from dotenv import load_dotenv
 import os
@@ -192,11 +192,13 @@ def handle_bedrooms_selection(call):
 
 
 # Отправляем текущее предложение
+
 def send_offer_message(chat_id):
     current_offer_index = user_data[chat_id]['current_offer_index']
     offers = user_data[chat_id]['offers']
     offer = offers[current_offer_index]
 
+    # Основное фото
     main_photo = next((photo.url for photo in offer.photos if photo.is_main),
                       offer.photos[0].url if offer.photos else None)
 
@@ -230,7 +232,6 @@ def send_offer_message(chat_id):
 
     # Фильтруем удобства, оставляем только те, которые True, и добавляем эмодзи
     amenities = [f"{AMENITIES_EMOJI.get(name)} {name}" for name, condition in amenities_dict.items() if condition]
-
     amenities_str = ", \n".join(amenities)
 
     offer_message = f"Предложение: \n" \
@@ -246,15 +247,23 @@ def send_offer_message(chat_id):
     markup.add(next_button)
 
     print(f"--main_photo {main_photo}")
-    print(f"--main_photo[1] {offer.photos[1].url}")
 
-    # Отправляем сообщение с предложением
+    # Подготовка медиагруппы для отправки
+    media_group = []
     if main_photo:
-        bot.send_photo(chat_id, [main_photo], caption=offer_message, reply_markup=markup)
-        bot.send_location(chat_id, offer.location.latitude, offer.location.longitude)
-    else:
-        bot.send_location(chat_id, offer.location.latitude, offer.location.longitude)
-        bot.send_message(chat_id, offer_message, reply_markup=markup)
+        media_group.append(InputMediaPhoto(media=main_photo, caption=offer_message))
+
+    # Добавляем остальные фото в медиагруппу
+    for photo in offer.photos:
+        if photo.url != main_photo:  # Исключаем основное фото
+            media_group.append(InputMediaPhoto(media=photo.url))
+
+    # Отправляем медиагруппу
+    if media_group:
+        bot.send_media_group(chat_id, media_group)
+
+    # Отправляем местоположение
+    bot.send_location(chat_id, offer.location.latitude, offer.location.longitude)
 
 
 # Обработчик кнопки "Далее"
