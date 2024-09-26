@@ -4,6 +4,7 @@ import re
 from pprint import pprint
 
 import httpx
+import requests
 import telebot
 from sqlalchemy import distinct
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, InputMediaPhoto
@@ -270,6 +271,9 @@ def send_offer_message(chat_id):
 
     # Добавляем остальные фото в медиагруппу
     urls_to_check = [photo.url for photo in offer.photos if str(photo.url).startswith('http')]
+    for url in urls_to_check:
+        response = requests.get(url)
+        print(response.status_code)
     valid_urls = asyncio.run(check_media_links(urls_to_check))
 
     print(valid_urls)
