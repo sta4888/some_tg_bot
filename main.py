@@ -318,9 +318,13 @@ def handle_offer_details(call):
     current_offer_index = user_data[chat_id]['current_offer_index']
     offer = user_data[chat_id]['offers'][current_offer_index]
 
+    print("offer.description", len(offer.description))
+
     # Формируем сообщение с основными данными о предложении
     offer_message = f"Подробнее о предложении:\n" \
                     f"Описание: {offer.description[:4000]}\n\n"
+
+    print("offer_message", len(offer_message))
 
 
     # Подготовка медиагруппы для отправки
