@@ -317,6 +317,16 @@ def handle_pagination(call):
     bot.edit_message_reply_markup(call.message.chat.id, call.message.message_id, reply_markup=markup)
 
 
+# Пример булевых полей
+BOOLEAN_FIELDS = [
+    'washing_machine', 'wi_fi', 'tv', 'air_conditioner', 'kids_friendly', 'party', 'refrigerator',
+    'phone', 'stove', 'dishwasher', 'music_center', 'microwave', 'iron', 'concierge', 'parking',
+    'safe', 'water_heater', 'television', 'bathroom', 'pet_friendly', 'smoke', 'romantic',
+    'jacuzzi', 'balcony', 'elevator'
+]
+
+
+# Обработка выбора оффера для редактирования
 # Обработка выбора оффера для редактирования
 @bot.callback_query_handler(func=lambda call: call.data.startswith("edit_offer_"))
 def handle_offer_selection(call):
@@ -326,17 +336,8 @@ def handle_offer_selection(call):
     if offer and offer.creator.telegram_id == call.from_user.id:
         # Отправляем текущее состояние оффера
         offer_details = f"Текущий оффер:\nID: {offer.internal_id}\nURL: {offer.url_to}\nОписание: {offer.description}"
-        # bot.edit_message_text(
-        #     chat_id=call.message.chat.id,
-        #     message_id=call.message.message_id,
-        #     text=offer_details
-        # )
-
-        # Запрашиваем, что именно редактировать с помощью inline-кнопок
-        # markup = types.InlineKeyboardMarkup()
-        # markup
-        # Отправляем список удобств с кнопками
-        markup = create_boolean_buttons(offer)
+        # Начинаем с первой страницы (page=0)
+        markup = create_boolean_buttons(offer, page=0)
         markup.add(
             types.InlineKeyboardButton(text="URL", callback_data=f"edit_url_{offer.internal_id}"),
             types.InlineKeyboardButton(text="описание", callback_data=f"edit_description_{offer.internal_id}"),
@@ -357,15 +358,26 @@ def handle_offer_selection(call):
         bot.send_message(call.message.chat.id, "Ошибка: Оффер не найден или не принадлежит вам.")
 
 
-def create_boolean_buttons(offer):
+def create_boolean_buttons(offer, page=0):
     markup = types.InlineKeyboardMarkup()
 
-    # Для каждого булевого поля создаем кнопку
-    for field in BOOLEAN_FIELDS:
+    # Определяем индекс начала и конца кнопок на текущей странице
+    start_index = page * ITEMS_PER_PAGE
+    end_index = start_index + ITEMS_PER_PAGE
+    fields_on_page = BOOLEAN_FIELDS[start_index:end_index]
+
+    # Для каждого поля на текущей странице создаем кнопку
+    for field in fields_on_page:
         field_value = getattr(offer, field)
         field_display = f"{field.replace('_', ' ').capitalize()} {'✅' if field_value else '❌'}"
         button = types.InlineKeyboardButton(text=field_display, callback_data=f"toggle_{field}")
         markup.add(button)
+
+    # Добавляем кнопки для пагинации, если это не первая и не последняя страница
+    if page > 0:
+        markup.add(types.InlineKeyboardButton(text="⬅️ Назад", callback_data=f"page_{page - 1}"))
+    if end_index < len(BOOLEAN_FIELDS):
+        markup.add(types.InlineKeyboardButton(text="Вперед ➡️", callback_data=f"page_{page + 1}"))
 
     return markup
 
@@ -374,10 +386,10 @@ def create_boolean_buttons(offer):
 def handle_toggle_field(call):
     field = call.data.split('_')[1]
     user_id = call.from_user.id
-    offer_id = user_states[user_id]['offer_id']
+    offer_id = user_states[user_id]['offer_to_edit'].internal_id
 
     # Загружаем оффер из базы данных
-    offer = session.query(Offer).filter_by(id=offer_id).first()
+    offer = session.query(Offer).filter_by(internal_id=offer_id).first()
 
     # Переключаем значение поля
     current_value = getattr(offer, field)
@@ -386,8 +398,23 @@ def handle_toggle_field(call):
     # Сохраняем изменения в базе данных
     session.commit()
 
-    # Обновляем кнопки с учетом изменения
-    markup = create_boolean_buttons(offer)
+    # Обновляем кнопки с учетом изменения, показывая ту же страницу
+    page = int(call.data.split('_')[-1]) if "page" in call.data else 0
+    markup = create_boolean_buttons(offer, page=page)
+    bot.edit_message_reply_markup(call.message.chat.id, call.message.message_id, reply_markup=markup)
+
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith('page_'))
+def handle_pagination(call):
+    page = int(call.data.split('_')[1])
+    user_id = call.from_user.id
+    offer_id = user_states[user_id]['offer_to_edit'].internal_id
+
+    # Загружаем оффер из базы данных
+    offer = session.query(Offer).filter_by(internal_id=offer_id).first()
+
+    # Показываем кнопки на выбранной странице
+    markup = create_boolean_buttons(offer, page=page)
     bot.edit_message_reply_markup(call.message.chat.id, call.message.message_id, reply_markup=markup)
 
 
