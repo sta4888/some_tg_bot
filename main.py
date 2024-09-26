@@ -284,6 +284,8 @@ def send_offer_message(chat_id):
     markup.add(back_button, next_button, details_button)
     markup.add(contact_host_button)
 
+    print(f"--main_photo {main_photo}")
+
     # Отправляем сообщение с предложением и сохраняем его message_id
     if main_photo:
         message = bot.send_photo(chat_id, main_photo, caption=offer_message, reply_markup=markup)
@@ -301,8 +303,6 @@ def contact_host(call):
     offer = user_data[chat_id]['offers'][current_offer_index]
     # Получаем пользователя, который создал оффер
     user = session.query(User).get(offer.created_by)
-    print("--username", user.username)
-    print("--#--#--", user_data[chat_id])
 
     host = user  # Предположим, что у предложения есть хост, связанный с моделью User
 
