@@ -278,8 +278,8 @@ def send_offer_message(chat_id):
 
     # Отправляем основное фото с сообщением
     if main_photo:
-        sent_message = bot.send_photo(chat_id, main_photo, caption=offer_message)
-        bot.send_location(chat_id, offer.location.latitude, offer.location.longitude)
+        # sent_message = bot.send_photo(chat_id, main_photo, caption=offer_message)
+        # bot.send_location(chat_id, offer.location.latitude, offer.location.longitude)
 
         # Отправляем медиагруппу без reply_markup
         if media_group:
