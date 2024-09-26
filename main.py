@@ -273,7 +273,7 @@ def send_offer_message(chat_id):
     details_button = types.InlineKeyboardButton("Подробнее", callback_data="offer_details")
 
     # Добавляем кнопку для связи с хостом
-    contact_host_button = types.InlineKeyboardButton("Связь с хостом", callback_data="contact_host_")
+    contact_host_button = types.InlineKeyboardButton("Связь с хостом", callback_data="contact_host")
 
     markup.add(back_button, next_button, details_button)
     markup.add(contact_host_button)
