@@ -294,15 +294,11 @@ def contact_host(call):
     current_offer_index = user_data[chat_id]['current_offer_index']
     offer = user_data[chat_id]['offers'][current_offer_index]
     # Получаем пользователя, который создал оффер
-    user = session.query(User).get(offer.created_by)  # Убираем 'id='
-    print("--offer", offer)
-    print("--user", user)
-
-    print("--user", offer.created_by.uuid)
+    user = session.query(User).get(offer.created_by)
     print("--username", user.username)
     print("--#--#--", user_data[chat_id])
 
-    host = offer.created_by  # Предположим, что у предложения есть хост, связанный с моделью User
+    host = user  # Предположим, что у предложения есть хост, связанный с моделью User
 
     # Если у хоста есть username в Telegram, то используем его
     if host.username:
