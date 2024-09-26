@@ -254,7 +254,9 @@ def send_offer_message(chat_id):
 
     # Добавляем остальные фото в медиагруппу
     for photo in offer.photos:
+        print(f"--photo.url {photo.url}")
         if photo.url != main_photo and str(photo.url).startswith('http'):  # Исключаем основное фото
+            print(f"!!! --photo.url {photo.url}")
             media_group.append(InputMediaPhoto(media=photo.url))
 
     # Отправляем сообщение с предложением
