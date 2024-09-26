@@ -347,7 +347,7 @@ def handle_offer_details(call):
 
     # Отправляем медиагруппу
     if media_group:
-        media_messages = bot.send_media_group(chat_id, media_group[:10])
+        media_messages = bot.send_media_group(chat_id, media_group[1:7])
 
     # Формируем кнопки для возврата к просмотру
     markup = types.InlineKeyboardMarkup()
