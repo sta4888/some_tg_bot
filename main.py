@@ -328,7 +328,8 @@ def handle_offer_details(call):
                     f"Wi-Fi: {'Да' if offer.wi_fi else 'Нет'}\n" \
                     f"Кондиционер: {'Да' if offer.air_conditioner else 'Нет'}\n" \
                     f"Телевизор: {'Да' if offer.tv else 'Нет'}\n" \
-                    f"И другие удобства..."
+                    f"Описание: {offer.description}\n\n"
+
 
     # Подготовка медиагруппы для отправки
     media_group = []
