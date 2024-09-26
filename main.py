@@ -332,8 +332,6 @@ def handle_offer_details(call):
 
     # Подготовка медиагруппы для отправки
     media_group = []
-
-    # Основное фото с текстом
     main_photo = next((photo.url for photo in offer.photos if photo.is_main),
                       offer.photos[0].url if offer.photos else None)
 
@@ -342,33 +340,45 @@ def handle_offer_details(call):
 
     # Проверяем и добавляем остальные фото в медиагруппу
     urls_to_check = [photo.url for photo in offer.photos if str(photo.url).startswith('http')]
-    valid_urls = asyncio.run(check_media_links(urls_to_check))  # Проверка доступности ссылок
+    valid_urls = asyncio.run(check_media_links(urls_to_check))
 
     for url in valid_urls:
         media_group.append(InputMediaPhoto(media=url))
 
-    # Удаляем сообщение с предложением и отправляем медиагруппу
+    # Удаляем сообщение с предложением
     bot.delete_message(chat_id, call.message.message_id)
 
+    # Отправляем медиагруппу
     if media_group:
-        bot.send_media_group(chat_id, media_group[:10])  # Отправляем до 10 фото в медиагруппе
+        media_messages = bot.send_media_group(chat_id, media_group[:10])
 
     # Формируем кнопки для возврата к просмотру
     markup = types.InlineKeyboardMarkup()
     return_button = types.InlineKeyboardButton("Вернуться к просмотру", callback_data="back_to_offers")
     markup.add(return_button)
 
-    # Отправляем кнопки в отдельном сообщении
-    bot.send_message(chat_id, "Выберите действие:", reply_markup=markup)
+    # Отправляем сообщение с кнопками и сохраняем ID сообщений
+    buttons_message = bot.send_message(chat_id, "Выберите действие:", reply_markup=markup)
+
+    # Сохраняем ID сообщений для последующего удаления
+    user_data[chat_id]['last_media_messages'] = [msg.message_id for msg in media_messages]
+    user_data[chat_id]['last_buttons_message'] = buttons_message.message_id
 
 
 # Обработчик кнопки "Вернуться к просмотру"
 @bot.callback_query_handler(func=lambda call: call.data == "back_to_offers")
 def handle_back_to_offers(call):
     chat_id = call.message.chat.id
+
+    # Удаляем последнее сообщение с кнопками
+    bot.delete_message(chat_id, user_data[chat_id]['last_buttons_message'])
+
+    # Удаляем все сообщения медиагруппы
+    for msg_id in user_data[chat_id]['last_media_messages']:
+        bot.delete_message(chat_id, msg_id)
+
     # Возвращаемся к просмотру текущего оффера
     send_offer_message(chat_id)
-    bot.delete_message(chat_id, call.message.message_id)  # Удаляем сообщение с кнопками
 
 
 # Обработчик кнопки "Вернуться к просмотру"
