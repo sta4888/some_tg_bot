@@ -402,12 +402,13 @@ def handle_toggle_field(call):
     field = call.data.split('_')[1]
     user_id = call.from_user.id
     offer_id = user_states[user_id]['offer_to_edit'].internal_id
-
+    print(1)
     # Загружаем оффер из базы данных
     offer = session.query(Offer).filter_by(internal_id=offer_id).first()
-
+    print(2)
     # Переключаем значение поля
     current_value = getattr(offer, field)
+    print(current_value)
     setattr(offer, field, not current_value)
 
     # Сохраняем изменения в базе данных
