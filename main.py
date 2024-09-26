@@ -214,7 +214,7 @@ async def check_media_links(urls):
     return valid_urls
 
 
-# Отправляем текущее предложение
+# Отправляем текущее предложение и сохраняем message_id
 def send_offer_message(chat_id):
     current_offer_index = user_data[chat_id]['current_offer_index']
     offers = user_data[chat_id]['offers']
@@ -251,9 +251,7 @@ def send_offer_message(chat_id):
         "Лифт": offer.elevator
     }
 
-    # Фильтруем удобства, оставляем только те, которые True, и добавляем эмодзи
     amenities = [f"{AMENITIES_EMOJI.get(name)} {name}" for name, condition in amenities_dict.items() if condition]
-
     amenities_str = ", \n".join(amenities)
 
     offer_message = f"Предложение: \n" \
@@ -263,22 +261,34 @@ def send_offer_message(chat_id):
                     f"Удобства: {amenities_str}\n\n" \
                     f"Депозит: {offer.price.deposit} {offer.price.deposit_currency}\n"
 
-    # Формируем кнопки для навигации
     markup = types.InlineKeyboardMarkup()
     next_button = types.InlineKeyboardButton("Далее", callback_data="next_offer")
-    markup.add(next_button)
+    back_button = types.InlineKeyboardButton("Назад", callback_data="previous_offer")
+    details_button = types.InlineKeyboardButton("Подробнее", callback_data="offer_details")
+    markup.add(back_button, next_button, details_button)
 
-    # Отправляем сообщение с предложением
+    # Отправляем сообщение с предложением и сохраняем его message_id
     if main_photo:
-        bot.send_photo(chat_id, main_photo, caption=offer_message)
+        message = bot.send_photo(chat_id, main_photo, caption=offer_message, reply_markup=markup)
     else:
-        bot.send_message(chat_id, offer_message)
+        message = bot.send_message(chat_id, offer_message, reply_markup=markup)
 
-    # Отправляем местоположение
-    bot.send_location(chat_id, offer.location.latitude, offer.location.longitude)
+    # Сохраняем message_id в user_data
+    user_data[chat_id]['message_id'] = message.message_id
 
-    # Отправляем кнопку "Далее" под сообщением
-    bot.send_message(chat_id, "Если вы хотите увидеть следующее предложение, нажмите кнопку ниже:", reply_markup=markup)
+
+# Обработчик кнопки "Назад"
+@bot.callback_query_handler(func=lambda call: call.data == "previous_offer")
+def handle_previous_offer(call):
+    chat_id = call.message.chat.id
+    current_offer_index = user_data[chat_id]['current_offer_index']
+
+    if current_offer_index - 1 >= 0:
+        user_data[chat_id]['current_offer_index'] -= 1
+        send_offer_message(chat_id)
+        bot.delete_message(chat_id, call.message.message_id)  # Удаляем старое сообщение
+    else:
+        bot.send_message(chat_id, "Это было первое предложение.")
 
 
 # Обработчик кнопки "Далее"
@@ -286,27 +296,34 @@ def send_offer_message(chat_id):
 def handle_next_offer(call):
     chat_id = call.message.chat.id
     current_offer_index = user_data[chat_id]['current_offer_index']
-    offers = user_data[chat_id]['offers']
 
-    if current_offer_index + 1 < len(offers):
+    if current_offer_index + 1 < len(user_data[chat_id]['offers']):
         user_data[chat_id]['current_offer_index'] += 1
         send_offer_message(chat_id)
+        bot.delete_message(chat_id, call.message.message_id)  # Удаляем старое сообщение
     else:
         bot.send_message(chat_id, "Это было последнее предложение.")
 
 
-# Обработчик кнопки "Далее"
-@bot.callback_query_handler(func=lambda call: call.data == "next_offer")
-def handle_next_offer(call):
+# Обработчик кнопки "Подробнее"
+@bot.callback_query_handler(func=lambda call: call.data == "offer_details")
+def handle_offer_details(call):
     chat_id = call.message.chat.id
     current_offer_index = user_data[chat_id]['current_offer_index']
-    offers = user_data[chat_id]['offers']
+    offer = user_data[chat_id]['offers'][current_offer_index]
 
-    if current_offer_index + 1 < len(offers):
-        user_data[chat_id]['current_offer_index'] += 1
-        send_offer_message(chat_id)
-    else:
-        bot.send_message(chat_id, "Это было последнее предложение.")
+    details_message = f"Подробнее о предложении:\n" \
+                      f"Адрес: {offer.location.address}\n" \
+                      f"Цена: {offer.price.value} {offer.price.currency}\n" \
+                      f"Депозит: {offer.price.deposit} {offer.price.deposit_currency}\n\n" \
+                      f"Удобства:\n" \
+                      f"Стиральная машина: {'Да' if offer.washing_machine else 'Нет'}\n" \
+                      f"Wi-Fi: {'Да' if offer.wi_fi else 'Нет'}\n" \
+                      f"Кондиционер: {'Да' if offer.air_conditioner else 'Нет'}\n" \
+                      f"Телевизор: {'Да' if offer.tv else 'Нет'}\n" \
+                      f"И другие удобства..."  # Добавьте сюда остальные удобства
+
+    bot.send_message(chat_id, details_message)
 
 
 def check_calendars():
