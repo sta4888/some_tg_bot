@@ -208,6 +208,7 @@ async def check_media_links(urls):
     async with httpx.AsyncClient() as client:
         tasks = [check_url(client, url) for url in urls]
         results = await asyncio.gather(*tasks)
+        print(f"--results {results}")
         valid_urls = [url for url, is_valid in zip(urls, results) if is_valid]
     return valid_urls
 
@@ -270,6 +271,8 @@ def send_offer_message(chat_id):
     # Добавляем остальные фото в медиагруппу
     urls_to_check = [photo.url for photo in offer.photos if str(photo.url).startswith('http')]
     valid_urls = asyncio.run(check_media_links(urls_to_check))
+
+    print(valid_urls)
 
     for url in valid_urls:
         media_group.append(InputMediaPhoto(media=url))
