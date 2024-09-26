@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 import os
 
 from connect import session, Session
-from models import Location, Offer
+from models import Location, Offer, User
 from service import find_offers, parse_ical
 
 load_dotenv()
@@ -293,12 +293,15 @@ def contact_host(call):
     chat_id = call.message.chat.id
     current_offer_index = user_data[chat_id]['current_offer_index']
     offer = user_data[chat_id]['offers'][current_offer_index]
+    user = session.query(User).get(id=offer.created_by)
     print("--offer", offer)
-    print("--user", offer.user.uuid)
-    print("--username", offer.user.username)
+    print("--user", user)
+
+    print("--user", offer.created_by.uuid)
+    print("--username", offer.created_by.username)
     print("--#--#--", user_data[chat_id])
 
-    host = offer.user  # Предположим, что у предложения есть хост, связанный с моделью User
+    host = offer.created_by  # Предположим, что у предложения есть хост, связанный с моделью User
 
     # Если у хоста есть username в Telegram, то используем его
     if host.username:
