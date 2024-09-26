@@ -287,8 +287,18 @@ def send_offer_message(chat_id):
     print(f"--main_photo {main_photo}")
 
     # Отправляем сообщение с предложением и сохраняем его message_id
+    # if main_photo:
+    #     message = bot.send_photo(chat_id, main_photo, caption=offer_message, reply_markup=markup)
+    # else:
+    #     message = bot.send_message(chat_id, offer_message, reply_markup=markup)
+
     if main_photo:
-        message = bot.send_photo(chat_id, main_photo, caption=offer_message, reply_markup=markup)
+        try:
+            print(f"Отправка фото: {main_photo}")  # Добавьте это для отладки
+            message = bot.send_photo(chat_id, main_photo, caption=offer_message, reply_markup=markup)
+        except telebot.apihelper.ApiTelegramException as tg_exception:
+            print(f"--tg_exception {tg_exception}")
+            message = bot.send_message(chat_id, offer_message, reply_markup=markup)
     else:
         message = bot.send_message(chat_id, offer_message, reply_markup=markup)
 
