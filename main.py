@@ -399,7 +399,7 @@ def create_boolean_buttons(offer, page=0):
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('toggle_'))
 def handle_toggle_field(call):
-    field = call.data.split('_')[1]
+    field = call.data.split('_')[1:]
     user_id = call.from_user.id
     offer_id = user_states[user_id]['offer_to_edit'].internal_id
     print(1)
