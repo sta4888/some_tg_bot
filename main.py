@@ -322,25 +322,21 @@ def handle_offer_details(call):
 
     # Формируем сообщение с основными данными о предложении
     offer_message = f"Подробнее о предложении:\n" \
-                    f"Описание: {offer.description[:4000]}\n\n"
+                    f"Описание: {offer.description}\n\n"
 
     print("offer_message", len(offer_message))
 
-
     # Подготовка медиагруппы для отправки
     media_group = []
-    main_photo = next((photo.url for photo in offer.photos if photo.is_main),
-                      offer.photos[0].url if offer.photos else None)
-
-    if main_photo:
-        media_group.append(InputMediaPhoto(media=main_photo, caption=offer_message))
-
     # Проверяем и добавляем остальные фото в медиагруппу
     urls_to_check = [photo.url for photo in offer.photos if str(photo.url).startswith('http')]
     valid_urls = asyncio.run(check_media_links(urls_to_check))
 
-    for url in valid_urls:
-        media_group.append(InputMediaPhoto(media=url))
+    for num, url in enumerate(valid_urls):
+        if num == 0:
+            InputMediaPhoto(media=url, caption=offer_message)
+        else:
+            media_group.append(InputMediaPhoto(media=url))
 
     # Удаляем сообщение с предложением
     bot.delete_message(chat_id, call.message.message_id)
