@@ -197,7 +197,7 @@ def handle_bedrooms_selection(call):
 # Отправляем текущее предложение
 async def check_url(client, url):
     try:
-        response = await client.head(url)
+        response = await client.get(url)
         return response.status_code >= 200 and response.status_code < 300
     except Exception as e:
         print(f"Ошибка при проверке URL {url}: {e}")
