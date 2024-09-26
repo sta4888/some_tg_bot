@@ -214,6 +214,7 @@ async def check_media_links(urls):
     return valid_urls
 
 
+# Отправляем текущее предложение
 def send_offer_message(chat_id):
     current_offer_index = user_data[chat_id]['current_offer_index']
     offers = user_data[chat_id]['offers']
@@ -250,7 +251,9 @@ def send_offer_message(chat_id):
         "Лифт": offer.elevator
     }
 
+    # Фильтруем удобства, оставляем только те, которые True, и добавляем эмодзи
     amenities = [f"{AMENITIES_EMOJI.get(name)} {name}" for name, condition in amenities_dict.items() if condition]
+
     amenities_str = ", \n".join(amenities)
 
     offer_message = f"Предложение: \n" \
@@ -260,42 +263,36 @@ def send_offer_message(chat_id):
                     f"Удобства: {amenities_str}\n\n" \
                     f"Депозит: {offer.price.deposit} {offer.price.deposit_currency}\n"
 
+    # Формируем кнопки для навигации
     markup = types.InlineKeyboardMarkup()
     next_button = types.InlineKeyboardButton("Далее", callback_data="next_offer")
     markup.add(next_button)
 
-    # Подготовка медиагруппы для отправки
-    media_group = []
+    # Отправляем сообщение с предложением
     if main_photo:
-        media_group.append(InputMediaPhoto(media=main_photo, caption=offer_message))
-
-    # Добавляем остальные фото в медиагруппу
-    urls_to_check = [photo.url for photo in offer.photos if str(photo.url).startswith('http')]
-    valid_urls = asyncio.run(check_media_links(urls_to_check))
-
-    for url in valid_urls:
-        media_group.append(InputMediaPhoto(media=url))
-
-    # Отправляем основное фото с сообщением
-    if main_photo:
-        # sent_message = bot.send_photo(chat_id, main_photo, caption=offer_message)
-        # bot.send_location(chat_id, offer.location.latitude, offer.location.longitude)
-
-        # Отправляем медиагруппу без reply_markup
-        if media_group:
-            bot.send_media_group(chat_id, media_group[:10])
-
-        # Формируем кнопки
-        markup = types.InlineKeyboardMarkup()
-        next_button = types.InlineKeyboardButton("Далее", callback_data="next_offer")
-        back_button = types.InlineKeyboardButton("Назад", callback_data="previous_offer")
-        markup.add(back_button, next_button)  # Добавляем кнопку "Назад" и "Далее"
-
-        # Отправляем кнопки в отдельном сообщении
-        bot.send_message(chat_id, "Выберите действие:", reply_markup=markup)
+        bot.send_photo(chat_id, main_photo, caption=offer_message)
     else:
-        bot.send_location(chat_id, offer.location.latitude, offer.location.longitude)
         bot.send_message(chat_id, offer_message)
+
+    # Отправляем местоположение
+    bot.send_location(chat_id, offer.location.latitude, offer.location.longitude)
+
+    # Отправляем кнопку "Далее" под сообщением
+    bot.send_message(chat_id, "Если вы хотите увидеть следующее предложение, нажмите кнопку ниже:", reply_markup=markup)
+
+
+# Обработчик кнопки "Далее"
+@bot.callback_query_handler(func=lambda call: call.data == "next_offer")
+def handle_next_offer(call):
+    chat_id = call.message.chat.id
+    current_offer_index = user_data[chat_id]['current_offer_index']
+    offers = user_data[chat_id]['offers']
+
+    if current_offer_index + 1 < len(offers):
+        user_data[chat_id]['current_offer_index'] += 1
+        send_offer_message(chat_id)
+    else:
+        bot.send_message(chat_id, "Это было последнее предложение.")
 
 
 # Обработчик кнопки "Далее"
