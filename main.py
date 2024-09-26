@@ -273,10 +273,12 @@ def send_offer_message(chat_id):
 
     # Формируем ссылку на чат с хостом
     host = session.query(User).get(offer.created_by)  # Предполагается, что у предложения есть поле host
+    predefined_message = "Привет"  # Сообщение, которое будет вставлено в поле ввода
+
     if host.username:
-        host_chat_link = f"tg://resolve?domain={host.username}"
+        host_chat_link = f"tg://resolve?domain={host.username}&start={predefined_message}"
     else:
-        host_chat_link = f"tg://user?id={host.telegram_id}"
+        host_chat_link = f"tg://user?id={host.telegram_id}&start={predefined_message}"
 
     # Добавляем кнопку для связи с хостом с ссылкой
     contact_host_button = types.InlineKeyboardButton("Связь с хостом", url=host_chat_link)
