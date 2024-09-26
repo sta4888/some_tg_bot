@@ -271,7 +271,12 @@ def send_offer_message(chat_id):
     next_button = types.InlineKeyboardButton("Далее", callback_data="next_offer")
     back_button = types.InlineKeyboardButton("Назад", callback_data="previous_offer")
     details_button = types.InlineKeyboardButton("Подробнее", callback_data="offer_details")
+
+    # Добавляем кнопку для связи с хостом
+    contact_host_button = types.InlineKeyboardButton("Связь с хостом", callback_data="contact_host_")
+
     markup.add(back_button, next_button, details_button)
+    markup.add(contact_host_button)
 
     # Отправляем сообщение с предложением и сохраняем его message_id
     if main_photo:
@@ -281,6 +286,36 @@ def send_offer_message(chat_id):
 
     # Сохраняем message_id в user_data
     user_data[chat_id]['message_id'] = message.message_id
+
+
+@bot.callback_query_handler(func=lambda call: call.data == 'contact_host')
+def contact_host(call):
+    chat_id = call.message.chat.id
+    current_offer_index = user_data[chat_id]['current_offer_index']
+    offer = user_data[chat_id]['offers'][current_offer_index]
+    print("--offer", offer)
+    print("--#--#--", user_data[chat_id])
+
+    # host = offer.host  # Предположим, что у предложения есть хост, связанный с моделью User
+
+    # # Если у хоста есть username в Telegram, то используем его
+    # if host.username:
+    #     host_chat_link = f"tg://resolve?domain={host.username}"
+    # else:
+    #     # Иначе используем chat_id для перехода в личный чат
+    #     host_chat_link = f"tg://user?id={host.telegram_id}"
+    #
+    # # Отправляем сообщение пользователю с ссылкой на чат с хостом
+    # bot.send_message(chat_id, f"Свяжитесь с хостом по следующей ссылке: {host_chat_link}")
+    #
+    # # Отправляем хосту сообщение с оффером
+    # offer_message = f"Пользователь интересуется вашим предложением: \n" \
+    #                 f"{offer.location.region}, {offer.location.locality_name}\n" \
+    #                 f"Адрес: {offer.location.address}\n" \
+    #                 f"Цена: {offer.price.value} {offer.price.currency}\n\n"
+    #
+    # bot.send_message(host.telegram_id, f"У вас новый запрос от пользователя {call.from_user.first_name}")
+    # bot.send_message(host.telegram_id, offer_message)
 
 
 # Обработчик кнопки "Назад"
@@ -366,18 +401,16 @@ def handle_offer_details(call):
     amenities = [f"{AMENITIES_EMOJI.get(name)} {name}" for name, condition in amenities_dict.items() if condition]
     amenities_str = ", ".join(amenities)
 
-
-
     # 3. Отправляем сообщение с описанием
     description_message = f"Описание: {offer.description}"
     description_msg = bot.send_message(chat_id, description_message)
 
     # 4. Отправляем сообщение с локацией
     location_message = f"Локация: {offer.location.region}, {offer.location.locality_name}\nАдрес: {offer.location.address}"
-    location_msg = bot.send_location(chat_id, offer.location.latitude, offer.location.longitude)
 
     amenities_message = f"Удобства: {amenities_str}\n {location_message}"
     amenities_msg = bot.send_message(chat_id, amenities_message)
+    location_msg = bot.send_location(chat_id, offer.location.latitude, offer.location.longitude)
 
     # Сохраняем ID сообщений для последующего удаления
     user_data[chat_id]['last_details_messages'] = [
