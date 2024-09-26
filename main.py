@@ -323,7 +323,7 @@ def handle_pagination(call):
 
 # Пример булевых полей
 BOOLEAN_FIELDS = {
-    'washing_machine': 'Стиральная машина', 'wi-fi': 'wi-fi', 'tv': 'Телевизор', 'air_conditioner': 'Кондиционер',
+    'washing_machine': 'Стиральная машина', 'wi_fi': 'wi-fi', 'tv': 'Телевизор', 'air_conditioner': 'Кондиционер',
     'kids_friendly': 'Можно с детьми', 'party': 'Для вечеринок', 'refrigerator': 'Холодильник',
     'phone': 'Телефон', 'stove': 'Плита', 'dishwasher': 'Посудомоечная машина', 'music_center': 'Музыкальный центр',
     'microwave': 'Микроволновая печь', 'iron': 'Утюг', 'concierge': 'Консьерж', 'parking': 'Парковка',
