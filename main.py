@@ -327,7 +327,21 @@ def handle_offer_details(call):
                       f"Телевизор: {'Да' if offer.tv else 'Нет'}\n" \
                       f"И другие удобства..."  # Добавьте сюда остальные удобства
 
-    bot.send_message(chat_id, details_message)
+    # Добавляем кнопку "Вернуться к просмотру"
+    markup = types.InlineKeyboardMarkup()
+    return_button = types.InlineKeyboardButton("Вернуться к просмотру", callback_data="back_to_offers")
+    markup.add(return_button)
+
+    bot.send_message(chat_id, details_message, reply_markup=markup)
+
+
+# Обработчик кнопки "Вернуться к просмотру"
+@bot.callback_query_handler(func=lambda call: call.data == "back_to_offers")
+def handle_back_to_offers(call):
+    chat_id = call.message.chat.id
+    # Возвращаемся к просмотру текущего оффера
+    send_offer_message(chat_id)
+    bot.delete_message(chat_id, call.message.message_id)  # Удаляем сообщение с подробностями
 
 
 def check_calendars():
