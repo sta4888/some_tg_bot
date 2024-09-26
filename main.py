@@ -257,15 +257,13 @@ def send_offer_message(chat_id):
         if photo.url != main_photo:  # Исключаем основное фото
             media_group.append(InputMediaPhoto(media=photo.url))
 
-
-
     # Отправляем сообщение с предложением
     if main_photo:
         bot.send_photo(chat_id, main_photo, caption=offer_message, reply_markup=markup)
         bot.send_location(chat_id, offer.location.latitude, offer.location.longitude)
         # Отправляем медиагруппу
         if media_group:
-            bot.send_media_group(chat_id, media_group)
+            bot.send_media_group(chat_id, media_group[:10])
     else:
         bot.send_location(chat_id, offer.location.latitude, offer.location.longitude)
         bot.send_message(chat_id, offer_message, reply_markup=markup)
