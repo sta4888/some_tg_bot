@@ -20,7 +20,7 @@ bot = telebot.TeleBot(API_TOKEN)
 user_states = {}
 
 # Количество кнопок на одной строке и на одной странице
-BUTTONS_PER_ROW = 3
+BUTTONS_PER_ROW = 2
 ITEMS_PER_PAGE = 9  # 9 кнопок на странице, 3 строки по 3 кнопки
 
 # Пример булевых полей
@@ -324,7 +324,7 @@ def handle_pagination(call):
 # Пример булевых полей
 BOOLEAN_FIELDS = {
     'washing_machine': 'Стиральная машина', 'wi_fi': 'wi-fi', 'tv': 'Телевизор', 'air_conditioner': 'Кондиционер',
-    'kids_friendly': 'Можно с детьми', 'party': 'Для вечеринок', 'refrigerator': 'Холодильник',
+    'kids_friendly': 'Дети', 'party': 'Для вечеринок', 'refrigerator': 'Холодильник',
     'phone': 'Телефон', 'stove': 'Плита', 'dishwasher': 'Посудомоечная машина', 'music_center': 'Музыкальный центр',
     'microwave': 'Микроволновая печь', 'iron': 'Утюг', 'concierge': 'Консьерж', 'parking': 'Парковка',
     'safe': 'Сейф', 'water_heater': 'Нагреватель воды', 'pet_friendly': 'Домашние животные', 'smoke': 'Курение',
