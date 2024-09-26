@@ -250,7 +250,7 @@ def send_offer_message(chat_id):
 
     # Отправляем сообщение с предложением
     if main_photo:
-        bot.send_media_group(chat_id, main_photo, caption=offer_message, reply_markup=markup)
+        bot.send_photo(chat_id, main_photo, caption=offer_message, reply_markup=markup)
         bot.send_location(chat_id, offer.location.latitude, offer.location.longitude)
     else:
         bot.send_location(chat_id, offer.location.latitude, offer.location.longitude)
