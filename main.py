@@ -335,8 +335,9 @@ def handle_offer_selection(call):
         # Запрашиваем, что именно редактировать с помощью inline-кнопок
         markup = types.InlineKeyboardMarkup()
         markup.add(
-            types.InlineKeyboardButton(text="Изменить URL", callback_data=f"edit_url_{offer.internal_id}"),
-            types.InlineKeyboardButton(text="Изменить описание", callback_data=f"edit_description_{offer.internal_id}"),
+            types.InlineKeyboardButton(text="URL", callback_data=f"edit_url_{offer.internal_id}"),
+            types.InlineKeyboardButton(text="описание", callback_data=f"edit_description_{offer.internal_id}"),
+            types.InlineKeyboardButton(text="спальных мест", callback_data=f"edit_sleeps_{offer.internal_id}"),
             types.InlineKeyboardButton(text="Отмена", callback_data="cancel_edit")
         )
 
@@ -383,6 +384,23 @@ def handle_edit_description(call):
             text="Введите новое описание:"
         )
         user_states[call.from_user.id]['editing_field'] = 'description'
+    else:
+        bot.send_message(call.message.chat.id, "Ошибка при редактировании оффера.")
+
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith("edit_sleeps_"))
+def handle_edit_description(call):
+    internal_id = call.data.split("_")[2]
+    offer = user_states[call.from_user.id]['offer_to_edit']
+
+    if offer and offer.internal_id == internal_id:
+        # Запрос нового описания
+        bot.edit_message_text(
+            chat_id=call.message.chat.id,
+            message_id=call.message.message_id,
+            text="Введите новое количество:"
+        )
+        user_states[call.from_user.id]['editing_field'] = 'sleeps'
     else:
         bot.send_message(call.message.chat.id, "Ошибка при редактировании оффера.")
 
