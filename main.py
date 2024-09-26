@@ -318,25 +318,57 @@ def handle_offer_details(call):
     current_offer_index = user_data[chat_id]['current_offer_index']
     offer = user_data[chat_id]['offers'][current_offer_index]
 
-    details_message = f"Подробнее о предложении:\n" \
-                      f"Адрес: {offer.location.address}\n" \
-                      f"Цена: {offer.price.value} {offer.price.currency}\n" \
-                      f"Депозит: {offer.price.deposit} {offer.price.deposit_currency}\n\n" \
-                      f"Удобства:\n" \
-                      f"Стиральная машина: {'Да' if offer.washing_machine else 'Нет'}\n" \
-                      f"Wi-Fi: {'Да' if offer.wi_fi else 'Нет'}\n" \
-                      f"Кондиционер: {'Да' if offer.air_conditioner else 'Нет'}\n" \
-                      f"Телевизор: {'Да' if offer.tv else 'Нет'}\n" \
-                      f"И другие удобства..."  # Добавьте сюда остальные удобства
+    # Формируем сообщение с основными данными о предложении
+    offer_message = f"Подробнее о предложении:\n" \
+                    f"Адрес: {offer.location.address}\n" \
+                    f"Цена: {offer.price.value} {offer.price.currency}\n" \
+                    f"Депозит: {offer.price.deposit} {offer.price.deposit_currency}\n\n" \
+                    f"Удобства:\n" \
+                    f"Стиральная машина: {'Да' if offer.washing_machine else 'Нет'}\n" \
+                    f"Wi-Fi: {'Да' if offer.wi_fi else 'Нет'}\n" \
+                    f"Кондиционер: {'Да' if offer.air_conditioner else 'Нет'}\n" \
+                    f"Телевизор: {'Да' if offer.tv else 'Нет'}\n" \
+                    f"И другие удобства..."
 
-    # Добавляем кнопку "Вернуться к просмотру"
+    # Подготовка медиагруппы для отправки
+    media_group = []
+
+    # Основное фото с текстом
+    main_photo = next((photo.url for photo in offer.photos if photo.is_main),
+                      offer.photos[0].url if offer.photos else None)
+
+    if main_photo:
+        media_group.append(InputMediaPhoto(media=main_photo, caption=offer_message))
+
+    # Проверяем и добавляем остальные фото в медиагруппу
+    urls_to_check = [photo.url for photo in offer.photos if str(photo.url).startswith('http')]
+    valid_urls = asyncio.run(check_media_links(urls_to_check))  # Проверка доступности ссылок
+
+    for url in valid_urls:
+        media_group.append(InputMediaPhoto(media=url))
+
+    # Удаляем сообщение с предложением и отправляем медиагруппу
+    bot.delete_message(chat_id, call.message.message_id)
+
+    if media_group:
+        bot.send_media_group(chat_id, media_group[:10])  # Отправляем до 10 фото в медиагруппе
+
+    # Формируем кнопки для возврата к просмотру
     markup = types.InlineKeyboardMarkup()
     return_button = types.InlineKeyboardButton("Вернуться к просмотру", callback_data="back_to_offers")
     markup.add(return_button)
 
-    # Удаляем сообщение с предложением и отправляем подробности
-    bot.delete_message(chat_id, call.message.message_id)
-    bot.send_message(chat_id, details_message, reply_markup=markup)
+    # Отправляем кнопки в отдельном сообщении
+    bot.send_message(chat_id, "Выберите действие:", reply_markup=markup)
+
+
+# Обработчик кнопки "Вернуться к просмотру"
+@bot.callback_query_handler(func=lambda call: call.data == "back_to_offers")
+def handle_back_to_offers(call):
+    chat_id = call.message.chat.id
+    # Возвращаемся к просмотру текущего оффера
+    send_offer_message(chat_id)
+    bot.delete_message(chat_id, call.message.message_id)  # Удаляем сообщение с кнопками
 
 
 # Обработчик кнопки "Вернуться к просмотру"
