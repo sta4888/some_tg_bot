@@ -254,12 +254,16 @@ def send_offer_message(chat_id):
     amenities = [f"{AMENITIES_EMOJI.get(name)} {name}" for name, condition in amenities_dict.items() if condition]
     amenities_str = ", \n".join(amenities)
 
+    total_offers = len(offers)
+    current_offer_number = current_offer_index + 1  # Номер предложения (1-индексация)
+
     offer_message = f"Предложение: \n" \
                     f"{offer.location.region}, {offer.location.locality_name}\n" \
                     f"Адрес: {offer.location.address}\n" \
                     f"Цена: {offer.price.value} {offer.price.currency}\n\n" \
                     f"Удобства: {amenities_str}\n\n" \
-                    f"Депозит: {offer.price.deposit} {offer.price.deposit_currency}\n"
+                    f"Депозит: {offer.price.deposit} {offer.price.deposit_currency}\n\n" \
+                    f"Найдено {total_offers} | {current_offer_number}"
 
     markup = types.InlineKeyboardMarkup()
     next_button = types.InlineKeyboardButton("Далее", callback_data="next_offer")
