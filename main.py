@@ -271,9 +271,9 @@ def send_offer_message(chat_id):
 
     # Добавляем остальные фото в медиагруппу
     urls_to_check = [photo.url for photo in offer.photos if str(photo.url).startswith('http')]
-    for url in urls_to_check:
-        response = requests.get(url)
-        print(response.status_code)
+    # for url in urls_to_check:
+    #     response = requests.get(url)
+    #     print(response.status_code)
     valid_urls = asyncio.run(check_media_links(urls_to_check))
 
     print(valid_urls)
@@ -287,7 +287,7 @@ def send_offer_message(chat_id):
         # bot.send_location(chat_id, offer.location.latitude, offer.location.longitude)
         # Отправляем медиагруппу
         if media_group:
-            bot.send_media_group(chat_id, media_group[:3])
+            bot.send_media_group(chat_id, media_group[:4])
     else:
         bot.send_location(chat_id, offer.location.latitude, offer.location.longitude)
         bot.send_message(chat_id, offer_message, reply_markup=markup)
