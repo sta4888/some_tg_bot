@@ -271,26 +271,31 @@ def send_offer_message(chat_id):
 
     # Добавляем остальные фото в медиагруппу
     urls_to_check = [photo.url for photo in offer.photos if str(photo.url).startswith('http')]
-    # for url in urls_to_check:
-    #     response = requests.get(url)
-    #     print(response.status_code)
     valid_urls = asyncio.run(check_media_links(urls_to_check))
-
-    print(valid_urls)
 
     for url in valid_urls:
         media_group.append(InputMediaPhoto(media=url))
 
-    # Отправляем сообщение с предложением
+    # Отправляем основное фото с сообщением
     if main_photo:
-        # bot.send_photo(chat_id, main_photo, caption=offer_message, reply_markup=markup)
-        # bot.send_location(chat_id, offer.location.latitude, offer.location.longitude)
-        # Отправляем медиагруппу
+        sent_message = bot.send_photo(chat_id, main_photo, caption=offer_message)
+        bot.send_location(chat_id, offer.location.latitude, offer.location.longitude)
+
+        # Отправляем медиагруппу без reply_markup
         if media_group:
-            bot.send_media_group(chat_id, media_group[:4])
+            bot.send_media_group(chat_id, media_group[:10])
+
+        # Формируем кнопки
+        markup = types.InlineKeyboardMarkup()
+        next_button = types.InlineKeyboardButton("Далее", callback_data="next_offer")
+        back_button = types.InlineKeyboardButton("Назад", callback_data="previous_offer")
+        markup.add(back_button, next_button)  # Добавляем кнопку "Назад" и "Далее"
+
+        # Отправляем кнопки в отдельном сообщении
+        bot.send_message(chat_id, "Выберите действие:", reply_markup=markup)
     else:
         bot.send_location(chat_id, offer.location.latitude, offer.location.longitude)
-        bot.send_message(chat_id, offer_message, reply_markup=markup)
+        bot.send_message(chat_id, offer_message)
 
 
 # Обработчик кнопки "Далее"
