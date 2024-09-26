@@ -4,7 +4,7 @@ from pprint import pprint
 
 import telebot
 from sqlalchemy import distinct
-from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
+from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, InputMediaPhoto
 from telegram_bot_calendar import DetailedTelegramCalendar, LSTEP
 from dotenv import load_dotenv
 import os
@@ -247,11 +247,25 @@ def send_offer_message(chat_id):
 
     print(f"--main_photo {main_photo}")
     print(f"--main_photo[1] {offer.photos[1].url}")
+    # Подготовка медиагруппы для отправки
+    media_group = []
+    if main_photo:
+        media_group.append(InputMediaPhoto(media=main_photo, caption=offer_message))
+
+    # Добавляем остальные фото в медиагруппу
+    for photo in offer.photos:
+        if photo.url != main_photo:  # Исключаем основное фото
+            media_group.append(InputMediaPhoto(media=photo.url))
+
+
 
     # Отправляем сообщение с предложением
     if main_photo:
         bot.send_photo(chat_id, main_photo, caption=offer_message, reply_markup=markup)
         bot.send_location(chat_id, offer.location.latitude, offer.location.longitude)
+        # Отправляем медиагруппу
+        if media_group:
+            bot.send_media_group(chat_id, media_group)
     else:
         bot.send_location(chat_id, offer.location.latitude, offer.location.longitude)
         bot.send_message(chat_id, offer_message, reply_markup=markup)
