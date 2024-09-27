@@ -14,7 +14,7 @@ import os
 
 from connect import session, Session
 from models import Location, Offer, User
-from service import find_offers, parse_ical
+from service import find_offers, parse_ical, random_with_N_digits
 
 load_dotenv()
 
@@ -271,17 +271,8 @@ def send_offer_message(chat_id):
     back_button = types.InlineKeyboardButton("Назад", callback_data="previous_offer")
     details_button = types.InlineKeyboardButton("Подробнее", callback_data="offer_details")
 
-    # Формируем ссылку на чат с хостом
-    host = session.query(User).get(offer.created_by)  # Предполагается, что у предложения есть поле host
-    predefined_message = "Привет"  # Сообщение, которое будет вставлено в поле ввода
-
-    if host.username:
-        host_chat_link = f"tg://resolve?domain={host.username}&start={predefined_message}"
-    else:
-        host_chat_link = f"tg://user?id={host.telegram_id}&start={predefined_message}"
-
     # Добавляем кнопку для связи с хостом с ссылкой
-    contact_host_button = types.InlineKeyboardButton("Связь с хостом", url=host_chat_link, callback_data="contact_host")
+    contact_host_button = types.InlineKeyboardButton("Связь с хостом", callback_data="contact_host")
 
     markup.add(back_button, next_button, details_button)
     markup.add(contact_host_button)
@@ -308,10 +299,29 @@ def contact_host(call):
     # Получаем пользователя, который создал оффер
     user = session.query(User).get(offer.created_by)
 
+    markup = types.InlineKeyboardMarkup()
+
     host = user  # Предположим, что у предложения есть хост, связанный с моделью User
+
+    # Если у хоста есть username в Telegram, то используем его
+    if host.username:
+        host_chat_link = f"tg://resolve?domain={host.username}"
+    else:
+        # Иначе используем chat_id для перехода в личный чат
+        host_chat_link = f"tg://user?id={host.telegram_id}"
+
+    # Добавляем кнопку для связи с хостом с ссылкой
+    contact_host_button = types.InlineKeyboardButton("Чат с хостом", url=host_chat_link)
+    markup.add(contact_host_button)
+
+    request_id = random_with_N_digits(8)
+
+    # Отправляем сообщение пользователю с ссылкой на чат с хостом
+    bot.send_message(chat_id, f"Ваша заявка: {request_id}", reply_markup=markup)
 
     # Отправляем хосту сообщение с оффером
     offer_message = f"Пользователь интересуется вашим предложением: \n" \
+                    f"ID Заявки: {request_id}\n" \
                     f"{offer.location.region}, {offer.location.locality_name}\n" \
                     f"Адрес: {offer.location.address}\n" \
                     f"Цена: {offer.price.value} {offer.price.currency}\n\n"

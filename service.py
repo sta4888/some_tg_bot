@@ -1,4 +1,5 @@
 from datetime import datetime
+from random import randint
 
 import icalendar
 import requests
@@ -146,3 +147,9 @@ def insert_image_to_pdf(existing_pdf, output_pdf, image_path, x, y):
     # Write to the output PDF
     with open(output_pdf, "wb") as output_file:
         pdf_writer.write(output_file)
+
+
+def random_with_N_digits(n):
+    range_start = 10 ** (n - 1)
+    range_end = (10 ** n) - 1
+    return randint(range_start, range_end)
