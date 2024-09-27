@@ -1,10 +1,8 @@
 import asyncio
 import datetime
 import re
-from pprint import pprint
 
 import httpx
-import requests
 import telebot
 from sqlalchemy import distinct
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, InputMediaPhoto
@@ -14,6 +12,7 @@ import os
 
 from connect import session, Session
 from models import Location, Offer, User
+from resender import resend_message
 from service import find_offers, parse_ical, random_with_N_digits
 
 load_dotenv()
@@ -319,6 +318,8 @@ def contact_host(call):
     # Отправляем сообщение пользователю с ссылкой на чат с хостом
     bot.send_message(chat_id, f"Ваша заявка: {request_id}", reply_markup=markup)
 
+    resend_message(bot, call.message, host.chat_id)
+
     # Отправляем хосту сообщение с оффером
     offer_message = f"Пользователь интересуется вашим предложением: \n" \
                     f"ID Заявки: {request_id}\n" \
@@ -326,8 +327,8 @@ def contact_host(call):
                     f"Адрес: {offer.location.address}\n" \
                     f"Цена: {offer.price.value} {offer.price.currency}\n\n"
 
-    bot.send_message(chat_id, f"У вас новый запрос от пользователя {call.from_user.first_name}")
-    bot.send_message(chat_id, offer_message)
+    bot.send_message(host.telegram_id, f"У вас новый запрос от пользователя {call.from_user.first_name}")
+    bot.send_message(host.telegram_id, offer_message)
 
 
 # Обработчик кнопки "Назад"
