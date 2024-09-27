@@ -215,6 +215,34 @@ async def check_media_links(urls):
 
 
 ################################################################################################
+# Callback обработчик для нажатий на inline-кнопки
+@bot.callback_query_handler(func=lambda call: True)
+def handle_callback(call):
+    if call.data == "offer_details":
+        chat_id = call.message.chat.id
+        # Здесь логика для получения предложения, если необходимо
+        # В данном случае просто пересылаем сообщение хосту
+
+        # Получаем информацию о хосте
+        current_offer_index = user_data[chat_id]['current_offer_index']
+        offers = user_data[chat_id]['offers']
+        offer = offers[current_offer_index]
+        host = session.query(User).get(offer.created_by)  # Получаем хоста из базы данных
+
+        # Получаем message_id текущего сообщения
+        message_id = user_data[chat_id]['message_id']
+
+        # Пересылаем сообщение хосту
+        if host.username:
+            # Если у хоста есть username, используем его для пересылки
+            bot.forward_message(chat_id=f"@{host.username}", from_chat_id=chat_id, message_id=message_id)
+        else:
+            # Если у хоста нет username, пересылаем по telegram_id
+            bot.forward_message(chat_id=host.telegram_id, from_chat_id=chat_id, message_id=message_id)
+
+        bot.answer_callback_query(call.id, "Сообщение переслано хосту")
+
+
 # Отправляем текущее предложение и сохраняем message_id
 def send_offer_message(chat_id):
     current_offer_index = user_data[chat_id]['current_offer_index']
@@ -288,12 +316,6 @@ def send_offer_message(chat_id):
 
     print(f"--main_photo {main_photo}")
 
-    # Отправляем сообщение с предложением и сохраняем его message_id
-    # if main_photo:
-    #     message = bot.send_photo(chat_id, main_photo, caption=offer_message, reply_markup=markup)
-    # else:
-    #     message = bot.send_message(chat_id, offer_message, reply_markup=markup)
-
     if main_photo:
         try:
             print(f"Отправка фото: {main_photo}")  # Добавьте это для отладки
@@ -306,36 +328,6 @@ def send_offer_message(chat_id):
 
     # Сохраняем message_id в user_data
     user_data[chat_id]['message_id'] = message.message_id
-
-
-@bot.callback_query_handler(func=lambda call: call.data == 'contact_host')
-def contact_host(call):
-    chat_id = call.message.chat.id
-    current_offer_index = user_data[chat_id]['current_offer_index']
-    offer = user_data[chat_id]['offers'][current_offer_index]
-    # Получаем пользователя, который создал оффер
-    user = session.query(User).get(offer.created_by)
-
-    host = user  # Предположим, что у предложения есть хост, связанный с моделью User
-
-    # Если у хоста есть username в Telegram, то используем его
-    if host.username:
-        host_chat_link = f"tg://resolve?domain={host.username}"
-    else:
-        # Иначе используем chat_id для перехода в личный чат
-        host_chat_link = f"tg://user?id={host.telegram_id}"
-
-    # Отправляем сообщение пользователю с ссылкой на чат с хостом
-    bot.send_message(chat_id, f"Свяжитесь с хостом по следующей ссылке: {host_chat_link}")
-
-    # Отправляем хосту сообщение с оффером
-    offer_message = f"Пользователь интересуется вашим предложением: \n" \
-                    f"{offer.location.region}, {offer.location.locality_name}\n" \
-                    f"Адрес: {offer.location.address}\n" \
-                    f"Цена: {offer.price.value} {offer.price.currency}\n\n"
-
-    bot.send_message(host.telegram_id, f"У вас новый запрос от пользователя {call.from_user.first_name}")
-    bot.send_message(host.telegram_id, offer_message)
 
 
 # Обработчик кнопки "Назад"
