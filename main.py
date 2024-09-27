@@ -281,7 +281,7 @@ def send_offer_message(chat_id):
         host_chat_link = f"tg://user?id={host.telegram_id}&start={predefined_message}"
 
     # Добавляем кнопку для связи с хостом с ссылкой
-    contact_host_button = types.InlineKeyboardButton("Связь с хостом", callback_data="contact_host")
+    contact_host_button = types.InlineKeyboardButton("Связь с хостом", url=host_chat_link, callback_data="contact_host")
 
     markup.add(back_button, next_button, details_button)
     markup.add(contact_host_button)
@@ -309,16 +309,6 @@ def contact_host(call):
     user = session.query(User).get(offer.created_by)
 
     host = user  # Предположим, что у предложения есть хост, связанный с моделью User
-
-    # Если у хоста есть username в Telegram, то используем его
-    if host.username:
-        host_chat_link = f"tg://resolve?domain={host.username}"
-    else:
-        # Иначе используем chat_id для перехода в личный чат
-        host_chat_link = f"tg://user?id={host.telegram_id}"
-
-    # Отправляем сообщение пользователю с ссылкой на чат с хостом
-    bot.send_message(chat_id, f"Свяжитесь с хостом по следующей ссылке: {host_chat_link}")
 
     # Отправляем хосту сообщение с оффером
     offer_message = f"Пользователь интересуется вашим предложением: \n" \
