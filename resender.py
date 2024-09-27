@@ -12,16 +12,13 @@ SEND_MESSAGE_URL = f'https://api.telegram.org/bot{SECOND_BOT_TOKEN}/sendMessage'
 
 
 # Обработчик команды /start
-def resend_message(bot, message, target_chat_id):
-    bot.send_message(message.chat.id, "Сообщение отправлено другому боту!")
-
-    # Сообщение для второго бота
-    message_text = 'Привет из первого бота!'
+def resend_message(bot, message, target_chat_id, text):
+    # bot.send_message(message.chat.id, "Сообщение отправлено другому боту!")
 
     # Данные для отправки сообщения второму боту
     data = {
         'chat_id': target_chat_id,
-        'text': message_text
+        'text': text
     }
 
     # Отправляем сообщение второму боту через API

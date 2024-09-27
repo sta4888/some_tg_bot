@@ -310,25 +310,27 @@ def contact_host(call):
         host_chat_link = f"tg://user?id={host.telegram_id}"
 
     # Добавляем кнопку для связи с хостом с ссылкой
-    contact_host_button = types.InlineKeyboardButton("Чат с хостом", url=host_chat_link)
+    contact_host_button = types.InlineKeyboardButton("Чат с хостом 💬", url=host_chat_link)
     markup.add(contact_host_button)
 
     request_id = random_with_N_digits(8)
 
     # Отправляем сообщение пользователю с ссылкой на чат с хостом
-    bot.send_message(chat_id, f"Ваша заявка: {request_id}", reply_markup=markup)
-
-    resend_message(bot, call.message, host.chat_id)
+    bot.send_message(chat_id, f"Ваша заявка: `{request_id}`", reply_markup=markup)
 
     # Отправляем хосту сообщение с оффером
     offer_message = f"Пользователь интересуется вашим предложением: \n" \
-                    f"ID Заявки: {request_id}\n" \
+                    f"У вас новый запрос от пользователя {call.from_user.username if call.from_user.username else call.from_user.first_name}" \
+                    f"Даты: {user_data[chat_id].get('start_date', 'Не указано')} - {user_data[chat_id].get('end_date', 'Не указано')}\n" \
+                    f"Количество гостей: {user_data[chat_id].get('guest', 'Не указано')}\n" \
+                    f"ID Заявки: `{request_id}`\n" \
                     f"{offer.location.region}, {offer.location.locality_name}\n" \
                     f"Адрес: {offer.location.address}\n" \
                     f"Цена: {offer.price.value} {offer.price.currency}\n\n"
 
-    bot.send_message(host.telegram_id, f"У вас новый запрос от пользователя {call.from_user.first_name}")
-    bot.send_message(host.telegram_id, offer_message)
+    resend_message(bot, call.message, host.chat_id, offer_message)
+
+    # bot.send_message(host.telegram_id, offer_message)
 
 
 # Обработчик кнопки "Назад"
