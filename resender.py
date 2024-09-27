@@ -19,9 +19,9 @@ def escape_markdown(text):
     return ''.join(['\\' + char if char in escape_chars else char for char in text])
 
 
-def resend_message(bot, message, target_chat_id, text, second_bot_token):
+def resend_message(bot, message, target_chat_id, text):
     # URL для отправки сообщения через API второго бота
-    send_message_url = f'https://api.telegram.org/bot{second_bot_token}/sendMessage'
+    send_message_url = f'https://api.telegram.org/bot{SECOND_BOT_TOKEN}/sendMessage'
 
     # Экранируем текст
     escaped_text = escape_markdown(text)
