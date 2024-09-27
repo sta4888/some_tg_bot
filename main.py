@@ -229,6 +229,11 @@ def handle_callback(call):
         offer = offers[current_offer_index]
         host = session.query(User).get(offer.created_by)  # Получаем хоста из базы данных
 
+        print(f"--host {host}")
+        print(f"--host {host.username}")
+        print(f"--host {host.telegram_id}")
+        print(f"--chat_id {chat_id}")
+
         # Получаем message_id текущего сообщения
         message_id = user_data[chat_id]['message_id']
 
