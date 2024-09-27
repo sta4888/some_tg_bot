@@ -11,21 +11,35 @@ SECOND_BOT_TOKEN = os.environ.get('SECOND_BOT_TOKEN')
 SEND_MESSAGE_URL = f'https://api.telegram.org/bot{SECOND_BOT_TOKEN}/sendMessage'
 
 
-# Обработчик команды /start
-def resend_message(bot, message, target_chat_id, text):
-    # bot.send_message(message.chat.id, "Сообщение отправлено другому боту!")
+def escape_markdown(text):
+    """
+    Экранирует специальные символы для MarkdownV2
+    """
+    escape_chars = r'_*[]()~`>#+-=|{}.!'
+    return ''.join(['\\' + char if char in escape_chars else char for char in text])
+
+
+def resend_message(bot, message, target_chat_id, text, second_bot_token):
+    # URL для отправки сообщения через API второго бота
+    send_message_url = f'https://api.telegram.org/bot{second_bot_token}/sendMessage'
+
+    # Экранируем текст
+    escaped_text = escape_markdown(text)
 
     # Данные для отправки сообщения второму боту
     data = {
         'chat_id': target_chat_id,
-        'text': text,
-        'parse_mode': 'MarkdownV2',
+        'text': escaped_text,
+        'parse_mode': 'MarkdownV2'
     }
 
     # Отправляем сообщение второму боту через API
-    response = requests.post(SEND_MESSAGE_URL, data=data)
+    response = requests.post(send_message_url, data=data)
 
     if response.status_code == 200:
         print("Сообщение успешно отправлено второму боту!")
+        return True
     else:
-        print(f"Ошибка при отправке сообщения: {response.status_code}\n{response.text}")
+        print(f"Ошибка при отправке сообщения: {response.status_code}")
+        print(f"Ответ: {response.text}")
+        return False
