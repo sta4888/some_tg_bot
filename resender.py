@@ -28,4 +28,4 @@ def resend_message(bot, message, target_chat_id, text):
     if response.status_code == 200:
         print("Сообщение успешно отправлено второму боту!")
     else:
-        print(f"Ошибка при отправке сообщения: {response.status_code}")
+        print(f"Ошибка при отправке сообщения: {response.status_code}\n{response.text}")
