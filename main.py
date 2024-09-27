@@ -316,11 +316,11 @@ def contact_host(call):
     request_id = random_with_N_digits(8)
 
     # Отправляем сообщение пользователю с ссылкой на чат с хостом
-    bot.send_message(chat_id, f"Ваша заявка: `{request_id}`", reply_markup=markup)
+    bot.send_message(chat_id, f"Ваша заявка: `{request_id}`", reply_markup=markup, parse_mode='MarkdownV2')
 
     # Отправляем хосту сообщение с оффером
     offer_message = f"Пользователь интересуется вашим предложением: \n" \
-                    f"У вас новый запрос от пользователя {call.from_user.username if call.from_user.username else call.from_user.first_name}" \
+                    f"У вас новый запрос от пользователя {'@' + call.from_user.username if call.from_user.username else call.from_user.first_name}\n" \
                     f"Даты: {user_data[chat_id].get('start_date', 'Не указано')} - {user_data[chat_id].get('end_date', 'Не указано')}\n" \
                     f"Количество гостей: {user_data[chat_id].get('guest', 'Не указано')}\n" \
                     f"ID Заявки: `{request_id}`\n" \

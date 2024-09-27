@@ -18,7 +18,8 @@ def resend_message(bot, message, target_chat_id, text):
     # Данные для отправки сообщения второму боту
     data = {
         'chat_id': target_chat_id,
-        'text': text
+        'text': text,
+        'parse_mode': 'MarkdownV2',
     }
 
     # Отправляем сообщение второму боту через API
