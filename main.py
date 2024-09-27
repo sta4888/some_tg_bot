@@ -326,8 +326,8 @@ def contact_host(call):
                     f"Адрес: {offer.location.address}\n" \
                     f"Цена: {offer.price.value} {offer.price.currency}\n\n"
 
-    bot.send_message(host.telegram_id, f"У вас новый запрос от пользователя {call.from_user.first_name}")
-    bot.send_message(host.telegram_id, offer_message)
+    bot.send_message(chat_id, f"У вас новый запрос от пользователя {call.from_user.first_name}")
+    bot.send_message(chat_id, offer_message)
 
 
 # Обработчик кнопки "Назад"
