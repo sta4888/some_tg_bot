@@ -239,8 +239,12 @@ def handle_callback(call):
 
         # Пересылаем сообщение хосту
         if host.username:
-            # Если у хоста есть username, используем его для пересылки
-            bot.forward_message(chat_id=f"@{host.username}", from_chat_id=chat_id, message_id=message_id)
+            try:
+                # Если у хоста есть username, используем его для пересылки
+                bot.forward_message(chat_id=f"@{host.username}", from_chat_id=chat_id, message_id=message_id)
+            except Exception as e:
+                print(e)
+                bot.forward_message(chat_id=host.telegram_id, from_chat_id=chat_id, message_id=message_id)
         else:
             # Если у хоста нет username, пересылаем по telegram_id
             bot.forward_message(chat_id=host.telegram_id, from_chat_id=chat_id, message_id=message_id)
