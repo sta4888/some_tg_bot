@@ -49,7 +49,10 @@ def parse_and_save_offer(xml_data, bot, message):
 
         # Проверяем, существует ли предложение с таким internal_id
         existing_offer = session.query(Offer).filter_by(internal_id=internal_id).first()
-        print(f"--## existing_offer {existing_offer.created_by} ##--")
+        if existing_offer:
+            print(f"--## existing_offer {existing_offer.created_by} ##--")
+        else:
+            continue
         print(f"--internal_id {internal_id}")
 
         # Обработка агента по продажам
