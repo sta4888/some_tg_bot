@@ -155,6 +155,9 @@ def parse_and_save_offer(xml_data, bot, message):
             area = Area(value=area_value, unit=area_unit)
             session.add(area)
 
+        print(f"--area_value {area_value}")
+        print(f"--area_unit {area_unit}")
+
         amenities = {
             'washing_machine': bool(offer.find('washing-machine').text) if offer.find('washing-machine') else 0,
             'wi_fi': bool(offer.find('wi-fi').text) if offer.find('wi-fi') else 0,
