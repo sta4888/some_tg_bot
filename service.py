@@ -126,6 +126,7 @@ def parse_and_save_offer(xml_data, bot, message):
         location = None
         if location_country and location_address:
             location = session.query(Location).filter_by(
+                internal_id=internal_id,
                 country=location_country,
                 address=location_address,
                 region=location_region,
@@ -134,6 +135,7 @@ def parse_and_save_offer(xml_data, bot, message):
             print(f"--location {location}")
             if not location:
                 location = Location(
+                    internal_id=internal_id,
                     country=location_country,
                     region=location_region,
                     locality_name=location_locality_name,
