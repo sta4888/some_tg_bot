@@ -142,8 +142,6 @@ def parse_and_save_offer(xml_data, bot, message):
                     longitude=location_longitude
                 )
                 session.add(location)
-            else:
-                continue
 
         # Обработка площади
         area_value = float(offer.find('area').find('value').text) if offer.find('area') and offer.find('area').find(
