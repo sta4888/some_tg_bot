@@ -96,7 +96,12 @@ def parse_and_save_offer(xml_data, bot, message):
 
         location = None
         if location_country and location_address:
-            location = session.query(Location).filter_by(country=location_country, address=location_address).first()
+            location = session.query(Location).filter_by(
+                country=location_country,
+                address=location_address,
+                region=location_region,
+                locality_name=location_locality_name,
+            ).first()
             if not location:
                 location = Location(
                     country=location_country,
@@ -107,6 +112,8 @@ def parse_and_save_offer(xml_data, bot, message):
                     longitude=location_longitude
                 )
                 session.add(location)
+            else:
+                continue
 
         # Обработка площади
         area_value = float(offer.find('area').find('value').text) if offer.find('area') and offer.find('area').find(
