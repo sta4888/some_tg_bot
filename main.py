@@ -127,35 +127,35 @@ def handle_url_input(message):
         bot.reply_to(message, "Пользователь не найден.")
         return
 
-    try:
-        # Пытаемся загрузить и обработать XML-файл
-        response = requests.get(url)
-        response.raise_for_status()
-        xml_data = response.content.decode('utf-8')
+    # try:
+    # Пытаемся загрузить и обработать XML-файл
+    response = requests.get(url)
+    response.raise_for_status()
+    xml_data = response.content.decode('utf-8')
 
-        # Здесь происходит парсинг и сохранение предложений
-        internal_ids = parse_and_save_offer(xml_data, bot, message)
-        print(internal_ids)
+    # Здесь происходит парсинг и сохранение предложений
+    internal_ids = parse_and_save_offer(xml_data, bot, message)
+    print(internal_ids)
 
-        if internal_ids:
-            # Сохраняем ссылку в таблице XML_FEED
-            new_feed = XML_FEED(url=url, user_id=user.id)
-            session.add(new_feed)
-            session.commit()
+    if internal_ids:
+        # Сохраняем ссылку в таблице XML_FEED
+        new_feed = XML_FEED(url=url, user_id=user.id)
+        session.add(new_feed)
+        session.commit()
 
-            bot.send_message(message.chat.id, f'спасибо! 👌\nДобавлено объектов: {len(internal_ids)}')
-            user_states[message.from_user.id] = {'internal_ids': internal_ids, 'current_index': 0}
+        bot.send_message(message.chat.id, f'спасибо! 👌\nДобавлено объектов: {len(internal_ids)}')
+        user_states[message.from_user.id] = {'internal_ids': internal_ids, 'current_index': 0}
 
-            first_internal_id = internal_ids[0].get('internal_id')
-            first_location_address = internal_ids[0].get('location_address')
-            bot.reply_to(message,
-                         f"Пожалуйста, введите URL для объекта с internal_id: {first_internal_id}\nадресом: {first_location_address}")
-        else:
-            bot.reply_to(message, "В загруженном файле нет ни одного нового объекта.")
+        first_internal_id = internal_ids[0].get('internal_id')
+        first_location_address = internal_ids[0].get('location_address')
+        bot.reply_to(message,
+                     f"Пожалуйста, введите URL для объекта с internal_id: {first_internal_id}\nадресом: {first_location_address}")
+    else:
+        bot.reply_to(message, "В загруженном файле нет ни одного нового объекта.")
 
-    except Exception as e:
-        session.rollback()  # В случае ошибки откатываем транзакцию
-        bot.reply_to(message, f"Ошибка при загрузке файла: {str(e)}.")
+    # except Exception as e:
+    #     session.rollback()  # В случае ошибки откатываем транзакцию
+    #     bot.reply_to(message, f"Ошибка при загрузке файла: {str(e)}.")
 
 
 # Обработка текстовых сообщений от пользователей для ввода URL
