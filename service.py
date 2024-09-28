@@ -24,7 +24,8 @@ def parse_and_save_offer(xml_data, bot, message):
     soup = BeautifulSoup(xml_data, 'xml')
     agency_id = int(soup.find('agency-id').text) if soup.find('agency-id') else None
 
-    for offer in soup.find_all('offer'):
+    for num, offer in enumerate(soup.find_all('offer')):
+        print(f"################# {num} ######################")
         internal_id = offer.get('internal-id') if offer.get('internal-id') else None
         offer_type = offer.find('type').text if offer.find('type') else None
         property_type = offer.find('property-type').text if offer.find('property-type') else None
