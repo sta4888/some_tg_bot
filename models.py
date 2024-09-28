@@ -188,6 +188,7 @@ class Location(Base):
 
     id = Column(Integer, primary_key=True)
     country = Column(String(100))
+    internal_id = Column(String(50), default=None)
     region = Column(String(100))
     locality_name = Column(String(100))
     address = Column(String(255))
