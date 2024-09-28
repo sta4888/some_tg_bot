@@ -131,6 +131,7 @@ def parse_and_save_offer(xml_data, bot, message):
                 region=location_region,
                 locality_name=location_locality_name,
             ).first()
+            print(f"--location {location}")
             if not location:
                 location = Location(
                     country=location_country,
