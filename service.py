@@ -41,7 +41,6 @@ def parse_and_save_offer(xml_data, bot, message):
         print(f"--category {category}")
         print(f"--creation_date_str {creation_date_str}")
         print(f"--last_update_date_str {last_update_date_str}")
-        print(f"--description {description}")
         print(f"--min_stay {min_stay}")
 
         # Пропускаем предложение, если обязательные поля отсутствуют
@@ -50,6 +49,7 @@ def parse_and_save_offer(xml_data, bot, message):
 
         # Проверяем, существует ли предложение с таким internal_id
         existing_offer = session.query(Offer).filter_by(internal_id=internal_id).first()
+        print(f"--## existing_offer {existing_offer.created_by} ##--")
         print(f"--internal_id {internal_id}")
 
         # Обработка агента по продажам
