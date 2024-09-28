@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 import os
 
 from connect import session, Session
-from models import Location, Offer, User
+from models import Location, Offer, User, Subscription
 from resender import resend_message
 from service import find_offers, parse_ical, random_with_N_digits
 
@@ -296,11 +296,10 @@ def contact_host(call):
     current_offer_index = user_data[chat_id]['current_offer_index']
     offer = user_data[chat_id]['offers'][current_offer_index]
     # Получаем пользователя, который создал оффер
-    user = session.query(User).get(offer.created_by)
+    host = session.query(User).get(offer.created_by)
+    user = session.query(User).get(call.message.chat.id)
 
     markup = types.InlineKeyboardMarkup()
-
-    host = user  # Предположим, что у предложения есть хост, связанный с моделью User
 
     # Если у хоста есть username в Telegram, то используем его
     if host.username:
@@ -313,7 +312,19 @@ def contact_host(call):
     contact_host_button = types.InlineKeyboardButton("Чат с хостом 💬", url=host_chat_link)
     markup.add(contact_host_button)
 
-    request_id = random_with_N_digits(8)
+    while True:
+        request_id = random_with_N_digits(8)
+        subscription = session.query(Subscription).get(unique_digits_id=request_id)
+        if subscription:
+            break
+
+    new_subscription = Subscription(
+        user_id=user,
+        start_date=user_data[chat_id].get('start_date', 'Не указано'),
+        end_date=user_data[chat_id].get('end_date', 'Не указано'),
+        offer_id=offer.id,
+        unique_digits_id=request_id
+    )
 
     # Отправляем сообщение пользователю с ссылкой на чат с хостом
     bot.send_message(chat_id, f"Ваша заявка: `{request_id}`", reply_markup=markup, parse_mode='MarkdownV2')
@@ -330,7 +341,11 @@ def contact_host(call):
 
     resend_message(bot, call.message, host.chat_id, offer_message)
 
-    # bot.send_message(host.telegram_id, offer_message)
+    # Добавьте новую подписку в сессию
+    session.add(new_subscription)
+
+    # Зафиксируйте изменения
+    session.commit()
 
 
 # Обработчик кнопки "Назад"
