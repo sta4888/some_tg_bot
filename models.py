@@ -195,6 +195,8 @@ class Location(Base):
     longitude = Column(Float)
     sub_locality_name = Column(String(100))
 
+    internal_id = Column(String(100), unique=True, nullable=False)
+
 
 class Area(Base):
     __tablename__ = 'area'
