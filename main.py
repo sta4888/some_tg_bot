@@ -28,6 +28,7 @@ ITEMS_PER_PAGE = 9  # 9 кнопок на странице, 3 строки по 
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
     # Извлекаем реферальный UUID, если он был передан
+    # fixme продумать логику приветствия пользователя. для зареганых бот предлагает действия, для вновь зареганных бот просит ссылку
     command = message.text.split()
     referrer_uuid = None
 
