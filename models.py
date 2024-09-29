@@ -1,8 +1,10 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Column, Integer, String, Float, Text, Boolean, DateTime, ForeignKey, UUID
+from sqlalchemy import create_engine, Column, Integer, String, Float, Text, Boolean, DateTime, ForeignKey, UUID
 from sqlalchemy.orm import declarative_base, relationship
+from sqlalchemy.ext.mutable import MutableList
+from sqlalchemy import JSON
 
 Base = declarative_base()
 
@@ -21,8 +23,12 @@ class User(Base):
     referer_id = Column(Integer, ForeignKey('users.id'), nullable=True)
     referer = relationship('User', remote_side=[id], backref='referred_users')
 
+    # Отношение "один ко многим" с XML_FEED
     xml_feeds = relationship('XML_FEED', back_populates='user')
+
+    # Новое поле для учета приглашенных пользователей
     invited_count = Column(Integer, default=0)
+
     payments = relationship("Payment", back_populates="user")
     payouts = relationship("Payout", back_populates="user")
     subscriptions = relationship("Subscription", back_populates="user")
@@ -32,10 +38,11 @@ class Payment(Base):
     __tablename__ = 'payments'
 
     id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
-    amount = Column(Float, nullable=False)
-    payment_date = Column(DateTime, default=datetime.utcnow)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)  # Связь с пользователем
+    amount = Column(Float, nullable=False)  # Сумма оплаты
+    payment_date = Column(DateTime, default=datetime.utcnow)  # Дата оплаты
 
+    # Связь с пользователем
     user = relationship("User", back_populates="payments")
 
     def __repr__(self):
@@ -46,10 +53,11 @@ class Payout(Base):
     __tablename__ = 'payouts'
 
     id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
-    amount = Column(Float, nullable=False)
-    payout_date = Column(DateTime, default=datetime.utcnow)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)  # Связь с пользователем
+    amount = Column(Float, nullable=False)  # Сумма выплаты
+    payout_date = Column(DateTime, default=datetime.utcnow)  # Дата выплаты
 
+    # Связь с пользователем
     user = relationship("User", back_populates="payouts")
 
     def __repr__(self):
@@ -60,15 +68,12 @@ class Subscription(Base):
     __tablename__ = 'subscriptions'
 
     id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
-    start_date = Column(DateTime, nullable=False)  # Установите значение по умолчанию
-    end_date = Column(DateTime, nullable=False)
-    creation_date = Column(DateTime, default=datetime.utcnow)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)  # Связь с пользователем
+    start_date = Column(DateTime, nullable=False)  # Дата начала подписки
+    end_date = Column(DateTime, nullable=False)  # Дата окончания подписки
 
+    # Связь с пользователем
     user = relationship("User", back_populates="subscriptions")
-    offer_id = Column(Integer, ForeignKey('offer.id'))  # Если подписка связана с предложением
-    offer = relationship("Offer", back_populates="subscriptions")
-    unique_digits_id = Column(String, unique=True)
 
     def __repr__(self):
         return f"<Subscription(user_id={self.user_id}, start_date={self.start_date}, end_date={self.end_date})>"
@@ -78,9 +83,10 @@ class XML_FEED(Base):
     __tablename__ = 'xml_feed'
 
     id = Column(Integer, primary_key=True)
-    url = Column(String(255), nullable=False)
-    user_id = Column(Integer, ForeignKey('users.id'))
+    url = Column(String(255), nullable=False)  # Поле для хранения ссылки
+    user_id = Column(Integer, ForeignKey('users.id'))  # Внешний ключ на таблицу User
 
+    # Отношение к User (многие к одному)
     user = relationship('User', back_populates='xml_feeds')
 
 
@@ -98,24 +104,24 @@ class Offer(Base):
 
     id = Column(Integer, primary_key=True)
     internal_id = Column(String(50), unique=True)
-    offer_type = Column(String(50))
-    property_type = Column(String(50))
-    category = Column(String(50))
-    url_to = Column(String(150), default=None)
-    creation_date = Column(DateTime, default=datetime.utcnow)
-    last_update_date = Column(DateTime, default=datetime.utcnow)
+    offer_type = Column(String(50))  # 'аренда'
+    property_type = Column(String(50))  # 'жилая'
+    category = Column(String(50))  # 'квартира'
+    url_to = Column(String(150), default=None)  # 'ссылка на '
+    creation_date = Column(DateTime)
+    last_update_date = Column(DateTime)
 
     min_stay = Column(Integer)
     agency_id = Column(Integer)
     description = Column(Text)
 
     sales_agent_id = Column(Integer, ForeignKey('sales_agent.id'))
-    price_id = Column(Integer, ForeignKey('price.id'), unique=True)
-    location_id = Column(Integer, ForeignKey('location.id'), unique=True)
-    area_id = Column(Integer, ForeignKey('area.id'), unique=True)
+    price_id = Column(Integer, ForeignKey('price.id'), unique=True)  # Одно предложение - одна цена
+    location_id = Column(Integer, ForeignKey('location.id'), unique=True)  # Одно предложение - одно местоположение
+    area_id = Column(Integer, ForeignKey('area.id'), unique=True)  # Одно предложение - одна площадь
 
-    created_by = Column(Integer, ForeignKey('users.id'))
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_by = Column(Integer, ForeignKey('users.id'))  # Поле для указания создателя
+    created_at = Column(DateTime)  # Поле для хранения даты создания
 
     # Удобства
     washing_machine = Column(Boolean, default=False)
@@ -143,25 +149,25 @@ class Offer(Base):
     jacuzzi = Column(Boolean, default=False)
     balcony = Column(Boolean, default=False)
     elevator = Column(Boolean, default=False)
-    sleeps = Column(String(20))
+    sleeps = Column(String(20))  # '2+2'  не добавляется
     rooms = Column(Integer)
 
-    check_in_time_start = Column(String(5))
-    check_in_time_end = Column(String(5))
-    check_out_time_start = Column(String(5))
-    check_out_time_end = Column(String(5))
+    check_in_time_start = Column(String(5))  # '14:00'
+    check_in_time_end = Column(String(5))  # '22:00'
+    check_out_time_start = Column(String(5))  # '12:00'
+    check_out_time_end = Column(String(5))  # '12:00'
 
     deposit_value = Column(Float)
     deposit_currency = Column(String(10))
 
     sales_agent = relationship("SalesAgent")
-    price = relationship("Price", uselist=False)
-    location = relationship("Location", uselist=False)
-    area = relationship("Area", uselist=False)
-    creator = relationship("User", foreign_keys=[created_by])
-    photos = relationship("Photo", back_populates="offer")
+    price = relationship("Price", uselist=False)  # Один к одному
+    location = relationship("Location", uselist=False)  # Один к одному
+    area = relationship("Area", uselist=False)  # Один к одному
+    creator = relationship("User", foreign_keys=[created_by])  # Связь с пользователем, создавшим запись
+    photos = relationship("Photo", back_populates="offer")  # Связь с фотографиями
+    # Связь с событиями
     events = relationship('Event', back_populates='offer')
-    subscriptions = relationship("Subscription", back_populates="offer")
 
     available_on_file = Column(Boolean, default=True)
 
@@ -182,7 +188,6 @@ class Location(Base):
 
     id = Column(Integer, primary_key=True)
     country = Column(String(100))
-    internal_id = Column(String(50), default=None)
     region = Column(String(100))
     locality_name = Column(String(100))
     address = Column(String(255))
