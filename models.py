@@ -1,6 +1,7 @@
 import uuid
 from datetime import datetime
 
+from sqlalchemy import BigInteger
 from sqlalchemy import Column, Integer, String, Float, Text, Boolean, DateTime, ForeignKey, UUID
 from sqlalchemy.orm import declarative_base, relationship
 
@@ -12,11 +13,11 @@ class User(Base):
 
     id = Column(Integer, primary_key=True)
     uuid = Column(UUID(as_uuid=True), default=uuid.uuid4, unique=True, nullable=False)
-    telegram_id = Column(Integer, unique=True, nullable=False)
+    telegram_id = Column(BigInteger, unique=True, nullable=False)  # Изменение на BigInteger
     username = Column(String(100), nullable=True, default="")
     first_name = Column(String(100), nullable=True, default="")
     second_name = Column(String(100), nullable=True, default="")
-    chat_id = Column(String(100), nullable=True)
+    chat_id = Column(BigInteger, nullable=True)  # Если это целое число, лучше тоже поменять
     is_client = Column(Boolean, nullable=False, default=True)
     referer_id = Column(Integer, ForeignKey('users.id'), nullable=True)
     referer = relationship('User', remote_side=[id], backref='referred_users')
@@ -200,21 +201,27 @@ class Area(Base):
 
 
 class Photo(Base):
-    __tablename__ = 'photos'
+    __tablename__ = 'photo'
 
     id = Column(Integer, primary_key=True)
-    url = Column(String(255))
     offer_id = Column(Integer, ForeignKey('offer.id'))
+    is_main = Column(Boolean, default=False)
+    url = Column(String(255), nullable=False)  # Ссылка на изображение
 
-    offer = relationship("Offer", back_populates="photos")
+    offer = relationship("Offer", back_populates="photos")  # Связь с предложением
 
 
 class Event(Base):
     __tablename__ = 'events'
 
     id = Column(Integer, primary_key=True)
-    offer_id = Column(Integer, ForeignKey('offer.id'))
-    event_type = Column(String(50))
-    event_date = Column(DateTime, default=datetime.utcnow)
-
+    offer_id = Column(Integer, ForeignKey('offer.id'), nullable=False)
     offer = relationship('Offer', back_populates='events')
+
+    uid = Column(String(100), nullable=False)  # уникальный идентификатор события
+    start_time = Column(DateTime, nullable=False)  # дата начала
+    end_time = Column(DateTime, nullable=False)  # дата окончания
+    summary = Column(String(200))  # описание события
+
+    def __str__(self):
+        return f"{self.summary} ({self.start_time} - {self.end_time})"
