@@ -1,6 +1,7 @@
 import uuid
 from datetime import datetime
 
+from sqlalchemy import BigInteger
 from sqlalchemy import Column, Integer, String, Float, Text, Boolean, DateTime, ForeignKey, UUID
 from sqlalchemy.orm import declarative_base, relationship
 
@@ -12,11 +13,11 @@ class User(Base):
 
     id = Column(Integer, primary_key=True)
     uuid = Column(UUID(as_uuid=True), default=uuid.uuid4, unique=True, nullable=False)
-    telegram_id = Column(Integer, unique=True, nullable=False)
+    telegram_id = Column(BigInteger, unique=True, nullable=False)  # Изменение на BigInteger
     username = Column(String(100), nullable=True, default="")
     first_name = Column(String(100), nullable=True, default="")
     second_name = Column(String(100), nullable=True, default="")
-    chat_id = Column(String(100), nullable=True)
+    chat_id = Column(BigInteger, nullable=True)  # Если это целое число, лучше тоже поменять
     is_client = Column(Boolean, nullable=False, default=True)
     referer_id = Column(Integer, ForeignKey('users.id'), nullable=True)
     referer = relationship('User', remote_side=[id], backref='referred_users')
