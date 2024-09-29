@@ -167,45 +167,49 @@ def request_url(message):
     bot.reply_to(message, "Пожалуйста, введите ссылку на XML-файл.")
 
 
-# Обработка ответа на запрос обновления
+# Обработка текстовых сообщений от пользователей для ввода URL объектов
 @bot.message_handler(
-    func=lambda message: message.from_user.id in user_states and 'update_existing' in user_states[message.from_user.id])
-def handle_update_confirmation(message):
+    func=lambda message: message.from_user.id in user_states and 'internal_ids' in user_states[message.from_user.id])
+def handle_object_url(message):
     user_id = message.from_user.id
     user_state = user_states[user_id]
 
-    if message.text.strip().lower() == 'да':
-        # Обновляем данные для существующих internal_id
-        internal_ids = user_state['internal_ids']
-        current_index = user_state['current_index']
-        current_internal_id_data = internal_ids[current_index]
-        internal_id = current_internal_id_data.get('internal_id')
+    # Получаем текущий индекс и список объектов
+    internal_ids = user_state['internal_ids']
+    current_index = user_state['current_index']
 
-        offer = session.query(Offer).filter_by(internal_id=internal_id).first()
+    # Получаем текущий объект и его внутренний ID
+    current_internal_id_data = internal_ids[current_index]
+    internal_id = current_internal_id_data.get('internal_id')
 
-        if offer and offer.created_by == user_id:
-            # Здесь нужно обновить данные предложения
-            session.commit()
-            bot.reply_to(message, f"Данные для internal_id {internal_id} обновлены.")
+    # Сохраняем URL для текущего объекта (логика сохранения может отличаться в зависимости от модели)
+    new_url = message.text.strip()
+    offer = session.query(Offer).filter_by(internal_id=internal_id).first()
 
-            # Переход к следующему internal_id
-            current_index += 1
-            user_state['current_index'] = current_index
+    if offer:
+        # Сохраняем или обновляем URL в базе данных
+        offer.url = new_url
+        session.commit()
 
-            if current_index < len(internal_ids):
-                next_internal_id_data = internal_ids[current_index]
-                next_internal_id = next_internal_id_data.get('internal_id')
-                bot.reply_to(message,
-                             f"Обновите данные для internal_id: {next_internal_id}. Пожалуйста, введите новый URL.")
-            else:
-                del user_states[user_id]  # Удаляем пользователя из состояния
-                bot.reply_to(message, "Все данные успешно обновлены.")
+        # Переходим к следующему объекту
+        current_index += 1
+        user_state['current_index'] = current_index
+
+        # Если ещё есть объекты для добавления
+        if current_index < len(internal_ids):
+            next_internal_id_data = internal_ids[current_index]
+            next_internal_id = next_internal_id_data.get('internal_id')
+            next_location_address = next_internal_id_data.get('location_address')
+
+            # Запрашиваем следующую ссылку
+            bot.reply_to(message,
+                         f"Введите URL для объекта с internal_id: {next_internal_id}, адрес: {next_location_address}")
         else:
-            bot.reply_to(message, f"Предложение с internal_id {internal_id} не найдено или не принадлежит вам.")
+            # Если все ссылки введены, завершаем процесс
+            del user_states[user_id]
+            bot.reply_to(message, "Все ссылки успешно добавлены!")
     else:
-        # Если пользователь не хочет обновлять, просто удаляем состояние
-        del user_states[user_id]
-        bot.reply_to(message, "Обновление данных отменено.")
+        bot.reply_to(message, f"Предложение с internal_id {internal_id} не найдено.")
 
 
 # Команда для получения рефералов до 6 уровня
