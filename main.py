@@ -162,6 +162,7 @@ def handle_url_input(message):
 @bot.message_handler(func=lambda message: message.text.startswith(
     "https://realtycalendar.ru/apart") and not message.from_user.id in user_states)
 def request_url(message):
+    print("request_url")
     user_states[message.from_user.id] = {'url_input': True}
     bot.reply_to(message, "Пожалуйста, введите ссылку на XML-файл.")
 
