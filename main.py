@@ -434,7 +434,6 @@ def process_new_url(message):
 
 
 ####### ---------- JGJHGJHGHJ  -------- #########
-
 @bot.callback_query_handler(func=lambda call: call.data.startswith("edit_description_"))
 def handle_edit_description(call):
     internal_id = call.data.split("_")[2]
@@ -451,24 +450,124 @@ def handle_edit_description(call):
         bot.send_message(call.message.chat.id, "Ошибка при редактировании оффера.")
 
 
-@bot.message_handler(
-    func=lambda message: message.chat.id in user_states and user_states[message.chat.id].get(
-        'editing_field') == 'description')
-def process_new_description(message):
-    user_id = message.from_user.id
-    new_description = message.text
-    offer = user_states[user_id]['offer_to_edit']
+@bot.callback_query_handler(func=lambda call: call.data.startswith("edit_sleeps_"))
+def handle_edit_sleeps(call):
+    internal_id = call.data.split("_")[2]
+    offer = user_states[call.from_user.id]['offer_to_edit']
 
-    # Обновление описания в базе данных
-    offer.description = new_description
+    if offer and offer.internal_id == internal_id:
+        bot.edit_message_text(
+            chat_id=call.message.chat.id,
+            message_id=call.message.message_id,
+            text="Введите новое количество спальных мест:"
+        )
+        user_states[call.from_user.id]['editing_field'] = 'sleeps'
+    else:
+        bot.send_message(call.message.chat.id, "Ошибка при редактировании оффера.")
+
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith("edit_price_"))
+def handle_edit_price(call):
+    internal_id = call.data.split("_")[2]
+    offer = user_states[call.from_user.id]['offer_to_edit']
+
+    if offer and offer.internal_id == internal_id:
+        bot.edit_message_text(
+            chat_id=call.message.chat.id,
+            message_id=call.message.message_id,
+            text="Введите новую цену:"
+        )
+        user_states[call.from_user.id]['editing_field'] = 'price'
+    else:
+        bot.send_message(call.message.chat.id, "Ошибка при редактировании оффера.")
+
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith("edit_sales_agent_"))
+def handle_edit_sales_agent(call):
+    internal_id = call.data.split("_")[2]
+    offer = user_states[call.from_user.id]['offer_to_edit']
+
+    if offer and offer.internal_id == internal_id:
+        bot.edit_message_text(
+            chat_id=call.message.chat.id,
+            message_id=call.message.message_id,
+            text="Введите нового агента:"
+        )
+        user_states[call.from_user.id]['editing_field'] = 'sales_agent'
+    else:
+        bot.send_message(call.message.chat.id, "Ошибка при редактировании оффера.")
+
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith("edit_area_"))
+def handle_edit_area(call):
+    internal_id = call.data.split("_")[2]
+    offer = user_states[call.from_user.id]['offer_to_edit']
+
+    if offer and offer.internal_id == internal_id:
+        bot.edit_message_text(
+            chat_id=call.message.chat.id,
+            message_id=call.message.message_id,
+            text="Введите новую площадь:"
+        )
+        user_states[call.from_user.id]['editing_field'] = 'area'
+    else:
+        bot.send_message(call.message.chat.id, "Ошибка при редактировании оффера.")
+
+
+##########
+
+@bot.message_handler(
+    func=lambda message: message.chat.id in user_states and user_states[message.chat.id].get('editing_field') in ['url',
+                                                                                                                  'description',
+                                                                                                                  'sleeps',
+                                                                                                                  'price',
+                                                                                                                  'sales_agent',
+                                                                                                                  'area'])
+def process_offer_updates(message):
+    user_id = message.from_user.id
+    offer = user_states[user_id]['offer_to_edit']
+    field = user_states[user_id]['editing_field']
+
+    if field == 'url':
+        new_value = message.text
+        offer.url_to = new_value
+    elif field == 'description':
+        new_value = message.text
+        offer.description = new_value
+    elif field == 'sleeps':
+        new_value = message.text
+        offer.sleeps = int(new_value)  # предполагаем, что это число
+    elif field == 'price':
+        new_value = message.text
+        offer.price = float(new_value)  # предполагаем, что это число
+    elif field == 'sales_agent':
+        new_value = message.text
+        offer.sales_agent = new_value
+    elif field == 'area':
+        new_value = message.text
+        offer.area = float(new_value)  # предполагаем, что это число
+
+    # Сохраните изменения в базе данных
     session.commit()
 
-    # Обновление сообщения
-    offer_details = f"Текущий оффер:\nID: {offer.internal_id}\nURL: {offer.url_to}\nАдрес: {offer.location.address}\nОписание: {offer.description[:200]}..."
+    # Отправьте обновленное сообщение об оффере
+    offer_details = f"Текущий оффер:\nID: {offer.internal_id}\nURL: {offer.url_to}\nОписание: {offer.description[:200]}...\nСпальных мест: {offer.sleeps}\nЦена: {offer.price}\nАгент: {offer.sales_agent}\nПлощадь: {offer.area}"
+
     markup = create_boolean_buttons(offer)
-    markup.add(...)
+    markup.add(
+        types.InlineKeyboardButton(text="URL", callback_data=f"edit_url_{offer.internal_id}"),
+        types.InlineKeyboardButton(text="Описание", callback_data=f"edit_description_{offer.internal_id}"),
+        types.InlineKeyboardButton(text="Спальных мест", callback_data=f"edit_sleeps_{offer.internal_id}"),
+        types.InlineKeyboardButton(text="Изменить цену", callback_data=f"edit_price_{offer.internal_id}"),
+        types.InlineKeyboardButton(text="Изменить агента", callback_data=f"edit_sales_agent_{offer.internal_id}"),
+        types.InlineKeyboardButton(text="Изменить площадь", callback_data=f"edit_area_{offer.internal_id}"),
+        types.InlineKeyboardButton(text="К списку офферов", callback_data="back_to_offers"),
+        types.InlineKeyboardButton(text="Отмена", callback_data="cancel_edit"),
+    )
 
     bot.send_message(chat_id=message.chat.id, text=offer_details + "\n\nЧто вы хотите изменить?", reply_markup=markup)
+
+    # Очистить состояние редактирования
     user_states[user_id]['editing_field'] = None
 
 
