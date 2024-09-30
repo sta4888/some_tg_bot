@@ -151,7 +151,7 @@ def handle_object_url(message):
     offer = session.query(Offer).filter_by(internal_id=internal_id).first()
 
     if offer:
-        offer.url = new_url
+        offer.url_to = new_url
         session.commit()
 
         current_index += 1
