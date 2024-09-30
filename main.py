@@ -23,6 +23,16 @@ user_states = {}
 BUTTONS_PER_ROW = 2
 ITEMS_PER_PAGE = 9  # 9 кнопок на странице, 3 строки по 3 кнопки
 
+# Пример булевых полей
+BOOLEAN_FIELDS = {
+    'washing_machine': 'Стиральная машина', 'wi_fi': 'wi-fi', 'tv': 'Телевизор', 'air_conditioner': 'Кондиционер',
+    'kids_friendly': 'Дети', 'party': 'Для вечеринок', 'refrigerator': 'Холодильник',
+    'phone': 'Телефон', 'stove': 'Плита', 'dishwasher': 'Посудомоечная машина', 'music_center': 'Музыкальный центр',
+    'microwave': 'Микроволновая печь', 'iron': 'Утюг', 'concierge': 'Консьерж', 'parking': 'Парковка',
+    'safe': 'Сейф', 'water_heater': 'Нагреватель воды', 'pet_friendly': 'Домашние животные', 'smoke': 'Курение',
+    'romantic': 'Романтический', 'jacuzzi': 'Джакузи', 'balcony': 'Балкон', 'elevator': 'Лифт'
+}
+
 
 # Обработчик команды /start
 @bot.message_handler(commands=['start'])
@@ -119,7 +129,6 @@ def handle_url_input(message):
     except Exception as e:
         session.rollback()
         bot.reply_to(message, f"Ошибка при загрузке файла: {str(e)}.")
-
 
 
 # Обработка ссылок на объекты (apart)
@@ -251,17 +260,6 @@ def handle_pagination(call):
     bot.edit_message_reply_markup(call.message.chat.id, call.message.message_id, reply_markup=markup)
 
 
-# Пример булевых полей
-BOOLEAN_FIELDS = {
-    'washing_machine': 'Стиральная машина', 'wi_fi': 'wi-fi', 'tv': 'Телевизор', 'air_conditioner': 'Кондиционер',
-    'kids_friendly': 'Дети', 'party': 'Для вечеринок', 'refrigerator': 'Холодильник',
-    'phone': 'Телефон', 'stove': 'Плита', 'dishwasher': 'Посудомоечная машина', 'music_center': 'Музыкальный центр',
-    'microwave': 'Микроволновая печь', 'iron': 'Утюг', 'concierge': 'Консьерж', 'parking': 'Парковка',
-    'safe': 'Сейф', 'water_heater': 'Нагреватель воды', 'pet_friendly': 'Домашние животные', 'smoke': 'Курение',
-    'romantic': 'Романтический', 'jacuzzi': 'Джакузи', 'balcony': 'Балкон', 'elevator': 'Лифт'
-}
-
-
 # Создайте функцию для создания булевых кнопок
 def create_boolean_buttons(offer, page=0):
     markup = types.InlineKeyboardMarkup()
@@ -298,7 +296,7 @@ def create_boolean_buttons(offer, page=0):
 
 # Функция для обновления кнопок оффера
 def update_offer_buttons(call, offer, page=0):
-    offer_details = f"Текущий оффер:\nID: {offer.internal_id}\nURL: {offer.url_to}\nАдрес: {offer.location.address}\nОписание: {offer.description}"
+    offer_details = f"Текущий оффер:\nID: {offer.internal_id}\nURL: {offer.url_to}\nАдрес: {offer.location.address}\nОписание: {offer.description[:200]}..."
 
     markup = create_boolean_buttons(offer, page)
     markup.add(
@@ -682,6 +680,7 @@ def handle_url_input(message):
             bot.reply_to(message, "Все ссылки успешно обновлены.")
     else:
         bot.reply_to(message, f"Предложение с internal_id {internal_id} не найдено.")
+
 
 #####################################################################################################################
 # Обработка нажатия кнопки "СГЕНЕРИРОВАТЬ РЕФЕРАЛЬНУЮ ССЫЛКУ"
