@@ -195,6 +195,7 @@ def parse_and_save_offer(xml_data, bot, message):
 
         print(f"--party {bool(offer.find('party').text) if offer and offer.find('party') else 0}")
         print(f"--party text {offer.find('party').text}")
+        print(f"--party text bool {bool(offer.find('party').text)}")
         print(f"--internal_id {internal_id}")
         pprint(f"--amenities {amenities}")
         if input("продолжить?") != 'l':
