@@ -537,10 +537,10 @@ def process_offer_updates(message):
             offer.description = new_value
         elif field == 'sleeps':
             new_value = message.text
-            offer.sleeps = int(new_value)  # предполагаем, что это число
+            offer.sleeps = new_value  # предполагаем, что это число
         elif field == 'price':
             new_value = message.text
-            offer.price = float(new_value)  # предполагаем, что это число
+            offer.price = new_value  # предполагаем, что это число
         elif field == 'sales_agent':
             new_value = message.text
             # Предполагается, что sales_agent - это объект SalesAgent, вам нужно его найти по имени или номеру телефона
