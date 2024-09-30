@@ -298,7 +298,7 @@ def create_boolean_buttons(offer, page=0):
 
 # Функция для обновления кнопок оффера
 def update_offer_buttons(call, offer, page=0):
-    offer_details = f"Текущий оффер:\nID: {offer.internal_id}\nURL: {offer.url_to}\nОписание: {offer.description}"
+    offer_details = f"Текущий оффер:\nID: {offer.internal_id}\nURL: {offer.url_to}\nАдрес: {offer.location.address}\nОписание: {offer.description}"
 
     markup = create_boolean_buttons(offer, page)
     markup.add(
