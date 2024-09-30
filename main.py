@@ -301,12 +301,13 @@ def update_offer_buttons(call, offer, page=0):
     markup = create_boolean_buttons(offer, page)
     markup.add(
         types.InlineKeyboardButton(text="URL", callback_data=f"edit_url_{offer.internal_id}"),
-        types.InlineKeyboardButton(text="описание", callback_data=f"edit_description_{offer.internal_id}"),
-        types.InlineKeyboardButton(text="спальных мест", callback_data=f"edit_sleeps_{offer.internal_id}"),
+        types.InlineKeyboardButton(text="Описание", callback_data=f"edit_description_{offer.internal_id}"),
+        types.InlineKeyboardButton(text="Спальных мест", callback_data=f"edit_sleeps_{offer.internal_id}"),
         types.InlineKeyboardButton(text="Изменить цену", callback_data=f"edit_price_{offer.internal_id}"),
         types.InlineKeyboardButton(text="Изменить агента", callback_data=f"edit_sales_agent_{offer.internal_id}"),
         types.InlineKeyboardButton(text="Изменить площадь", callback_data=f"edit_area_{offer.internal_id}"),
         types.InlineKeyboardButton(text="Изменить фото", callback_data=f"edit_photos_{offer.internal_id}"),
+        types.InlineKeyboardButton(text="К списку офферов", callback_data="back_to_offers"),
         types.InlineKeyboardButton(text="Отмена", callback_data="cancel_edit"),
     )
 
@@ -316,6 +317,21 @@ def update_offer_buttons(call, offer, page=0):
         text=offer_details + "\n\nЧто вы хотите изменить?",
         reply_markup=markup
     )
+
+
+@bot.callback_query_handler(func=lambda call: call.data == "back_to_offers")
+def handle_back_to_offers(call):
+    user = session.query(User).filter_by(telegram_id=call.from_user.id).first()
+    offers = session.query(Offer).filter_by(created_by=user.id).all()
+
+    # Установим текущую страницу обратно на 1
+    user_states[call.from_user.id]['page'] = 1
+
+    # Отправим список офферов с пагинацией
+    markup = paginate_buttons(offers, page=1)
+    bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
+                          text="Выберите оффер для редактирования:", reply_markup=markup)
+
 
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("edit_price_"))
