@@ -27,8 +27,6 @@ ITEMS_PER_PAGE = 9  # 9 кнопок на странице, 3 строки по 
 # Обработчик команды /start
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
-    # Извлекаем реферальный UUID, если он был передан
-    # fixme (1) нужно ли делать так, что без реферальной ссылки пользователь может зарегистрироваться? если нет, тогда условие переписываем
     command = message.text.split()
     referrer_uuid = None
 
@@ -46,11 +44,9 @@ def send_welcome(message):
     if user is None:
         referer = None
 
-        # Если есть реферальный UUID, найдем пользователя-реферера
         if referrer_uuid:
             referer = session.query(User).filter_by(uuid=referrer_uuid).first()
 
-        # Создаем нового пользователя с реферальной информацией (если есть)
         user = User(
             telegram_id=message.from_user.id,
             username=message.from_user.username,
@@ -61,13 +57,11 @@ def send_welcome(message):
 
         session.add(user)
 
-        # Если есть реферер, увеличим его счетчик приглашений
         if referer:
             referer.invited_count += 1
             session.add(referer)
 
         session.commit()
-        # Отправляем приветственное сообщение с клавиатурой
         bot.send_message(message.chat.id, "Привет Хост! Добро пожаловать в нашего бота.")
 
     # Создаем клавиатуру
@@ -78,36 +72,42 @@ def send_welcome(message):
     bot.send_message(message.chat.id, "Пожалуйста, отправьте ссылку на XML-файл.", reply_markup=markup)
 
     # Инициализируем состояние пользователя для обработки URL
-    user_states[message.from_user.id] = {'url_input': True}
+    user_states[message.from_user.id] = {'awaiting_feed_url': True}
 
 
+#####################################################################################################################
+# Обработка ссылки на XML-файл
 @bot.message_handler(func=lambda message: 'https://realtycalendar.ru/xml_feed' in message.text)
 def handle_url_input(message):
-    user = session.query(User).filter_by(telegram_id=message.from_user.id).first()
-    url = message.text.strip()
+    user_id = message.from_user.id
+    user = session.query(User).filter_by(telegram_id=user_id).first()
+
+    # Проверяем, на каком этапе находится пользователь
+    if user_id in user_states and 'awaiting_object_urls' in user_states[user_id]:
+        bot.reply_to(message, "Сначала завершите добавление ссылок на объекты.")
+        return
 
     if not user:
         bot.reply_to(message, "Пользователь не найден.")
         return
 
+    url = message.text.strip()
+
     try:
-        # Пытаемся загрузить и обработать XML-файл
         response = requests.get(url)
         response.raise_for_status()
         xml_data = response.content.decode('utf-8')
 
-        # Здесь происходит парсинг и сохранение предложений
         internal_ids = parse_and_save_offer(xml_data, bot, message)
         print(internal_ids)
 
         if internal_ids:
-            # Сохраняем ссылку в таблице XML_FEED
             new_feed = XML_FEED(url=url, user_id=user.id)
             session.add(new_feed)
             session.commit()
 
             bot.send_message(message.chat.id, f'спасибо! 👌\nДобавлено объектов: {len(internal_ids)}')
-            user_states[message.from_user.id] = {'internal_ids': internal_ids, 'current_index': 0}
+            user_states[user_id] = {'internal_ids': internal_ids, 'current_index': 0, 'awaiting_object_urls': True}
 
             first_internal_id = internal_ids[0].get('internal_id')
             first_location_address = internal_ids[0].get('location_address')
@@ -117,62 +117,59 @@ def handle_url_input(message):
             bot.reply_to(message, "В загруженном файле нет ни одного нового объекта.")
 
     except Exception as e:
-        session.rollback()  # В случае ошибки откатываем транзакцию
+        session.rollback()
         bot.reply_to(message, f"Ошибка при загрузке файла: {str(e)}.")
 
+
 #####################################################################################################################
-# Обработка текстовых сообщений от пользователей для ввода URL
-@bot.message_handler(func=lambda message: message.text.startswith("https://realtycalendar.ru/apart") and not message.from_user.id in user_states)
-def request_url(message):
-    print("request_url")
-    user_states[message.from_user.id] = {'url_input': True}
-    bot.reply_to(message, "Пожалуйста, введите ссылку на XML-файл.")
-
-
-# Обработка текстовых сообщений от пользователей для ввода URL объектов
+# Обработка ссылок на объекты (apart)
 @bot.message_handler(
-    func=lambda message: message.from_user.id in user_states and 'internal_ids' in user_states[message.from_user.id])
+    func=lambda message: message.from_user.id in user_states and 'awaiting_object_urls' in user_states[
+        message.from_user.id])
 def handle_object_url(message):
-    print("handle_object_url")
     user_id = message.from_user.id
     user_state = user_states[user_id]
 
-    # Получаем текущий индекс и список объектов
-    internal_ids = user_state['internal_ids']
-    current_index = user_state['current_index']
+    # Проверяем, не пытается ли пользователь снова отправить ссылку на XML-файл
+    if 'https://realtycalendar.ru/xml_feed' in message.text:
+        bot.reply_to(message, "Пожалуйста, завершите добавление ссылок на объекты.")
+        return
+
+    # Проверяем формат ссылки на объект
+    if not message.text.startswith("https://realtycalendar.ru/apart"):
+        bot.reply_to(message, "Неверная ссылка. Пожалуйста, введите корректный URL на объект.")
+        return
 
     # Получаем текущий объект и его внутренний ID
+    internal_ids = user_state['internal_ids']
+    current_index = user_state['current_index']
     current_internal_id_data = internal_ids[current_index]
     internal_id = current_internal_id_data.get('internal_id')
 
-    # Сохраняем URL для текущего объекта (логика сохранения может отличаться в зависимости от модели)
+    # Сохраняем URL для текущего объекта
     new_url = message.text.strip()
     offer = session.query(Offer).filter_by(internal_id=internal_id).first()
 
     if offer:
-        # Сохраняем или обновляем URL в базе данных
         offer.url = new_url
         session.commit()
 
-        # Переходим к следующему объекту
         current_index += 1
         user_state['current_index'] = current_index
 
-        # Если ещё есть объекты для добавления
         if current_index < len(internal_ids):
             next_internal_id_data = internal_ids[current_index]
             next_internal_id = next_internal_id_data.get('internal_id')
             next_location_address = next_internal_id_data.get('location_address')
 
-            # Запрашиваем следующую ссылку
             bot.reply_to(message,
                          f"Введите URL для объекта с internal_id: {next_internal_id}, адрес: {next_location_address}")
         else:
-            # Если все ссылки введены, завершаем процесс
             del user_states[user_id]
             bot.reply_to(message, "Все ссылки успешно добавлены!")
     else:
         bot.reply_to(message, f"Предложение с internal_id {internal_id} не найдено.")
+
 
 #
 # # Команда для получения рефералов до 6 уровня
