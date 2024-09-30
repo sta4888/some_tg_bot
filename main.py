@@ -515,7 +515,6 @@ def handle_edit_area(call):
 
 
 ##########
-
 @bot.message_handler(
     func=lambda message: message.chat.id in user_states and user_states[message.chat.id].get('editing_field') in ['url',
                                                                                                                   'description',
@@ -528,44 +527,54 @@ def process_offer_updates(message):
     offer = user_states[user_id]['offer_to_edit']
     field = user_states[user_id]['editing_field']
 
-    if field == 'url':
-        new_value = message.text
-        offer.url_to = new_value
-    elif field == 'description':
-        new_value = message.text
-        offer.description = new_value
-    elif field == 'sleeps':
-        new_value = message.text
-        offer.sleeps = int(new_value)  # предполагаем, что это число
-    elif field == 'price':
-        new_value = message.text
-        offer.price = float(new_value)  # предполагаем, что это число
-    elif field == 'sales_agent':
-        new_value = message.text
-        offer.sales_agent = new_value
-    elif field == 'area':
-        new_value = message.text
-        offer.area = float(new_value)  # предполагаем, что это число
+    # Обработчик для каждого поля
+    try:
+        if field == 'url':
+            new_value = message.text
+            offer.url_to = new_value
+        elif field == 'description':
+            new_value = message.text
+            offer.description = new_value
+        elif field == 'sleeps':
+            new_value = message.text
+            offer.sleeps = int(new_value)  # предполагаем, что это число
+        elif field == 'price':
+            new_value = message.text
+            offer.price = float(new_value)  # предполагаем, что это число
+        elif field == 'sales_agent':
+            new_value = message.text
+            # Предполагается, что sales_agent - это объект SalesAgent, вам нужно его найти по имени или номеру телефона
+            offer.sales_agent = session.query(SalesAgent).filter(SalesAgent.name == new_value).first()
+        elif field == 'area':
+            new_value = message.text
+            offer.area = float(new_value)  # предполагаем, что это число
 
-    # Сохраните изменения в базе данных
-    session.commit()
+        # Сохраните изменения в базе данных
+        session.commit()
 
-    # Отправьте обновленное сообщение об оффере
-    offer_details = f"Текущий оффер:\nID: {offer.internal_id}\nURL: {offer.url_to}\nОписание: {offer.description[:200]}...\nСпальных мест: {offer.sleeps}\nЦена: {offer.price}\nАгент: {offer.sales_agent}\nПлощадь: {offer.area}"
+        # Отправьте обновленное сообщение об оффере
+        offer_details = f"Текущий оффер:\nID: {offer.internal_id}\nURL: {offer.url_to}\nОписание: {offer.description[:200]}...\nСпальных мест: {offer.sleeps}\nЦена: {offer.price}\nАгент: {offer.sales_agent.name if offer.sales_agent else 'Не указан'}\nПлощадь: {offer.area}"
 
-    markup = create_boolean_buttons(offer)
-    markup.add(
-        types.InlineKeyboardButton(text="URL", callback_data=f"edit_url_{offer.internal_id}"),
-        types.InlineKeyboardButton(text="Описание", callback_data=f"edit_description_{offer.internal_id}"),
-        types.InlineKeyboardButton(text="Спальных мест", callback_data=f"edit_sleeps_{offer.internal_id}"),
-        types.InlineKeyboardButton(text="Изменить цену", callback_data=f"edit_price_{offer.internal_id}"),
-        types.InlineKeyboardButton(text="Изменить агента", callback_data=f"edit_sales_agent_{offer.internal_id}"),
-        types.InlineKeyboardButton(text="Изменить площадь", callback_data=f"edit_area_{offer.internal_id}"),
-        types.InlineKeyboardButton(text="К списку офферов", callback_data="back_to_offers"),
-        types.InlineKeyboardButton(text="Отмена", callback_data="cancel_edit"),
-    )
+        markup = create_boolean_buttons(offer)
+        markup.add(
+            types.InlineKeyboardButton(text="URL", callback_data=f"edit_url_{offer.internal_id}"),
+            types.InlineKeyboardButton(text="Описание", callback_data=f"edit_description_{offer.internal_id}"),
+            types.InlineKeyboardButton(text="Спальных мест", callback_data=f"edit_sleeps_{offer.internal_id}"),
+            types.InlineKeyboardButton(text="Изменить цену", callback_data=f"edit_price_{offer.internal_id}"),
+            types.InlineKeyboardButton(text="Изменить агента", callback_data=f"edit_sales_agent_{offer.internal_id}"),
+            types.InlineKeyboardButton(text="Изменить площадь", callback_data=f"edit_area_{offer.internal_id}"),
+            types.InlineKeyboardButton(text="К списку офферов", callback_data="back_to_offers"),
+            types.InlineKeyboardButton(text="Отмена", callback_data="cancel_edit"),
+        )
 
-    bot.send_message(chat_id=message.chat.id, text=offer_details + "\n\nЧто вы хотите изменить?", reply_markup=markup)
+        bot.send_message(chat_id=message.chat.id, text=offer_details + "\n\nЧто вы хотите изменить?",
+                         reply_markup=markup)
+
+    except ValueError as e:
+        bot.send_message(chat_id=message.chat.id,
+                         text=f"Ошибка при обновлении: {str(e)}. Пожалуйста, проверьте введенные данные.")
+    except Exception as e:
+        bot.send_message(chat_id=message.chat.id, text=f"Произошла ошибка: {str(e)}")
 
     # Очистить состояние редактирования
     user_states[user_id]['editing_field'] = None
