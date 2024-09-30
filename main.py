@@ -506,15 +506,17 @@ def process_offer_updates(message):
             new_value = message.text
             offer.sleeps = new_value  # предполагаем, что это число
         elif field == 'price':
-            new_value = message.text
-            offer.price = new_value  # предполагаем, что это число
+            value, currency = message.text.split()
+            value = float(value)
+            offer.price.value = value
+            offer.price.currency = currency
         elif field == 'sales_agent':
             new_value = message.text
             # Предполагается, что sales_agent - это объект SalesAgent, вам нужно его найти по имени или номеру телефона
             offer.sales_agent = session.query(SalesAgent).filter(SalesAgent.name == new_value).first()
         elif field == 'area':
             new_value = message.text
-            offer.area = float(new_value)  # предполагаем, что это число
+            offer.area = new_value  # предполагаем, что это число
 
         # Сохраните изменения в базе данных
         session.commit()
