@@ -1,6 +1,7 @@
 import os
 from datetime import datetime
 from io import BytesIO
+from pprint import pprint
 
 import segno
 from PyPDF2 import PdfReader, PdfWriter
@@ -196,6 +197,7 @@ def parse_and_save_offer(xml_data, bot, message):
 
         print(f"--party {bool(offer.find('party').text) if offer and offer.find('party') else 0}")
         print(f"--internal_id {internal_id}")
+        pprint(f"--amenities {amenities}")
         if input("продолжить?") != 'l':
             break
 
