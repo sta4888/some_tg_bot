@@ -536,7 +536,7 @@ def process_offer_updates(message):
         session.commit()
 
         # Отправьте обновленное сообщение об оффере
-        offer_details = f"Текущий оффер:\nID: {offer.internal_id}\nURL: {offer.url_to}\nОписание: {offer.description[:200]}...\nСпальных мест: {offer.sleeps}\nЦена: {offer.price.value} {offer.price.currency}\nАгент: {offer.sales_agent.name if offer.sales_agent else 'Не указан'}\nПлощадь: {offer.area}"
+        offer_details = f"Текущий оффер:\nID: {offer.internal_id}\nURL: {offer.url_to}\nОписание: {offer.description[:200]}...\nСпальных мест: {offer.sleeps}\nЦена: {offer.price.value} {offer.price.currency}\nАгент: {offer.sales_agent.name if offer.sales_agent else 'Не указан'}\nПлощадь: {offer.area.value} {offer.area.unit}"
 
         markup = create_boolean_buttons(offer)
         markup.add(
