@@ -40,6 +40,11 @@ def send_welcome(message):
     # Найдем пользователя по telegram_id
     user = session.query(User).filter_by(telegram_id=message.from_user.id).first()
 
+    # Создаем клавиатуру
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    ref_link_btn = types.KeyboardButton("СГЕНЕРИРОВАТЬ РЕФЕРАЛЬНУЮ ССЫЛКУ")
+    markup.add(ref_link_btn)
+
     # Если пользователь новый, создаем его
     if user is None:
         referer = None
@@ -63,11 +68,6 @@ def send_welcome(message):
 
         session.commit()
         bot.send_message(message.chat.id, "Привет Хост! Добро пожаловать в нашего бота.")
-
-    # Создаем клавиатуру
-    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    ref_link_btn = types.KeyboardButton("СГЕНЕРИРОВАТЬ РЕФЕРАЛЬНУЮ ССЫЛКУ")
-    markup.add(ref_link_btn)
 
     bot.send_message(message.chat.id, "Пожалуйста, отправьте ссылку на XML-файл.", reply_markup=markup)
 
@@ -171,32 +171,6 @@ def handle_object_url(message):
         bot.reply_to(message, f"Предложение с internal_id {internal_id} не найдено.")
 
 
-#
-# # Команда для получения рефералов до 6 уровня
-# @bot.message_handler(commands=['allrefstats'])
-# def handle_allrefstats(message):
-#     telegram_user_id = message.from_user.id
-#
-#     # Ищем пользователя по telegram_user_id
-#     user = session.query(User).filter_by(telegram_id=telegram_user_id).first()
-#
-#     if user:
-#         # Получаем реферальную цепочку
-#         all_referrals = get_referral_chain(user)
-#
-#         # Формируем сообщение с деталями
-#         if all_referrals:
-#             message_text = "Рефералы до 6 уровня:\n"
-#             for referral_info in all_referrals:
-#                 subscription_status = "Подписка активна" if referral_info[
-#                     "has_active_subscription"] else "Подписка не активна"
-#                 message_text += f"telegram_id: {referral_info['telegram_id']} Имя: {referral_info['first_name']}, Уровень: {referral_info['level']}, {subscription_status}\n"
-#         else:
-#             message_text = "У вас нет рефералов."
-#
-#         bot.send_message(message.chat.id, message_text)
-#     else:
-#         bot.send_message(message.chat.id, "Вы не зарегистрированы.")
 #
 #
 # @bot.message_handler(commands=['edit_offer'])
@@ -739,6 +713,33 @@ def handle_referral_link(message):
         else:
             # Если файл не найден, отправляем сообщение об ошибке
             bot.send_message(message.chat.id, "Не удалось найти PDF файл. Попробуйте позже.")
+    else:
+        bot.send_message(message.chat.id, "Вы не зарегистрированы.")
+
+
+# Команда для получения рефералов до 6 уровня
+@bot.message_handler(commands=['allrefstats'])
+def handle_allrefstats(message):
+    telegram_user_id = message.from_user.id
+
+    # Ищем пользователя по telegram_user_id
+    user = session.query(User).filter_by(telegram_id=telegram_user_id).first()
+
+    if user:
+        # Получаем реферальную цепочку
+        all_referrals = get_referral_chain(user)
+
+        # Формируем сообщение с деталями
+        if all_referrals:
+            message_text = "Рефералы до 6 уровня:\n"
+            for referral_info in all_referrals:
+                subscription_status = "Подписка активна" if referral_info[
+                    "has_active_subscription"] else "Подписка не активна"
+                message_text += f"telegram_id: {referral_info['telegram_id']} Имя: {referral_info['first_name']}, Уровень: {referral_info['level']}, {subscription_status}\n"
+        else:
+            message_text = "У вас нет рефералов."
+
+        bot.send_message(message.chat.id, message_text)
     else:
         bot.send_message(message.chat.id, "Вы не зарегистрированы.")
 
