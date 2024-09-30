@@ -180,7 +180,69 @@ def handle_object_url(message):
         bot.reply_to(message, f"Предложение с internal_id {internal_id} не найдено.")
 
 
+#####################################################################################################################
+# Обработка нажатия кнопки "СГЕНЕРИРОВАТЬ РЕФЕРАЛЬНУЮ ССЫЛКУ"
+@bot.message_handler(func=lambda message: message.text == "СГЕНЕРИРОВАТЬ РЕФЕРАЛЬНУЮ ССЫЛКУ")
+def handle_referral_link(message):
+    telegram_user_id = message.from_user.id
+
+    # Найдем пользователя по telegram_id
+    user = session.query(User).filter_by(telegram_id=telegram_user_id).first()
+
+    if user:
+        # Генерируем реферальную ссылку с UUID пользователя
+        ref_link = f"https://t.me/VgostiBot2_bot?start={user.uuid}"
+
+        # Генерация QR-кода (здесь предполагается, что у вас есть функция qr_generate)
+        qr_generate(ref_link, f"{os.getcwd()}/pdfs/host.pdf", f"{user.uuid}")
+
+        # Путь к PDF файлу
+        pdf_path = f"{os.getcwd()}/pdfs/created/{user.uuid}.pdf"
+
+        # Проверяем, существует ли файл по указанному пути
+        if os.path.exists(pdf_path):
+            # Отправляем PDF файл пользователю
+            with open(pdf_path, 'rb') as pdf_file:
+                bot.send_document(message.chat.id, pdf_file)
+
+            # Отправляем сообщение с реферальной ссылкой
+            bot.send_message(message.chat.id, f"Ваша реферальная ссылка: {ref_link}")
+        else:
+            # Если файл не найден, отправляем сообщение об ошибке
+            bot.send_message(message.chat.id, "Не удалось найти PDF файл. Попробуйте позже.")
+    else:
+        bot.send_message(message.chat.id, "Вы не зарегистрированы.")
+
+
+# Команда для получения рефералов до 6 уровня
+@bot.message_handler(commands=['allrefstats'])
+def handle_allrefstats(message):
+    telegram_user_id = message.from_user.id
+
+    # Ищем пользователя по telegram_user_id
+    user = session.query(User).filter_by(telegram_id=telegram_user_id).first()
+
+    if user:
+        # Получаем реферальную цепочку
+        all_referrals = get_referral_chain(user)
+
+        # Формируем сообщение с деталями
+        if all_referrals:
+            message_text = "Рефералы до 6 уровня:\n"
+            for referral_info in all_referrals:
+                subscription_status = "Подписка активна" if referral_info[
+                    "has_active_subscription"] else "Подписка не активна"
+                message_text += f"telegram_id: {referral_info['telegram_id']} Имя: {referral_info['first_name']}, Уровень: {referral_info['level']}, {subscription_status}\n"
+        else:
+            message_text = "У вас нет рефералов."
+
+        bot.send_message(message.chat.id, message_text)
+    else:
+        bot.send_message(message.chat.id, "Вы не зарегистрированы.")
+
+
 ######################################################################################################################
+
 
 @bot.message_handler(commands=['edit_offer'])
 def edit_offer(message):
@@ -294,162 +356,6 @@ def create_boolean_buttons(offer, page=0):
     return markup
 
 
-# Функция для обновления кнопок оффера
-def update_offer_buttons(call, offer, page=0):
-    offer_details = f"Текущий оффер:\nID: {offer.internal_id}\nURL: {offer.url_to}\nАдрес: {offer.location.address}\nОписание: {offer.description[:200]}..."
-
-    markup = create_boolean_buttons(offer, page)
-    markup.add(
-        types.InlineKeyboardButton(text="URL", callback_data=f"edit_url_{offer.internal_id}"),
-        types.InlineKeyboardButton(text="Описание", callback_data=f"edit_description_{offer.internal_id}"),
-        types.InlineKeyboardButton(text="Спальных мест", callback_data=f"edit_sleeps_{offer.internal_id}"),
-        types.InlineKeyboardButton(text="Изменить цену", callback_data=f"edit_price_{offer.internal_id}"),
-        types.InlineKeyboardButton(text="Изменить агента", callback_data=f"edit_sales_agent_{offer.internal_id}"),
-        types.InlineKeyboardButton(text="Изменить площадь", callback_data=f"edit_area_{offer.internal_id}"),
-        types.InlineKeyboardButton(text="Изменить фото", callback_data=f"edit_photos_{offer.internal_id}"),
-        types.InlineKeyboardButton(text="К списку офферов", callback_data="back_to_offers"),
-        types.InlineKeyboardButton(text="Отмена", callback_data="cancel_edit"),
-    )
-
-    bot.edit_message_text(
-        chat_id=call.message.chat.id,
-        message_id=call.message.message_id,
-        text=offer_details + "\n\nЧто вы хотите изменить?",
-        reply_markup=markup
-    )
-
-
-@bot.callback_query_handler(func=lambda call: call.data == "back_to_offers")
-def handle_back_to_offers(call):
-    user = session.query(User).filter_by(telegram_id=call.from_user.id).first()
-    offers = session.query(Offer).filter_by(created_by=user.id).all()
-
-    # Установим текущую страницу обратно на 1
-    user_states[call.from_user.id]['page'] = 1
-
-    # Отправим список офферов с пагинацией
-    markup = paginate_buttons(offers, page=1)
-    bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
-                          text="Выберите оффер для редактирования:", reply_markup=markup)
-
-
-@bot.callback_query_handler(func=lambda call: call.data.startswith("edit_price_"))
-def handle_edit_price(call):
-    internal_id = call.data.split("_")[2]
-    offer = session.query(Offer).filter_by(internal_id=str(internal_id)).first()
-
-    if offer:
-        bot.send_message(call.message.chat.id,
-                         "Введите новую цену и валюту в формате 'значение валюта' (например, '1000 USD').")
-        user_states[call.from_user.id] = {'offer_to_edit': offer, 'edit_type': 'price'}
-    else:
-        bot.send_message(call.message.chat.id, "Ошибка: Оффер не найден.")
-
-
-def get_agents():
-    return session.query(SalesAgent).all()
-
-
-# Обработка редактирования агента
-@bot.callback_query_handler(func=lambda call: call.data.startswith("edit_sales_agent_"))
-def handle_edit_sales_agent(call):
-    internal_id = call.data.split("_")[2]
-    offer = session.query(Offer).filter_by(internal_id=str(internal_id)).first()
-
-    if offer:
-        # Предположим, что у вас есть функция для получения списка агентов
-        agents = get_agents()  # Замените на вашу функцию
-        markup = types.InlineKeyboardMarkup()
-        for agent in agents:
-            markup.add(
-                types.InlineKeyboardButton(text=agent.name, callback_data=f"set_agent_{agent.id}_{offer.internal_id}"))
-        bot.send_message(call.message.chat.id, "Выберите агента:", reply_markup=markup)
-    else:
-        bot.send_message(call.message.chat.id, "Ошибка: Оффер не найден.")
-
-
-# Обработка редактирования площади
-@bot.callback_query_handler(func=lambda call: call.data.startswith("edit_area_"))
-def handle_edit_area(call):
-    internal_id = call.data.split("_")[2]
-    offer = session.query(Offer).filter_by(internal_id=str(internal_id)).first()
-
-    if offer:
-        bot.send_message(call.message.chat.id,
-                         "Введите новую площадь в формате 'значение единица' (например, '50 m2').")
-        user_states[call.from_user.id] = {'offer_to_edit': offer, 'edit_type': 'area'}
-    else:
-        bot.send_message(call.message.chat.id, "Ошибка: Оффер не найден.")
-
-
-# Обработка редактирования фотографий
-@bot.callback_query_handler(func=lambda call: call.data.startswith("edit_photos_"))
-def handle_edit_photos(call):
-    internal_id = call.data.split("_")[2]
-    offer = session.query(Offer).filter_by(internal_id=str(internal_id)).first()
-
-    if offer:
-        # Предположим, что у вас есть функция для получения списка фотографий
-        markup = types.InlineKeyboardMarkup()
-        for photo in offer.photos:
-            markup.add(types.InlineKeyboardButton(text="Удалить " + photo.url,
-                                                  callback_data=f"delete_photo_{photo.id}_{offer.internal_id}"))
-        markup.add(types.InlineKeyboardButton(text="Добавить фото", callback_data=f"add_photo_{offer.internal_id}"))
-        bot.send_message(call.message.chat.id, "Выберите фото для удаления или добавьте новое:", reply_markup=markup)
-    else:
-        bot.send_message(call.message.chat.id, "Ошибка: Оффер не найден.")
-
-
-# Обработка выбора оффера для редактирования
-@bot.callback_query_handler(func=lambda call: call.data.startswith("edit_offer_"))
-def handle_offer_selection(call):
-    internal_id = call.data.split("_")[2]
-    offer = session.query(Offer).filter_by(internal_id=str(internal_id)).first()
-
-    if offer and offer.creator.telegram_id == call.from_user.id:
-        # Показываем кнопки редактирования
-        update_offer_buttons(call, offer)
-        user_states[call.from_user.id] = {'offer_to_edit': offer, 'current_page': 0}  # Инициализация текущей страницы
-    else:
-        bot.send_message(call.message.chat.id, "Ошибка: Оффер не найден или не принадлежит вам.")
-
-
-# Обработка переключения булевого поля
-@bot.callback_query_handler(func=lambda call: call.data.startswith('toggle_'))
-def handle_toggle_field(call):
-    field, page = call.data.replace('toggle_', '').rsplit('_', 1)
-    page = int(page)  # Преобразуем страницу в целое число
-    user_id = call.from_user.id
-    offer_id = user_states[user_id]['offer_to_edit'].internal_id
-
-    # Загружаем оффер из базы данных
-    offer = session.query(Offer).filter_by(internal_id=offer_id).first()
-
-    # Переключаем значение поля
-    current_value = getattr(offer, field)
-    setattr(offer, field, not current_value)
-
-    # Сохраняем изменения в базе данных
-    session.commit()
-
-    # Обновляем кнопки с учетом изменения, оставаясь на той же странице
-    update_offer_buttons(call, offer, page)
-
-
-# Обработка пагинации
-@bot.callback_query_handler(func=lambda call: call.data.startswith('page_'))
-def handle_pagination(call):
-    page = int(call.data.split('_')[1])
-    user_id = call.from_user.id
-    offer_id = user_states[user_id]['offer_to_edit'].internal_id
-
-    # Загружаем оффер из базы данных
-    offer = session.query(Offer).filter_by(internal_id=offer_id).first()
-
-    # Показываем кнопки на выбранной странице
-    update_offer_buttons(call, offer, page)
-
-
 @bot.callback_query_handler(func=lambda call: call.data.startswith("edit_url_"))
 def handle_edit_url(call):
     internal_id = call.data.split("_")[2]
@@ -500,38 +406,212 @@ def process_new_url(message):
     user_states[user_id]['editing_field'] = None
 
 
+# Описание
 @bot.callback_query_handler(func=lambda call: call.data.startswith("edit_description_"))
 def handle_edit_description(call):
     internal_id = call.data.split("_")[2]
     offer = user_states[call.from_user.id]['offer_to_edit']
 
     if offer and offer.internal_id == internal_id:
-        # Запрос нового описания
-        bot.edit_message_text(
-            chat_id=call.message.chat.id,
-            message_id=call.message.message_id,
-            text="Введите новое описание:"
-        )
+        bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
+                              text="Введите новое описание:")
         user_states[call.from_user.id]['editing_field'] = 'description'
     else:
         bot.send_message(call.message.chat.id, "Ошибка при редактировании оффера.")
 
 
+@bot.message_handler(func=lambda message: message.chat.id in user_states and user_states[message.chat.id].get(
+    'editing_field') == 'description')
+def process_new_description(message):
+    user_id = message.from_user.id
+    new_description = message.text
+    offer = user_states[user_id]['offer_to_edit']
+
+    offer.description = new_description
+    session.commit()
+
+    update_offer_buttons(message, offer)
+
+
+# Спальных мест
 @bot.callback_query_handler(func=lambda call: call.data.startswith("edit_sleeps_"))
-def handle_edit_description(call):
+def handle_edit_sleeps(call):
     internal_id = call.data.split("_")[2]
     offer = user_states[call.from_user.id]['offer_to_edit']
 
     if offer and offer.internal_id == internal_id:
-        # Запрос нового описания
-        bot.edit_message_text(
-            chat_id=call.message.chat.id,
-            message_id=call.message.message_id,
-            text="Введите новое количество:"
-        )
+        bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
+                              text="Введите количество спальных мест:")
         user_states[call.from_user.id]['editing_field'] = 'sleeps'
     else:
         bot.send_message(call.message.chat.id, "Ошибка при редактировании оффера.")
+
+
+@bot.message_handler(func=lambda message: message.chat.id in user_states and user_states[message.chat.id].get(
+    'editing_field') == 'sleeps')
+def process_new_sleeps(message):
+    user_id = message.from_user.id
+    new_sleeps = message.text
+    offer = user_states[user_id]['offer_to_edit']
+
+    offer.sleeps = int(new_sleeps)
+    session.commit()
+
+    update_offer_buttons(message, offer)
+
+
+# Цена
+@bot.callback_query_handler(func=lambda call: call.data.startswith("edit_price_"))
+def handle_edit_price(call):
+    internal_id = call.data.split("_")[2]
+    offer = user_states[call.from_user.id]['offer_to_edit']
+
+    if offer and offer.internal_id == internal_id:
+        bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
+                              text="Введите новую цену:")
+        user_states[call.from_user.id]['editing_field'] = 'price'
+    else:
+        bot.send_message(call.message.chat.id, "Ошибка при редактировании оффера.")
+
+
+@bot.message_handler(func=lambda message: message.chat.id in user_states and user_states[message.chat.id].get(
+    'editing_field') == 'price')
+def process_new_price(message):
+    user_id = message.from_user.id
+    new_price = message.text
+    offer = user_states[user_id]['offer_to_edit']
+
+    offer.price = float(new_price)
+    session.commit()
+
+    update_offer_buttons(message, offer)
+
+
+# Агенты
+@bot.callback_query_handler(func=lambda call: call.data.startswith("edit_sales_agent_"))
+def handle_edit_sales_agent(call):
+    internal_id = call.data.split("_")[2]
+    offer = user_states[call.from_user.id]['offer_to_edit']
+
+    if offer and offer.internal_id == internal_id:
+        bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
+                              text="Введите нового агента:")
+        user_states[call.from_user.id]['editing_field'] = 'sales_agent'
+    else:
+        bot.send_message(call.message.chat.id, "Ошибка при редактировании оффера.")
+
+
+@bot.message_handler(func=lambda message: message.chat.id in user_states and user_states[message.chat.id].get(
+    'editing_field') == 'sales_agent')
+def process_new_sales_agent(message):
+    user_id = message.from_user.id
+    new_agent = message.text
+    offer = user_states[user_id]['offer_to_edit']
+
+    offer.sales_agent = new_agent
+    session.commit()
+
+    update_offer_buttons(message, offer)
+
+
+# Площадь
+@bot.callback_query_handler(func=lambda call: call.data.startswith("edit_area_"))
+def handle_edit_area(call):
+    internal_id = call.data.split("_")[2]
+    offer = user_states[call.from_user.id]['offer_to_edit']
+
+    if offer and offer.internal_id == internal_id:
+        bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
+                              text="Введите новую площадь:")
+        user_states[call.from_user.id]['editing_field'] = 'area'
+    else:
+        bot.send_message(call.message.chat.id, "Ошибка при редактировании оффера.")
+
+
+@bot.message_handler(
+    func=lambda message: message.chat.id in user_states and user_states[message.chat.id].get('editing_field') == 'area')
+def process_new_area(message):
+    user_id = message.from_user.id
+    new_area = message.text
+    offer = user_states[user_id]['offer_to_edit']
+
+    offer.area = float(new_area)
+    session.commit()
+
+    update_offer_buttons(message, offer)
+
+
+# Общая функция для обновления кнопок
+def update_offer_buttons(message_or_call, offer):
+    offer_details = f"Текущий оффер:\nID: {offer.internal_id}\nURL: {offer.url_to}\nАдрес: {offer.location.address}\nОписание: {offer.description[:200]}..."
+
+    markup = types.InlineKeyboardMarkup()
+    markup.add(
+        types.InlineKeyboardButton(text="URL", callback_data=f"edit_url_{offer.internal_id}"),
+        types.InlineKeyboardButton(text="Описание", callback_data=f"edit_description_{offer.internal_id}"),
+        types.InlineKeyboardButton(text="Спальных мест", callback_data=f"edit_sleeps_{offer.internal_id}"),
+        types.InlineKeyboardButton(text="Изменить цену", callback_data=f"edit_price_{offer.internal_id}"),
+        types.InlineKeyboardButton(text="Изменить агента", callback_data=f"edit_sales_agent_{offer.internal_id}"),
+        types.InlineKeyboardButton(text="Изменить площадь", callback_data=f"edit_area_{offer.internal_id}"),
+        types.InlineKeyboardButton(text="К списку офферов", callback_data="back_to_offers"),
+        types.InlineKeyboardButton(text="Отмена", callback_data="cancel_edit"),
+    )
+
+    bot.send_message(chat_id=message_or_call.chat.id, text=offer_details + "\n\nЧто вы хотите изменить?",
+                     reply_markup=markup)
+
+    # Очистка состояния редактирования
+    user_states[message_or_call.chat.id]['editing_field'] = None
+
+
+@bot.callback_query_handler(func=lambda call: call.data == "back_to_offers")
+def handle_back_to_offers(call):
+    user = session.query(User).filter_by(telegram_id=call.from_user.id).first()
+    offers = session.query(Offer).filter_by(created_by=user.id).all()
+
+    # Установим текущую страницу обратно на 1
+    user_states[call.from_user.id]['page'] = 1
+
+    # Отправим список офферов с пагинацией
+    markup = paginate_buttons(offers, page=1)
+    bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
+                          text="Выберите оффер для редактирования:", reply_markup=markup)
+
+
+# Обработка переключения булевого поля
+@bot.callback_query_handler(func=lambda call: call.data.startswith('toggle_'))
+def handle_toggle_field(call):
+    field, page = call.data.replace('toggle_', '').rsplit('_', 1)
+    page = int(page)  # Преобразуем страницу в целое число
+    user_id = call.from_user.id
+    offer_id = user_states[user_id]['offer_to_edit'].internal_id
+
+    # Загружаем оффер из базы данных
+    offer = session.query(Offer).filter_by(internal_id=offer_id).first()
+
+    # Переключаем значение поля
+    current_value = getattr(offer, field)
+    setattr(offer, field, not current_value)
+
+    # Сохраняем изменения в базе данных
+    session.commit()
+
+    # Обновляем кнопки с учетом изменения, оставаясь на той же странице
+    update_offer_buttons(call, offer, page)
+
+
+# Обработка пагинации
+@bot.callback_query_handler(func=lambda call: call.data.startswith('page_'))
+def handle_pagination(call):
+    page = int(call.data.split('_')[1])
+    user_id = call.from_user.id
+    offer_id = user_states[user_id]['offer_to_edit'].internal_id
+
+    # Загружаем оффер из базы данных
+    offer = session.query(Offer).filter_by(internal_id=offer_id).first()
+
+    # Показываем кнопки на выбранной странице
+    update_offer_buttons(call, offer, page)
 
 
 # Обработка отмены
@@ -543,6 +623,42 @@ def handle_cancel_edit(call):
         text="Редактирование оффера отменено."
     )
     user_states.pop(call.from_user.id, None)  # Удаляем состояние пользователя
+
+
+#######################################################################################################################
+# Обработка текстовых сообщений от пользователей для ввода URL
+@bot.message_handler(func=lambda message: message.from_user.id in user_states and 'update_existing' not in user_states[
+    message.from_user.id])
+def handle_url_input(message):
+    user_id = message.from_user.id
+    user_state = user_states[user_id]
+
+    url_to = message.text.strip()
+    internal_ids = user_state['internal_ids']
+    current_index = user_state['current_index']
+
+    current_internal_id_data = internal_ids[current_index]
+    internal_id = current_internal_id_data.get('internal_id')
+
+    offer = session.query(Offer).filter_by(internal_id=internal_id).first()
+
+    if offer:
+        offer.url_to = url_to
+        session.commit()
+        bot.reply_to(message, f"Ссылка для internal_id {internal_id} обновлена на: {url_to}")
+
+        current_index += 1
+        user_state['current_index'] = current_index
+
+        if current_index < len(internal_ids):
+            next_internal_id_data = internal_ids[current_index]
+            next_internal_id = next_internal_id_data.get('internal_id')
+            bot.reply_to(message, f"Пожалуйста, введите URL для предложения с internal_id: {next_internal_id}")
+        else:
+            del user_states[user_id]
+            bot.reply_to(message, "Все ссылки успешно обновлены.")
+    else:
+        bot.reply_to(message, f"Предложение с internal_id {internal_id} не найдено.")
 
 
 @bot.message_handler(func=lambda message: message.from_user.id in user_states)
@@ -580,16 +696,20 @@ def handle_text(message):
             del user_states[user_id]  # Удаляем состояние пользователя после завершения
 
 
-# Обработка выбора агента
-@bot.callback_query_handler(func=lambda call: call.data.startswith("set_agent_"))
-def handle_set_agent(call):
-    agent_id, internal_id = call.data.split("_")[2:4]
+# Обработка редактирования фотографий
+@bot.callback_query_handler(func=lambda call: call.data.startswith("edit_photos_"))
+def handle_edit_photos(call):
+    internal_id = call.data.split("_")[2]
     offer = session.query(Offer).filter_by(internal_id=str(internal_id)).first()
 
     if offer:
-        offer.sales_agent_id = agent_id
-        session.commit()
-        bot.send_message(call.message.chat.id, "Агент успешно обновлён.")
+        # Предположим, что у вас есть функция для получения списка фотографий
+        markup = types.InlineKeyboardMarkup()
+        for photo in offer.photos:
+            markup.add(types.InlineKeyboardButton(text="Удалить " + photo.url,
+                                                  callback_data=f"delete_photo_{photo.id}_{offer.internal_id}"))
+        markup.add(types.InlineKeyboardButton(text="Добавить фото", callback_data=f"add_photo_{offer.internal_id}"))
+        bot.send_message(call.message.chat.id, "Выберите фото для удаления или добавьте новое:", reply_markup=markup)
     else:
         bot.send_message(call.message.chat.id, "Ошибка: Оффер не найден.")
 
@@ -614,181 +734,6 @@ def handle_delete_photo(call):
         bot.send_message(call.message.chat.id, "Фото успешно удалено.")
     else:
         bot.send_message(call.message.chat.id, "Ошибка: Фото не найдено.")
-
-
-@bot.message_handler(
-    func=lambda message: message.from_user.id in user_states and 'editing_field' in user_states[message.from_user.id])
-def handle_new_value(message):
-    user_id = message.from_user.id
-    offer = user_states[user_id]['offer_to_edit']
-    field_to_edit = user_states[user_id]['editing_field']
-    new_value = message.text.strip()
-
-    # Обновляем значение в зависимости от выбранного поля
-    if field_to_edit == 'url':
-        offer.url_to = new_value
-        bot.send_message(message.chat.id, f"URL для оффера {offer.internal_id} обновлен на: {new_value}")
-    elif field_to_edit == 'description':
-        offer.description = new_value
-        bot.send_message(message.chat.id, f"Описание для оффера {offer.internal_id} обновлено на: {new_value}")
-
-    session.commit()  # Сохраняем изменения в базе данных
-    del user_states[user_id]  # Удаляем состояние пользователя после завершения редактирования
-
-
-# Обработка выбора действия редактирования
-@bot.message_handler(
-    func=lambda message: message.from_user.id in user_states and 'offer_to_edit' in user_states[message.from_user.id])
-def handle_edit_choice(message):
-    user_id = message.from_user.id
-    offer = user_states[user_id]['offer_to_edit']
-
-    if message.text == "Изменить URL":
-        bot.send_message(message.chat.id, "Введите новый URL для этого оффера:")
-        user_states[user_id]['editing_url'] = True
-    elif message.text == "Изменить описание":
-        bot.send_message(message.chat.id, "Введите новое описание для этого оффера:")
-        user_states[user_id]['editing_description'] = True
-        # fixme дописать про редактирование спальных мест
-    elif message.text == "Отмена":
-        del user_states[user_id]  # Удаляем состояние редактирования
-        bot.send_message(message.chat.id, "Редактирование отменено.")
-    else:
-        bot.send_message(message.chat.id, "Неизвестная команда.")
-
-
-# Обработка нового значения URL
-@bot.message_handler(
-    func=lambda message: message.from_user.id in user_states and 'editing_url' in user_states[message.from_user.id])
-def handle_new_url_input(message):
-    user_id = message.from_user.id
-    new_url = message.text.strip()
-    offer = user_states[user_id]['offer_to_edit']
-
-    # Обновляем URL оффера
-    offer.url_to = new_url
-    session.commit()  # Сохраняем изменения в базе данных
-
-    bot.send_message(message.chat.id,
-                     f"URL для оффера с internal_id {offer.internal_id} успешно обновлен на: {new_url}")
-
-    # Удаляем состояние редактирования
-    del user_states[user_id]
-
-
-# Обработка нового значения описания
-@bot.message_handler(func=lambda message: message.from_user.id in user_states and 'editing_description' in user_states[
-    message.from_user.id])
-def handle_new_description_input(message):
-    user_id = message.from_user.id
-    new_description = message.text.strip()
-    offer = user_states[user_id]['offer_to_edit']
-
-    # Обновляем описание оффера
-    offer.description = new_description
-    session.commit()  # Сохраняем изменения в базе данных
-
-    bot.send_message(message.chat.id,
-                     f"Описание для оффера с internal_id {offer.internal_id} успешно обновлено на: {new_description}")
-
-    # Удаляем состояние редактирования
-    del user_states[user_id]
-
-
-# Обработка текстовых сообщений от пользователей для ввода URL
-@bot.message_handler(func=lambda message: message.from_user.id in user_states and 'update_existing' not in user_states[
-    message.from_user.id])
-def handle_url_input(message):
-    user_id = message.from_user.id
-    user_state = user_states[user_id]
-
-    url_to = message.text.strip()
-    internal_ids = user_state['internal_ids']
-    current_index = user_state['current_index']
-
-    current_internal_id_data = internal_ids[current_index]
-    internal_id = current_internal_id_data.get('internal_id')
-
-    offer = session.query(Offer).filter_by(internal_id=internal_id).first()
-
-    if offer:
-        offer.url_to = url_to
-        session.commit()
-        bot.reply_to(message, f"Ссылка для internal_id {internal_id} обновлена на: {url_to}")
-
-        current_index += 1
-        user_state['current_index'] = current_index
-
-        if current_index < len(internal_ids):
-            next_internal_id_data = internal_ids[current_index]
-            next_internal_id = next_internal_id_data.get('internal_id')
-            bot.reply_to(message, f"Пожалуйста, введите URL для предложения с internal_id: {next_internal_id}")
-        else:
-            del user_states[user_id]
-            bot.reply_to(message, "Все ссылки успешно обновлены.")
-    else:
-        bot.reply_to(message, f"Предложение с internal_id {internal_id} не найдено.")
-
-
-#####################################################################################################################
-# Обработка нажатия кнопки "СГЕНЕРИРОВАТЬ РЕФЕРАЛЬНУЮ ССЫЛКУ"
-@bot.message_handler(func=lambda message: message.text == "СГЕНЕРИРОВАТЬ РЕФЕРАЛЬНУЮ ССЫЛКУ")
-def handle_referral_link(message):
-    telegram_user_id = message.from_user.id
-
-    # Найдем пользователя по telegram_id
-    user = session.query(User).filter_by(telegram_id=telegram_user_id).first()
-
-    if user:
-        # Генерируем реферальную ссылку с UUID пользователя
-        ref_link = f"https://t.me/VgostiBot2_bot?start={user.uuid}"
-
-        # Генерация QR-кода (здесь предполагается, что у вас есть функция qr_generate)
-        qr_generate(ref_link, f"{os.getcwd()}/pdfs/host.pdf", f"{user.uuid}")
-
-        # Путь к PDF файлу
-        pdf_path = f"{os.getcwd()}/pdfs/created/{user.uuid}.pdf"
-
-        # Проверяем, существует ли файл по указанному пути
-        if os.path.exists(pdf_path):
-            # Отправляем PDF файл пользователю
-            with open(pdf_path, 'rb') as pdf_file:
-                bot.send_document(message.chat.id, pdf_file)
-
-            # Отправляем сообщение с реферальной ссылкой
-            bot.send_message(message.chat.id, f"Ваша реферальная ссылка: {ref_link}")
-        else:
-            # Если файл не найден, отправляем сообщение об ошибке
-            bot.send_message(message.chat.id, "Не удалось найти PDF файл. Попробуйте позже.")
-    else:
-        bot.send_message(message.chat.id, "Вы не зарегистрированы.")
-
-
-# Команда для получения рефералов до 6 уровня
-@bot.message_handler(commands=['allrefstats'])
-def handle_allrefstats(message):
-    telegram_user_id = message.from_user.id
-
-    # Ищем пользователя по telegram_user_id
-    user = session.query(User).filter_by(telegram_id=telegram_user_id).first()
-
-    if user:
-        # Получаем реферальную цепочку
-        all_referrals = get_referral_chain(user)
-
-        # Формируем сообщение с деталями
-        if all_referrals:
-            message_text = "Рефералы до 6 уровня:\n"
-            for referral_info in all_referrals:
-                subscription_status = "Подписка активна" if referral_info[
-                    "has_active_subscription"] else "Подписка не активна"
-                message_text += f"telegram_id: {referral_info['telegram_id']} Имя: {referral_info['first_name']}, Уровень: {referral_info['level']}, {subscription_status}\n"
-        else:
-            message_text = "У вас нет рефералов."
-
-        bot.send_message(message.chat.id, message_text)
-    else:
-        bot.send_message(message.chat.id, "Вы не зарегистрированы.")
 
 
 if __name__ == "__main__":
