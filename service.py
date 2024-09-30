@@ -36,14 +36,6 @@ def parse_and_save_offer(xml_data, bot, message):
         description = offer.find('description').text if offer.find('description') else None
         min_stay = int(offer.find('min-stay').text) if offer.find('min-stay') else None
 
-        print(f"--internal_id {internal_id}")
-        print(f"--offer_type {offer_type}")
-        print(f"--property_type {property_type}")
-        print(f"--category {category}")
-        print(f"--creation_date_str {creation_date_str}")
-        print(f"--last_update_date_str {last_update_date_str}")
-        print(f"--min_stay {min_stay}")
-
         # Пропускаем предложение, если обязательные поля отсутствуют
         if internal_id is None or offer_type is None or property_type is None:
             continue
@@ -61,10 +53,6 @@ def parse_and_save_offer(xml_data, bot, message):
         agent_email = offer.find('sales-agent').find('email').text if offer.find('sales-agent') and offer.find(
             'sales-agent').find('email') else None
 
-        print(f"--agent_name {agent_name}")
-        print(f"--agent_phone {agent_phone}")
-        print(f"--agent_email {agent_email}")
-
         sales_agent = None
         if agent_name and agent_phone and agent_email:
             sales_agent = session.query(SalesAgent).filter_by(name=agent_name, phone=agent_phone,
@@ -81,19 +69,12 @@ def parse_and_save_offer(xml_data, bot, message):
         price_period = offer.find('price').find('period').text if offer.find('price') and offer.find('price').find(
             'period') else None
 
-        print(f"--price_value {price_value}")
-        print(f"--price_currency {price_currency}")
-        print(f"--price_period {price_period}")
-
         deposit_value = float(offer.find('deposit').find('value').text) if offer.find('deposit') and offer.find(
             'deposit').find(
             'value') else None
         deposit_currency = offer.find('deposit').find('currency').text if offer.find('deposit') and offer.find(
             'deposit').find(
             'currency') else None
-
-        print(f"--deposit_value {deposit_value}")
-        print(f"--deposit_currency {deposit_currency}")
 
         if price_value and price_currency:
             price = Price(value=price_value,
@@ -116,13 +97,6 @@ def parse_and_save_offer(xml_data, bot, message):
             'location') and offer.find('location').find('latitude') else None
         location_longitude = float(offer.find('location').find('longitude').text) if offer.find(
             'location') and offer.find('location').find('longitude') else None
-
-        print(f"--location_country {location_country}")
-        print(f"--location_region {location_region}")
-        print(f"--location_locality_name {location_locality_name}")
-        print(f"--location_address {location_address}")
-        print(f"--location_latitude {location_latitude}")
-        print(f"--location_longitude {location_longitude}")
 
         location = None
         if location_country and location_address:
@@ -157,8 +131,13 @@ def parse_and_save_offer(xml_data, bot, message):
             area = Area(value=area_value, unit=area_unit)
             session.add(area)
 
-        print(f"--area_value {area_value}")
-        print(f"--area_unit {area_unit}")
+        phones = offer.find_all('phone')
+
+        # Проверим, что есть хотя бы два телефона
+        if len(phones) > 1:
+            second_phone = phones[1].text  # Получаем второй телефон
+        else:
+            second_phone = None
 
         amenities = {
             'washing_machine': bool(int(offer.find('washing-machine').text)) if offer.find('washing-machine') else 0,
@@ -168,7 +147,7 @@ def parse_and_save_offer(xml_data, bot, message):
             'kids_friendly': bool(int(offer.find('kids-friendly').text)) if offer.find('kids-friendly') else 0,
             'party': bool(int(offer.find('party').text)) if offer and offer.find('party') else 0,
             'refrigerator': bool(int(offer.find('refrigerator').text)) if offer.find('refrigerator') else 0,
-            'phone': bool(int(offer.find('phone').text)) if offer.find('phone') else 0,
+            'phone': bool(int(second_phone)) if second_phone else 0,
             'stove': bool(int(offer.find('stove').text)) if offer.find('stove') else 0,
             'dishwasher': bool(int(offer.find('dishwasher').text)) if offer.find('dishwasher') else 0,
             'music_center': bool(int(offer.find('music-center').text)) if offer.find('music-center') else 0,
