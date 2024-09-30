@@ -28,6 +28,7 @@ ITEMS_PER_PAGE = 9  # 9 кнопок на странице, 3 строки по 
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
     # Извлекаем реферальный UUID, если он был передан
+    # fixme (1) нужно ли делать так, что без реферальной ссылки пользователь может зарегистрироваться? если нет, тогда условие переписываем
     command = message.text.split()
     referrer_uuid = None
 
@@ -35,7 +36,7 @@ def send_welcome(message):
         try:
             referrer_uuid = UUID(command[1])  # Парсим переданный UUID
         except ValueError:
-            bot.send_message(message.chat.id, "Неверная реферальная ссылка.")
+            bot.send_message(message.chat.id, "Неверная реферальная ссылка.\nЗапросите новую")
             referrer_uuid = None
 
     # Найдем пользователя по telegram_id
@@ -66,56 +67,18 @@ def send_welcome(message):
             session.add(referer)
 
         session.commit()
+        # Отправляем приветственное сообщение с клавиатурой
+        bot.send_message(message.chat.id, "Привет Хост! Добро пожаловать в нашего бота.")
 
     # Создаем клавиатуру
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
     ref_link_btn = types.KeyboardButton("СГЕНЕРИРОВАТЬ РЕФЕРАЛЬНУЮ ССЫЛКУ")
     markup.add(ref_link_btn)
 
-    # Отправляем приветственное сообщение с клавиатурой
-    bot.send_message(message.chat.id, "Привет! Добро пожаловать в нашего бота.", reply_markup=markup)
-
-    # Логика приветствия для разных типов пользователей
-    if user.is_client:
-        bot.send_message(message.chat.id, "Привет! Вы зарегистрированы как пользователь.")
-    else:
-        bot.send_message(message.chat.id, "Добро пожаловать, хост! Пожалуйста, отправьте ссылку на XML-файл.")
+    bot.send_message(message.chat.id, "Пожалуйста, отправьте ссылку на XML-файл.", reply_markup=markup)
 
     # Инициализируем состояние пользователя для обработки URL
     user_states[message.from_user.id] = {'url_input': True}
-
-
-# Обработка нажатия кнопки "СГЕНЕРИРОВАТЬ РЕФЕРАЛЬНУЮ ССЫЛКУ"
-@bot.message_handler(func=lambda message: message.text == "СГЕНЕРИРОВАТЬ РЕФЕРАЛЬНУЮ ССЫЛКУ")
-def handle_referral_link(message):
-    telegram_user_id = message.from_user.id
-
-    # Найдем пользователя по telegram_id
-    user = session.query(User).filter_by(telegram_id=telegram_user_id).first()
-
-    if user:
-        # Генерируем реферальную ссылку с UUID пользователя
-        ref_link = f"https://t.me/VgostiBot2_bot?start={user.uuid}"
-
-        # Генерация QR-кода (здесь предполагается, что у вас есть функция qr_generate)
-        qr_generate(ref_link, f"{os.getcwd()}/pdfs/host.pdf", f"{user.uuid}")
-
-        # Путь к PDF файлу
-        pdf_path = f"{os.getcwd()}/pdfs/created/{user.uuid}.pdf"
-
-        # Проверяем, существует ли файл по указанному пути
-        if os.path.exists(pdf_path):
-            # Отправляем PDF файл пользователю
-            with open(pdf_path, 'rb') as pdf_file:
-                bot.send_document(message.chat.id, pdf_file)
-
-            # Отправляем сообщение с реферальной ссылкой
-            bot.send_message(message.chat.id, f"Ваша реферальная ссылка: {ref_link}")
-        else:
-            # Если файл не найден, отправляем сообщение об ошибке
-            bot.send_message(message.chat.id, "Не удалось найти PDF файл. Попробуйте позже.")
-    else:
-        bot.send_message(message.chat.id, "Вы не зарегистрированы.")
 
 
 @bot.message_handler(func=lambda message: 'https://realtycalendar.ru/xml_feed' in message.text)
@@ -157,10 +120,9 @@ def handle_url_input(message):
         session.rollback()  # В случае ошибки откатываем транзакцию
         bot.reply_to(message, f"Ошибка при загрузке файла: {str(e)}.")
 
-
+#####################################################################################################################
 # Обработка текстовых сообщений от пользователей для ввода URL
-@bot.message_handler(func=lambda message: message.text.startswith(
-    "https://realtycalendar.ru/apart") and not message.from_user.id in user_states)
+@bot.message_handler(func=lambda message: message.text.startswith("https://realtycalendar.ru/apart") and not message.from_user.id in user_states)
 def request_url(message):
     print("request_url")
     user_states[message.from_user.id] = {'url_input': True}
@@ -748,6 +710,39 @@ def handle_url_input(message):
             bot.reply_to(message, "Все ссылки успешно обновлены.")
     else:
         bot.reply_to(message, f"Предложение с internal_id {internal_id} не найдено.")
+
+
+# Обработка нажатия кнопки "СГЕНЕРИРОВАТЬ РЕФЕРАЛЬНУЮ ССЫЛКУ"
+@bot.message_handler(func=lambda message: message.text == "СГЕНЕРИРОВАТЬ РЕФЕРАЛЬНУЮ ССЫЛКУ")
+def handle_referral_link(message):
+    telegram_user_id = message.from_user.id
+
+    # Найдем пользователя по telegram_id
+    user = session.query(User).filter_by(telegram_id=telegram_user_id).first()
+
+    if user:
+        # Генерируем реферальную ссылку с UUID пользователя
+        ref_link = f"https://t.me/VgostiBot2_bot?start={user.uuid}"
+
+        # Генерация QR-кода (здесь предполагается, что у вас есть функция qr_generate)
+        qr_generate(ref_link, f"{os.getcwd()}/pdfs/host.pdf", f"{user.uuid}")
+
+        # Путь к PDF файлу
+        pdf_path = f"{os.getcwd()}/pdfs/created/{user.uuid}.pdf"
+
+        # Проверяем, существует ли файл по указанному пути
+        if os.path.exists(pdf_path):
+            # Отправляем PDF файл пользователю
+            with open(pdf_path, 'rb') as pdf_file:
+                bot.send_document(message.chat.id, pdf_file)
+
+            # Отправляем сообщение с реферальной ссылкой
+            bot.send_message(message.chat.id, f"Ваша реферальная ссылка: {ref_link}")
+        else:
+            # Если файл не найден, отправляем сообщение об ошибке
+            bot.send_message(message.chat.id, "Не удалось найти PDF файл. Попробуйте позже.")
+    else:
+        bot.send_message(message.chat.id, "Вы не зарегистрированы.")
 
 
 if __name__ == "__main__":
