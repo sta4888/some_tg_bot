@@ -433,6 +433,44 @@ def process_new_url(message):
     user_states[user_id]['editing_field'] = None
 
 
+####### ---------- JGJHGJHGHJ  -------- #########
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith("edit_description_"))
+def handle_edit_description(call):
+    internal_id = call.data.split("_")[2]
+    offer = user_states[call.from_user.id]['offer_to_edit']
+
+    if offer and offer.internal_id == internal_id:
+        bot.edit_message_text(
+            chat_id=call.message.chat.id,
+            message_id=call.message.message_id,
+            text="Введите новое описание:"
+        )
+        user_states[call.from_user.id]['editing_field'] = 'description'
+    else:
+        bot.send_message(call.message.chat.id, "Ошибка при редактировании оффера.")
+
+
+@bot.message_handler(
+    func=lambda message: message.chat.id in user_states and user_states[message.chat.id].get(
+        'editing_field') == 'description')
+def process_new_description(message):
+    user_id = message.from_user.id
+    new_description = message.text
+    offer = user_states[user_id]['offer_to_edit']
+
+    # Обновление описания в базе данных
+    offer.description = new_description
+    session.commit()
+
+    # Обновление сообщения
+    offer_details = f"Текущий оффер:\nID: {offer.internal_id}\nURL: {offer.url_to}\nАдрес: {offer.location.address}\nОписание: {offer.description[:200]}..."
+    markup = create_boolean_buttons(offer)
+    markup.add(...)
+
+    bot.send_message(chat_id=message.chat.id, text=offer_details + "\n\nЧто вы хотите изменить?", reply_markup=markup)
+    user_states[user_id]['editing_field'] = None
+
 
 # Обработка отмены
 @bot.callback_query_handler(func=lambda call: call.data == "cancel_edit")
@@ -444,8 +482,8 @@ def handle_cancel_edit(call):
     )
     user_states.pop(call.from_user.id, None)  # Удаляем состояние пользователя
 
-####################################################################################
 
+####################################################################################
 
 
 ####################################################################################
