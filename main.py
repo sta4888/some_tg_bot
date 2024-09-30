@@ -360,13 +360,19 @@ def handle_toggle_field(call):
 
     # Переключаем значение поля
     current_value = getattr(offer, field)
-    setattr(offer, field, not current_value)
+    new_value = not current_value
+    setattr(offer, field, new_value)
 
     # Сохраняем изменения в базе данных
     session.commit()
 
+    # Отправляем уведомление о том, что значение поля изменилось
+    value_display = '✅' if new_value else '❌'
+    bot.send_message(call.message.chat.id, f"Вы изменили параметр {field} на {value_display}")
+
     # Обновляем кнопки с учетом изменения, оставаясь на той же странице
     update_offer_buttons(call, offer, page)
+
 
 
 # Обработка пагинации
