@@ -450,11 +450,10 @@ def handle_pagination(call):
     update_offer_buttons(call, offer, page)
 
 
-@bot.message_handler(
-    func=lambda message: message.chat.id in user_states and user_states[message.chat.id].get('editing_field') == 'url')
-def process_new_url(message):
-    user_id = message.from_user.id
-    new_url = message.text
+@bot.callback_query_handler(func=lambda call: call.data.startswith("edit_url_"))
+def handle_edit_url(call):
+    user_id = call.message.from_user.id
+    new_url = call.message.text
     offer = user_states[user_id]['offer_to_edit']
 
     # Обновите URL в базе данных
@@ -477,7 +476,8 @@ def process_new_url(message):
         types.InlineKeyboardButton(text="Отмена", callback_data="cancel_edit"),
     )
 
-    bot.send_message(chat_id=message.chat.id, text=offer_details + "\n\nЧто вы хотите изменить?", reply_markup=markup)
+    bot.send_message(chat_id=call.message.chat.id, text=offer_details + "\n\nЧто вы хотите изменить?",
+                     reply_markup=markup)
 
     # Очистить состояние редактирования
     user_states[user_id]['editing_field'] = None
