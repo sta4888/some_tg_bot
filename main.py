@@ -452,7 +452,7 @@ def handle_pagination(call):
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("edit_url_"))
 def handle_edit_url(call):
-    user_id = call.message.from_user.id
+    user_id = call.from_user.id
     new_url = call.message.text
     offer = user_states[user_id]['offer_to_edit']
 
