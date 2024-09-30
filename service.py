@@ -160,8 +160,6 @@ def parse_and_save_offer(xml_data, bot, message):
         print(f"--area_value {area_value}")
         print(f"--area_unit {area_unit}")
 
-
-
         amenities = {
             'washing_machine': bool(offer.find('washing-machine').text) if offer.find('washing-machine') else 0,
             'wi_fi': bool(offer.find('wi-fi').text) if offer.find('wi-fi') else 0,
@@ -196,6 +194,7 @@ def parse_and_save_offer(xml_data, bot, message):
         }
 
         print(f"--party {bool(offer.find('party').text) if offer and offer.find('party') else 0}")
+        print(f"--party text {offer.find('party').text}")
         print(f"--internal_id {internal_id}")
         pprint(f"--amenities {amenities}")
         if input("продолжить?") != 'l':
