@@ -433,112 +433,6 @@ def process_new_url(message):
     user_states[user_id]['editing_field'] = None
 
 
-####################################################################################
-
-
-
-####################################################################################
-
-@bot.callback_query_handler(func=lambda call: call.data.startswith("edit_price_"))
-def handle_edit_price(call):
-    internal_id = call.data.split("_")[2]
-    offer = session.query(Offer).filter_by(internal_id=str(internal_id)).first()
-
-    if offer:
-        bot.send_message(call.message.chat.id,
-                         "Введите новую цену и валюту в формате 'значение валюта' (например, '1000 USD').")
-        user_states[call.from_user.id] = {'offer_to_edit': offer, 'edit_type': 'price'}
-    else:
-        bot.send_message(call.message.chat.id, "Ошибка: Оффер не найден.")
-
-
-def get_agents():
-    return session.query(SalesAgent).all()
-
-
-# Обработка редактирования агента
-@bot.callback_query_handler(func=lambda call: call.data.startswith("edit_sales_agent_"))
-def handle_edit_sales_agent(call):
-    internal_id = call.data.split("_")[2]
-    offer = session.query(Offer).filter_by(internal_id=str(internal_id)).first()
-
-    if offer:
-        # Предположим, что у вас есть функция для получения списка агентов
-        agents = get_agents()  # Замените на вашу функцию
-        markup = types.InlineKeyboardMarkup()
-        for agent in agents:
-            markup.add(
-                types.InlineKeyboardButton(text=agent.name, callback_data=f"set_agent_{agent.id}_{offer.internal_id}"))
-        bot.send_message(call.message.chat.id, "Выберите агента:", reply_markup=markup)
-    else:
-        bot.send_message(call.message.chat.id, "Ошибка: Оффер не найден.")
-
-
-# Обработка редактирования площади
-@bot.callback_query_handler(func=lambda call: call.data.startswith("edit_area_"))
-def handle_edit_area(call):
-    internal_id = call.data.split("_")[2]
-    offer = session.query(Offer).filter_by(internal_id=str(internal_id)).first()
-
-    if offer:
-        bot.send_message(call.message.chat.id,
-                         "Введите новую площадь в формате 'значение единица' (например, '50 m2').")
-        user_states[call.from_user.id] = {'offer_to_edit': offer, 'edit_type': 'area'}
-    else:
-        bot.send_message(call.message.chat.id, "Ошибка: Оффер не найден.")
-
-
-# Обработка редактирования фотографий
-@bot.callback_query_handler(func=lambda call: call.data.startswith("edit_photos_"))
-def handle_edit_photos(call):
-    internal_id = call.data.split("_")[2]
-    offer = session.query(Offer).filter_by(internal_id=str(internal_id)).first()
-
-    if offer:
-        # Предположим, что у вас есть функция для получения списка фотографий
-        markup = types.InlineKeyboardMarkup()
-        for photo in offer.photos:
-            markup.add(types.InlineKeyboardButton(text="Удалить " + photo.url,
-                                                  callback_data=f"delete_photo_{photo.id}_{offer.internal_id}"))
-        markup.add(types.InlineKeyboardButton(text="Добавить фото", callback_data=f"add_photo_{offer.internal_id}"))
-        bot.send_message(call.message.chat.id, "Выберите фото для удаления или добавьте новое:", reply_markup=markup)
-    else:
-        bot.send_message(call.message.chat.id, "Ошибка: Оффер не найден.")
-
-
-@bot.callback_query_handler(func=lambda call: call.data.startswith("edit_description_"))
-def handle_edit_description(call):
-    internal_id = call.data.split("_")[2]
-    offer = user_states[call.from_user.id]['offer_to_edit']
-
-    if offer and offer.internal_id == internal_id:
-        # Запрос нового описания
-        bot.edit_message_text(
-            chat_id=call.message.chat.id,
-            message_id=call.message.message_id,
-            text="Введите новое описание:"
-        )
-        user_states[call.from_user.id]['editing_field'] = 'description'
-    else:
-        bot.send_message(call.message.chat.id, "Ошибка при редактировании оффера.")
-
-
-@bot.callback_query_handler(func=lambda call: call.data.startswith("edit_sleeps_"))
-def handle_edit_description(call):
-    internal_id = call.data.split("_")[2]
-    offer = user_states[call.from_user.id]['offer_to_edit']
-
-    if offer and offer.internal_id == internal_id:
-        # Запрос нового описания
-        bot.edit_message_text(
-            chat_id=call.message.chat.id,
-            message_id=call.message.message_id,
-            text="Введите новое количество:"
-        )
-        user_states[call.from_user.id]['editing_field'] = 'sleeps'
-    else:
-        bot.send_message(call.message.chat.id, "Ошибка при редактировании оффера.")
-
 
 # Обработка отмены
 @bot.callback_query_handler(func=lambda call: call.data == "cancel_edit")
@@ -550,190 +444,297 @@ def handle_cancel_edit(call):
     )
     user_states.pop(call.from_user.id, None)  # Удаляем состояние пользователя
 
-
-@bot.message_handler(func=lambda message: message.from_user.id in user_states)
-def handle_text(message):
-    user_id = message.from_user.id
-    offer = user_states[user_id].get('offer_to_edit')
-    edit_type = user_states[user_id].get('edit_type')
-
-    if edit_type == 'price':
-        try:
-            value, currency = message.text.split()
-            value = float(value)
-            offer.price.value = value
-            offer.price.currency = currency
-            session.commit()
-            bot.send_message(user_id, "Цена успешно обновлена.")
-        except Exception as e:
-            bot.send_message(user_id,
-                             "Ошибка при обновлении цены. Убедитесь, что вы ввели данные в правильном формате.")
-        finally:
-            del user_states[user_id]  # Удаляем состояние пользователя после завершения
-
-    elif edit_type == 'area':
-        try:
-            value, unit = message.text.split()
-            value = float(value)
-            offer.area.value = value
-            offer.area.unit = unit
-            session.commit()
-            bot.send_message(user_id, "Площадь успешно обновлена.")
-        except Exception as e:
-            bot.send_message(user_id,
-                             "Ошибка при обновлении площади. Убедитесь, что вы ввели данные в правильном формате.")
-        finally:
-            del user_states[user_id]  # Удаляем состояние пользователя после завершения
+####################################################################################
 
 
-# Обработка выбора агента
-@bot.callback_query_handler(func=lambda call: call.data.startswith("set_agent_"))
-def handle_set_agent(call):
-    agent_id, internal_id = call.data.split("_")[2:4]
-    offer = session.query(Offer).filter_by(internal_id=str(internal_id)).first()
 
-    if offer:
-        offer.sales_agent_id = agent_id
-        session.commit()
-        bot.send_message(call.message.chat.id, "Агент успешно обновлён.")
-    else:
-        bot.send_message(call.message.chat.id, "Ошибка: Оффер не найден.")
+####################################################################################
 
-
-# Обработка добавления и удаления фотографий
-@bot.callback_query_handler(func=lambda call: call.data.startswith("add_photo_"))
-def handle_add_photo(call):
-    internal_id = call.data.split("_")[2]
-    # Здесь можно реализовать логику для загрузки нового фото (например, через URL или файл)
-    # Необходимо добавить код для обработки загрузки фото
-
-
-@bot.callback_query_handler(func=lambda call: call.data.startswith("delete_photo_"))
-def handle_delete_photo(call):
-    photo_id, internal_id = call.data.split("_")[2:4]
-    offer = session.query(Offer).filter_by(internal_id=str(internal_id)).first()
-    photo = session.query(Photo).filter_by(id=photo_id).first()
-
-    if offer and photo:
-        session.delete(photo)
-        session.commit()
-        bot.send_message(call.message.chat.id, "Фото успешно удалено.")
-    else:
-        bot.send_message(call.message.chat.id, "Ошибка: Фото не найдено.")
-
-
-@bot.message_handler(
-    func=lambda message: message.from_user.id in user_states and 'editing_field' in user_states[message.from_user.id])
-def handle_new_value(message):
-    user_id = message.from_user.id
-    offer = user_states[user_id]['offer_to_edit']
-    field_to_edit = user_states[user_id]['editing_field']
-    new_value = message.text.strip()
-
-    # Обновляем значение в зависимости от выбранного поля
-    if field_to_edit == 'url':
-        offer.url_to = new_value
-        bot.send_message(message.chat.id, f"URL для оффера {offer.internal_id} обновлен на: {new_value}")
-    elif field_to_edit == 'description':
-        offer.description = new_value
-        bot.send_message(message.chat.id, f"Описание для оффера {offer.internal_id} обновлено на: {new_value}")
-
-    session.commit()  # Сохраняем изменения в базе данных
-    del user_states[user_id]  # Удаляем состояние пользователя после завершения редактирования
-
-
-# Обработка выбора действия редактирования
-@bot.message_handler(
-    func=lambda message: message.from_user.id in user_states and 'offer_to_edit' in user_states[message.from_user.id])
-def handle_edit_choice(message):
-    user_id = message.from_user.id
-    offer = user_states[user_id]['offer_to_edit']
-
-    if message.text == "Изменить URL":
-        bot.send_message(message.chat.id, "Введите новый URL для этого оффера:")
-        user_states[user_id]['editing_url'] = True
-    elif message.text == "Изменить описание":
-        bot.send_message(message.chat.id, "Введите новое описание для этого оффера:")
-        user_states[user_id]['editing_description'] = True
-        # fixme дописать про редактирование спальных мест
-    elif message.text == "Отмена":
-        del user_states[user_id]  # Удаляем состояние редактирования
-        bot.send_message(message.chat.id, "Редактирование отменено.")
-    else:
-        bot.send_message(message.chat.id, "Неизвестная команда.")
-
-
-# Обработка нового значения URL
-@bot.message_handler(
-    func=lambda message: message.from_user.id in user_states and 'editing_url' in user_states[message.from_user.id])
-def handle_new_url_input(message):
-    user_id = message.from_user.id
-    new_url = message.text.strip()
-    offer = user_states[user_id]['offer_to_edit']
-
-    # Обновляем URL оффера
-    offer.url_to = new_url
-    session.commit()  # Сохраняем изменения в базе данных
-
-    bot.send_message(message.chat.id,
-                     f"URL для оффера с internal_id {offer.internal_id} успешно обновлен на: {new_url}")
-
-    # Удаляем состояние редактирования
-    del user_states[user_id]
-
-
-# Обработка нового значения описания
-@bot.message_handler(func=lambda message: message.from_user.id in user_states and 'editing_description' in user_states[
-    message.from_user.id])
-def handle_new_description_input(message):
-    user_id = message.from_user.id
-    new_description = message.text.strip()
-    offer = user_states[user_id]['offer_to_edit']
-
-    # Обновляем описание оффера
-    offer.description = new_description
-    session.commit()  # Сохраняем изменения в базе данных
-
-    bot.send_message(message.chat.id,
-                     f"Описание для оффера с internal_id {offer.internal_id} успешно обновлено на: {new_description}")
-
-    # Удаляем состояние редактирования
-    del user_states[user_id]
-
-
-# Обработка текстовых сообщений от пользователей для ввода URL
-@bot.message_handler(func=lambda message: message.from_user.id in user_states and 'update_existing' not in user_states[
-    message.from_user.id])
-def handle_url_input(message):
-    user_id = message.from_user.id
-    user_state = user_states[user_id]
-
-    url_to = message.text.strip()
-    internal_ids = user_state['internal_ids']
-    current_index = user_state['current_index']
-
-    current_internal_id_data = internal_ids[current_index]
-    internal_id = current_internal_id_data.get('internal_id')
-
-    offer = session.query(Offer).filter_by(internal_id=internal_id).first()
-
-    if offer:
-        offer.url_to = url_to
-        session.commit()
-        bot.reply_to(message, f"Ссылка для internal_id {internal_id} обновлена на: {url_to}")
-
-        current_index += 1
-        user_state['current_index'] = current_index
-
-        if current_index < len(internal_ids):
-            next_internal_id_data = internal_ids[current_index]
-            next_internal_id = next_internal_id_data.get('internal_id')
-            bot.reply_to(message, f"Пожалуйста, введите URL для предложения с internal_id: {next_internal_id}")
-        else:
-            del user_states[user_id]
-            bot.reply_to(message, "Все ссылки успешно обновлены.")
-    else:
-        bot.reply_to(message, f"Предложение с internal_id {internal_id} не найдено.")
+# @bot.callback_query_handler(func=lambda call: call.data.startswith("edit_price_"))
+# def handle_edit_price(call):
+#     internal_id = call.data.split("_")[2]
+#     offer = session.query(Offer).filter_by(internal_id=str(internal_id)).first()
+#
+#     if offer:
+#         bot.send_message(call.message.chat.id,
+#                          "Введите новую цену и валюту в формате 'значение валюта' (например, '1000 USD').")
+#         user_states[call.from_user.id] = {'offer_to_edit': offer, 'edit_type': 'price'}
+#     else:
+#         bot.send_message(call.message.chat.id, "Ошибка: Оффер не найден.")
+#
+#
+# def get_agents():
+#     return session.query(SalesAgent).all()
+#
+#
+# # Обработка редактирования агента
+# @bot.callback_query_handler(func=lambda call: call.data.startswith("edit_sales_agent_"))
+# def handle_edit_sales_agent(call):
+#     internal_id = call.data.split("_")[2]
+#     offer = session.query(Offer).filter_by(internal_id=str(internal_id)).first()
+#
+#     if offer:
+#         # Предположим, что у вас есть функция для получения списка агентов
+#         agents = get_agents()  # Замените на вашу функцию
+#         markup = types.InlineKeyboardMarkup()
+#         for agent in agents:
+#             markup.add(
+#                 types.InlineKeyboardButton(text=agent.name, callback_data=f"set_agent_{agent.id}_{offer.internal_id}"))
+#         bot.send_message(call.message.chat.id, "Выберите агента:", reply_markup=markup)
+#     else:
+#         bot.send_message(call.message.chat.id, "Ошибка: Оффер не найден.")
+#
+#
+# # Обработка редактирования площади
+# @bot.callback_query_handler(func=lambda call: call.data.startswith("edit_area_"))
+# def handle_edit_area(call):
+#     internal_id = call.data.split("_")[2]
+#     offer = session.query(Offer).filter_by(internal_id=str(internal_id)).first()
+#
+#     if offer:
+#         bot.send_message(call.message.chat.id,
+#                          "Введите новую площадь в формате 'значение единица' (например, '50 m2').")
+#         user_states[call.from_user.id] = {'offer_to_edit': offer, 'edit_type': 'area'}
+#     else:
+#         bot.send_message(call.message.chat.id, "Ошибка: Оффер не найден.")
+#
+#
+# # Обработка редактирования фотографий
+# @bot.callback_query_handler(func=lambda call: call.data.startswith("edit_photos_"))
+# def handle_edit_photos(call):
+#     internal_id = call.data.split("_")[2]
+#     offer = session.query(Offer).filter_by(internal_id=str(internal_id)).first()
+#
+#     if offer:
+#         # Предположим, что у вас есть функция для получения списка фотографий
+#         markup = types.InlineKeyboardMarkup()
+#         for photo in offer.photos:
+#             markup.add(types.InlineKeyboardButton(text="Удалить " + photo.url,
+#                                                   callback_data=f"delete_photo_{photo.id}_{offer.internal_id}"))
+#         markup.add(types.InlineKeyboardButton(text="Добавить фото", callback_data=f"add_photo_{offer.internal_id}"))
+#         bot.send_message(call.message.chat.id, "Выберите фото для удаления или добавьте новое:", reply_markup=markup)
+#     else:
+#         bot.send_message(call.message.chat.id, "Ошибка: Оффер не найден.")
+#
+#
+# @bot.callback_query_handler(func=lambda call: call.data.startswith("edit_description_"))
+# def handle_edit_description(call):
+#     internal_id = call.data.split("_")[2]
+#     offer = user_states[call.from_user.id]['offer_to_edit']
+#
+#     if offer and offer.internal_id == internal_id:
+#         # Запрос нового описания
+#         bot.edit_message_text(
+#             chat_id=call.message.chat.id,
+#             message_id=call.message.message_id,
+#             text="Введите новое описание:"
+#         )
+#         user_states[call.from_user.id]['editing_field'] = 'description'
+#     else:
+#         bot.send_message(call.message.chat.id, "Ошибка при редактировании оффера.")
+#
+#
+# @bot.callback_query_handler(func=lambda call: call.data.startswith("edit_sleeps_"))
+# def handle_edit_description(call):
+#     internal_id = call.data.split("_")[2]
+#     offer = user_states[call.from_user.id]['offer_to_edit']
+#
+#     if offer and offer.internal_id == internal_id:
+#         # Запрос нового описания
+#         bot.edit_message_text(
+#             chat_id=call.message.chat.id,
+#             message_id=call.message.message_id,
+#             text="Введите новое количество:"
+#         )
+#         user_states[call.from_user.id]['editing_field'] = 'sleeps'
+#     else:
+#         bot.send_message(call.message.chat.id, "Ошибка при редактировании оффера.")
+#
+#
+#
+# @bot.message_handler(func=lambda message: message.from_user.id in user_states)
+# def handle_text(message):
+#     user_id = message.from_user.id
+#     offer = user_states[user_id].get('offer_to_edit')
+#     edit_type = user_states[user_id].get('edit_type')
+#
+#     if edit_type == 'price':
+#         try:
+#             value, currency = message.text.split()
+#             value = float(value)
+#             offer.price.value = value
+#             offer.price.currency = currency
+#             session.commit()
+#             bot.send_message(user_id, "Цена успешно обновлена.")
+#         except Exception as e:
+#             bot.send_message(user_id,
+#                              "Ошибка при обновлении цены. Убедитесь, что вы ввели данные в правильном формате.")
+#         finally:
+#             del user_states[user_id]  # Удаляем состояние пользователя после завершения
+#
+#     elif edit_type == 'area':
+#         try:
+#             value, unit = message.text.split()
+#             value = float(value)
+#             offer.area.value = value
+#             offer.area.unit = unit
+#             session.commit()
+#             bot.send_message(user_id, "Площадь успешно обновлена.")
+#         except Exception as e:
+#             bot.send_message(user_id,
+#                              "Ошибка при обновлении площади. Убедитесь, что вы ввели данные в правильном формате.")
+#         finally:
+#             del user_states[user_id]  # Удаляем состояние пользователя после завершения
+#
+#
+# # Обработка выбора агента
+# @bot.callback_query_handler(func=lambda call: call.data.startswith("set_agent_"))
+# def handle_set_agent(call):
+#     agent_id, internal_id = call.data.split("_")[2:4]
+#     offer = session.query(Offer).filter_by(internal_id=str(internal_id)).first()
+#
+#     if offer:
+#         offer.sales_agent_id = agent_id
+#         session.commit()
+#         bot.send_message(call.message.chat.id, "Агент успешно обновлён.")
+#     else:
+#         bot.send_message(call.message.chat.id, "Ошибка: Оффер не найден.")
+#
+#
+# # Обработка добавления и удаления фотографий
+# @bot.callback_query_handler(func=lambda call: call.data.startswith("add_photo_"))
+# def handle_add_photo(call):
+#     internal_id = call.data.split("_")[2]
+#     # Здесь можно реализовать логику для загрузки нового фото (например, через URL или файл)
+#     # Необходимо добавить код для обработки загрузки фото
+#
+#
+# @bot.callback_query_handler(func=lambda call: call.data.startswith("delete_photo_"))
+# def handle_delete_photo(call):
+#     photo_id, internal_id = call.data.split("_")[2:4]
+#     offer = session.query(Offer).filter_by(internal_id=str(internal_id)).first()
+#     photo = session.query(Photo).filter_by(id=photo_id).first()
+#
+#     if offer and photo:
+#         session.delete(photo)
+#         session.commit()
+#         bot.send_message(call.message.chat.id, "Фото успешно удалено.")
+#     else:
+#         bot.send_message(call.message.chat.id, "Ошибка: Фото не найдено.")
+#
+#
+# @bot.message_handler(
+#     func=lambda message: message.from_user.id in user_states and 'editing_field' in user_states[message.from_user.id])
+# def handle_new_value(message):
+#     user_id = message.from_user.id
+#     offer = user_states[user_id]['offer_to_edit']
+#     field_to_edit = user_states[user_id]['editing_field']
+#     new_value = message.text.strip()
+#
+#     # Обновляем значение в зависимости от выбранного поля
+#     if field_to_edit == 'url':
+#         offer.url_to = new_value
+#         bot.send_message(message.chat.id, f"URL для оффера {offer.internal_id} обновлен на: {new_value}")
+#     elif field_to_edit == 'description':
+#         offer.description = new_value
+#         bot.send_message(message.chat.id, f"Описание для оффера {offer.internal_id} обновлено на: {new_value}")
+#
+#     session.commit()  # Сохраняем изменения в базе данных
+#     del user_states[user_id]  # Удаляем состояние пользователя после завершения редактирования
+#
+#
+# # Обработка выбора действия редактирования
+# @bot.message_handler(
+#     func=lambda message: message.from_user.id in user_states and 'offer_to_edit' in user_states[message.from_user.id])
+# def handle_edit_choice(message):
+#     user_id = message.from_user.id
+#     offer = user_states[user_id]['offer_to_edit']
+#
+#     if message.text == "Изменить URL":
+#         bot.send_message(message.chat.id, "Введите новый URL для этого оффера:")
+#         user_states[user_id]['editing_url'] = True
+#     elif message.text == "Изменить описание":
+#         bot.send_message(message.chat.id, "Введите новое описание для этого оффера:")
+#         user_states[user_id]['editing_description'] = True
+#         # fixme дописать про редактирование спальных мест
+#     elif message.text == "Отмена":
+#         del user_states[user_id]  # Удаляем состояние редактирования
+#         bot.send_message(message.chat.id, "Редактирование отменено.")
+#     else:
+#         bot.send_message(message.chat.id, "Неизвестная команда.")
+#
+#
+# # Обработка нового значения URL
+# @bot.message_handler(
+#     func=lambda message: message.from_user.id in user_states and 'editing_url' in user_states[message.from_user.id])
+# def handle_new_url_input(message):
+#     user_id = message.from_user.id
+#     new_url = message.text.strip()
+#     offer = user_states[user_id]['offer_to_edit']
+#
+#     # Обновляем URL оффера
+#     offer.url_to = new_url
+#     session.commit()  # Сохраняем изменения в базе данных
+#
+#     bot.send_message(message.chat.id,
+#                      f"URL для оффера с internal_id {offer.internal_id} успешно обновлен на: {new_url}")
+#
+#     # Удаляем состояние редактирования
+#     del user_states[user_id]
+#
+#
+# # Обработка нового значения описания
+# @bot.message_handler(func=lambda message: message.from_user.id in user_states and 'editing_description' in user_states[
+#     message.from_user.id])
+# def handle_new_description_input(message):
+#     user_id = message.from_user.id
+#     new_description = message.text.strip()
+#     offer = user_states[user_id]['offer_to_edit']
+#
+#     # Обновляем описание оффера
+#     offer.description = new_description
+#     session.commit()  # Сохраняем изменения в базе данных
+#
+#     bot.send_message(message.chat.id,
+#                      f"Описание для оффера с internal_id {offer.internal_id} успешно обновлено на: {new_description}")
+#
+#     # Удаляем состояние редактирования
+#     del user_states[user_id]
+#
+#
+# # Обработка текстовых сообщений от пользователей для ввода URL
+# @bot.message_handler(func=lambda message: message.from_user.id in user_states and 'update_existing' not in user_states[
+#     message.from_user.id])
+# def handle_url_input(message):
+#     user_id = message.from_user.id
+#     user_state = user_states[user_id]
+#
+#     url_to = message.text.strip()
+#     internal_ids = user_state['internal_ids']
+#     current_index = user_state['current_index']
+#
+#     current_internal_id_data = internal_ids[current_index]
+#     internal_id = current_internal_id_data.get('internal_id')
+#
+#     offer = session.query(Offer).filter_by(internal_id=internal_id).first()
+#
+#     if offer:
+#         offer.url_to = url_to
+#         session.commit()
+#         bot.reply_to(message, f"Ссылка для internal_id {internal_id} обновлена на: {url_to}")
+#
+#         current_index += 1
+#         user_state['current_index'] = current_index
+#
+#         if current_index < len(internal_ids):
+#             next_internal_id_data = internal_ids[current_index]
+#             next_internal_id = next_internal_id_data.get('internal_id')
+#             bot.reply_to(message, f"Пожалуйста, введите URL для предложения с internal_id: {next_internal_id}")
+#         else:
+#             del user_states[user_id]
+#             bot.reply_to(message, "Все ссылки успешно обновлены.")
+#     else:
+#         bot.reply_to(message, f"Предложение с internal_id {internal_id} не найдено.")
 
 
 #####################################################################################################################
