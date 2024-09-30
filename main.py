@@ -512,8 +512,20 @@ def process_offer_updates(message):
             offer.price.currency = currency
         elif field == 'sales_agent':
             new_value = message.text
-            # Предполагается, что sales_agent - это объект SalesAgent, вам нужно его найти по имени или номеру телефона
-            offer.sales_agent = session.query(SalesAgent).filter(SalesAgent.name == new_value).first()
+            print(f"Ищем агента с именем: {new_value}")
+            agent = session.query(SalesAgent).filter(SalesAgent.name == new_value).first()
+
+            if agent is None:
+                # Если агент не найден, создаем нового
+                agent = SalesAgent(name=new_value)
+                session.add(agent)  # Добавляем нового агента в сессию
+                print(f"Создан новый агент с именем: {agent.name}")
+
+            # Присваиваем агенту оффера
+            offer.sales_agent = agent
+            session.commit()  # Сохраняем изменения в базе данных
+            print(f"Обновлен агент на: {offer.sales_agent.name}")
+
         elif field == 'area':
             value, unit = message.text.split()
             value = float(value)
