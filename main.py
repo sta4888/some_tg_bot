@@ -515,8 +515,10 @@ def process_offer_updates(message):
             # Предполагается, что sales_agent - это объект SalesAgent, вам нужно его найти по имени или номеру телефона
             offer.sales_agent = session.query(SalesAgent).filter(SalesAgent.name == new_value).first()
         elif field == 'area':
-            new_value = message.text
-            offer.area = new_value  # предполагаем, что это число
+            value, unit = message.text.split()
+            value = float(value)
+            offer.area.value = value
+            offer.area.unit = unit
 
         # Сохраните изменения в базе данных
         session.commit()
