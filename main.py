@@ -133,6 +133,7 @@ def request_url(message):
 @bot.message_handler(
     func=lambda message: message.from_user.id in user_states and 'internal_ids' in user_states[message.from_user.id])
 def handle_object_url(message):
+    print("handle_object_url")
     user_id = message.from_user.id
     user_state = user_states[user_id]
 
