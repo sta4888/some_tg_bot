@@ -161,46 +161,34 @@ def parse_and_save_offer(xml_data, bot, message):
         print(f"--area_unit {area_unit}")
 
         amenities = {
-            'washing_machine': bool(offer.find('washing-machine').text) if offer.find('washing-machine') else 0,
-            'wi_fi': bool(offer.find('wi-fi').text) if offer.find('wi-fi') else 0,
-            'tv': bool(offer.find('tv').text) if offer and offer.find('tv') else 0,
-            'air_conditioner': bool(offer.find('air-conditioner').text) if offer.find('air-conditioner') else 0,
-            'kids_friendly': bool(offer.find('kids-friendly').text) if offer.find('kids-friendly') else 0,
-            'party': bool(offer.find('party').text) if offer and offer.find('party') else 0,
-            'refrigerator': bool(offer.find('refrigerator').text) if offer.find('refrigerator') else 0,
-            'phone': bool(offer.find('phone').text) if offer.find('phone') else 0,
-            'stove': bool(offer.find('stove').text) if offer.find('stove') else 0,
-            'dishwasher': bool(offer.find('dishwasher').text) if offer.find('dishwasher') else 0,
-            'music_center': bool(offer.find('music-center').text) if offer.find('music-center') else 0,
-            'microwave': bool(offer.find('microwave').text) if offer.find('microwave') else 0,
-            'iron': bool(offer.find('iron').text) if offer.find('iron') else 0,
-            'concierge': bool(offer.find('concierge').text) if offer.find('concierge') else 0,
-            'parking': bool(offer.find('parking').text) if offer.find('parking') else 0,
-            'safe': bool(offer.find('safe').text) if offer.find('safe') else 0,
-            'water_heater': bool(offer.find('water-heater').text) if offer.find('water-heater') else 0,
-
-            'balcony': bool(offer.find('balcony').text) if offer.find('balcony') else 0,
-
-            'television': bool(offer.find('television').text) if offer.find('television') else 0,
-            'bathroom': bool(offer.find('bathroom').text) if offer.find('bathroom') else 0,
-            'pet_friendly': bool(offer.find('pet-friendly').text) if offer.find('pet-friendly') else False,
-            'smoke': bool(offer.find('smoke').text) if offer.find('smoke') else 0,
-            'romantic': bool(offer.find('romantic').text) if offer.find('romantic') else 0,
-            'jacuzzi': bool(offer.find('jacuzzi').text) if offer.find('jacuzzi') else 0,
-            'elevator': bool(offer.find('elevator').text) if offer.find('elevator') else 0,
-            'sleeps': str(offer.find('sleeps').text) if offer.find('sleeps') else 0,
+            'washing_machine': bool(int(offer.find('washing-machine').text)) if offer.find('washing-machine') else 0,
+            'wi_fi': bool(int(offer.find('wi-fi').text)) if offer.find('wi-fi') else 0,
+            'tv': bool(int(offer.find('tv').text)) if offer and offer.find('tv') else 0,
+            'air_conditioner': bool(int(offer.find('air-conditioner').text)) if offer.find('air-conditioner') else 0,
+            'kids_friendly': bool(int(offer.find('kids-friendly').text)) if offer.find('kids-friendly') else 0,
+            'party': bool(int(offer.find('party').text)) if offer and offer.find('party') else 0,
+            'refrigerator': bool(int(offer.find('refrigerator').text)) if offer.find('refrigerator') else 0,
+            'phone': bool(int(offer.find('phone').text)) if offer.find('phone') else 0,
+            'stove': bool(int(offer.find('stove').text)) if offer.find('stove') else 0,
+            'dishwasher': bool(int(offer.find('dishwasher').text)) if offer.find('dishwasher') else 0,
+            'music_center': bool(int(offer.find('music-center').text)) if offer.find('music-center') else 0,
+            'microwave': bool(int(offer.find('microwave').text)) if offer.find('microwave') else 0,
+            'iron': bool(int(offer.find('iron').text)) if offer.find('iron') else 0,
+            'concierge': bool(int(offer.find('concierge').text)) if offer.find('concierge') else 0,
+            'parking': bool(int(offer.find('parking').text)) if offer.find('parking') else 0,
+            'safe': bool(int(offer.find('safe').text)) if offer.find('safe') else 0,
+            'water_heater': bool(int(offer.find('water-heater').text)) if offer.find('water-heater') else 0,
+            'balcony': bool(int(offer.find('balcony').text)) if offer.find('balcony') else 0,
+            'television': bool(int(offer.find('television').text)) if offer.find('television') else 0,
+            'bathroom': bool(int(offer.find('bathroom').text)) if offer.find('bathroom') else 0,
+            'pet_friendly': bool(int(offer.find('pet-friendly').text)) if offer.find('pet-friendly') else 0,
+            'smoke': bool(int(offer.find('smoke').text)) if offer.find('smoke') else 0,
+            'romantic': bool(int(offer.find('romantic').text)) if offer.find('romantic') else 0,
+            'jacuzzi': bool(int(offer.find('jacuzzi').text)) if offer.find('jacuzzi') else 0,
+            'elevator': bool(int(offer.find('elevator').text)) if offer.find('elevator') else 0,
+            'sleeps': str(offer.find('sleeps').text) if offer.find('sleeps') else '0',
             'rooms': int(offer.find('rooms').text) if offer.find('rooms') else 0,
-
         }
-
-        print(f"--party {bool(offer.find('party').text) if offer and offer.find('party') else 0}")
-        print(f"--party text {offer.find('party').text}")
-        print(f"--party text bool {bool(offer.find('party').text)}")
-        print(f"--party text bool int {bool(int(offer.find('party').text))}")
-        print(f"--internal_id {internal_id}")
-        pprint(f"--amenities {amenities}")
-        if input("продолжить?") != 'l':
-            break
 
         if existing_offer:
             print(f"----------------------------## existing_offer {existing_offer.created_by} ##--")
