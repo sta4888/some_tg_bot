@@ -683,6 +683,8 @@ def handle_back_to_offer(call):
 
     # Удаляем сообщение с фотографией
     bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
+    offer = state['offer_to_edit']
+    update_offer_buttons(call, offer)
 
 
 # Обработка замены фотографии
