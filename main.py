@@ -718,12 +718,22 @@ def handle_replace_photo(call):
 
 
 def save_new_photo(message, photo_to_replace):
+    user_id = message.chat.id
+    state = user_states.get(user_id)
+
     if message.content_type == 'photo':
         new_photo = message.photo[-1].file_id  # Получаем ID нового фото
         # Обновляем ссылку на изображение в базе данных
         photo_to_replace.url = new_photo
         session.commit()  # Предполагая, что вы используете SQLAlchemy для работы с базой данных
         bot.send_message(message.chat.id, "Фото успешно заменено!")
+
+        # После замены фото показываем обновленный список фото
+        offer = state['offer_to_edit']
+        photos = offer.photos
+
+        # Показываем текущее фото (то, которое было заменено)
+        show_photo(message, user_id, photos)
     else:
         bot.send_message(message.chat.id, "Пожалуйста, загрузите фото.")
 
