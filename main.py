@@ -603,7 +603,6 @@ def handle_cancel_edit(call):
 
 #####################################################################################################################
 #####################################################################################################################
-# Словарь для хранения состояний пользователей
 user_states = {}
 
 
@@ -628,6 +627,9 @@ def handle_edit_photos(call):
         'photos': photos,
         'current_photo_index': 0
     }
+
+    # Удаляем предыдущее сообщение с оффером
+    bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
 
     # Отображаем первую фотографию
     show_photo(call.from_user.id)
@@ -654,21 +656,8 @@ def show_photo(user_id):
     if current_index < len(photos) - 1:
         markup.add(types.InlineKeyboardButton(text="Вперед ▶️", callback_data="next_photo"))
 
-    # Обновляем текст сообщения
-    text = "Фотографии для объекта:\n"
-
-    # Обновляем или отправляем сообщение с текстом и фотографией
-    if 'message_id' in state:
-        try:
-            bot.edit_message_text(text=text, chat_id=user_id, message_id=state['message_id'], reply_markup=markup)
-            bot.edit_message_media(media=types.InputMediaPhoto(photo.url), chat_id=user_id,
-                                   message_id=state['message_id'])
-        except Exception as e:
-            print(f"Ошибка при редактировании сообщения: {e}")
-    else:
-        # Если это первое сообщение, отправляем его
-        msg = bot.send_photo(chat_id=user_id, photo=photo.url, reply_markup=markup)
-        state['message_id'] = msg.message_id  # Сохраняем ID сообщения
+    # Отправляем сообщение с фото и кнопками
+    bot.send_photo(chat_id=user_id, photo=photo.url, reply_markup=markup)
 
 
 @bot.callback_query_handler(func=lambda call: call.data in ["next_photo", "prev_photo"])
@@ -686,23 +675,8 @@ def handle_photo_navigation(call):
         state['current_photo_index'] -= 1
 
     # Обновляем текущее фото
+    bot.delete_message(chat_id=user_id, message_id=call.message.message_id)  # Удаляем предыдущее сообщение
     show_photo(user_id)  # Показываем следующее фото
-
-
-@bot.callback_query_handler(func=lambda call: call.data.startswith("delete_photo_"))
-def handle_delete_photo(call):
-    # ... ваш код для удаления фотографии ...
-
-    # После удаления фото, необходимо обновить состояние
-    user_id = call.from_user.id
-    state = user_states.get(user_id)
-
-    if state:
-        state['photos'] = [photo for photo in state['photos'] if
-                           photo.id != int(call.data.split("_")[2])]  # Обновляем список фотографий
-        state['current_photo_index'] = max(0, min(state['current_photo_index'],
-                                                  len(state['photos']) - 1))  # Обновляем индекс
-        show_photo(user_id)  # Показываем обновленное фото
 
 
 #####################################################################################################################
