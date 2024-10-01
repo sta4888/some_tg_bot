@@ -13,7 +13,7 @@ import os
 from connect import session, Session
 from models import Location, Offer, User, Subscription
 from resender import resend_message
-from service import find_offers, parse_ical, random_with_N_digits, suggest_city
+from service import find_offers, parse_ical, random_with_N_digits, suggest_city, cities
 
 load_dotenv()
 
