@@ -628,6 +628,11 @@ def handle_edit_photos(call):
     # Добавляем кнопку "Назад" для возврата к редактированию оффера
     markup.add(types.InlineKeyboardButton(text="Назад", callback_data=f"edit_offer_{offer.internal_id}"))
 
+    # Отправляем сообщения с фотографиями
+    for photo in photos:
+        bot.send_photo(chat_id=call.message.chat.id, photo=photo.url)  # Отправляем каждую фотографию
+
+    # Обновляем сообщение с кнопками
     bot.edit_message_text(
         chat_id=call.message.chat.id,
         message_id=call.message.message_id,
