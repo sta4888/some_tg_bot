@@ -369,14 +369,14 @@ def handle_toggle_field(call):
     print(f"--offer {offer}", f"\n--field {field}\n--current_value {current_value}")
 
     setattr(offer, field, new_value)
-    bot.answer_callback_query(call.id, show_alert=False, text=f"Изменили {BOOLEAN_FIELDS.get(field)} на {new_value}")
+    bot.answer_callback_query(call.id, show_alert=False,
+                              text=f"Теперь {BOOLEAN_FIELDS.get(field)} на {'✅' if new_value else '❌'}")
 
     # Сохраняем изменения в базе данных
     session.commit()
 
     # Обновляем кнопки с учетом изменения, оставаясь на той же странице
     update_offer_buttons(call, offer, page)
-
 
 
 # Обработка пагинации
