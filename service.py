@@ -28,6 +28,8 @@ def find_offers(city, start_date, end_date, guest_count, bedrooms, amenities=Non
     if not locations:
         return None  # Если нет предложений в этом городе
 
+    print(city, start_date, end_date, guest_count, bedrooms, amenities)
+
     # Начало фильтрации предложений
     query = session.query(Offer).options(joinedload(Offer.photos)).filter(
         Offer.location_id.in_([loc.id for loc in locations]),  # Предложения по найденным локациям
