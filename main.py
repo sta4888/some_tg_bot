@@ -344,7 +344,8 @@ def handle_offer_selection(call):
         user_states[call.from_user.id] = {
             'offer_to_edit': offer,
             'current_photo_index': 0,
-            'offer_message_id': call.message.message_id  # Сохраняем ID сообщения с оффером
+            'offer_message_id': call.message.message_id,  # Сохраняем ID сообщения с оффером
+            'last_message_id': call.message.message_id  # Сохраняем ID последнего сообщения
         }
         # Редактируем сообщение с кнопками оффера
         update_offer_buttons(call, offer)
@@ -608,6 +609,18 @@ def handle_cancel_edit(call):
 
 #####################################################################################################################
 #####################################################################################################################
+# Логика обновления кнопок оффера
+def update_offer_buttons(call, offer):
+    markup = types.InlineKeyboardMarkup()
+    markup.add(types.InlineKeyboardButton(text="Изменить фото", callback_data=f"edit_photos_{offer.internal_id}"))
+    bot.edit_message_text(
+        chat_id=call.message.chat.id,
+        message_id=call.message.message_id,
+        text=f"Редактирование оффера: {offer.title}",
+        reply_markup=markup
+    )
+
+
 # Обработка изменения фотографий
 @bot.callback_query_handler(func=lambda call: call.data.startswith("edit_photos_"))
 def handle_edit_photos(call):
