@@ -629,6 +629,9 @@ def handle_edit_photos(call):
         'current_photo_index': 0
     }
 
+    # Удаляем предыдущее сообщение с оффером
+    bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
+
     # Отображаем первую фотографию
     show_photo(call.from_user.id)
 
