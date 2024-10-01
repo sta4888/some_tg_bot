@@ -38,9 +38,9 @@ def find_offers(city, start_date, end_date, guest_count, bedrooms, amenities=Non
     )
 
     # Учитываем выбранные удобства, если они переданы
-    if amenities:
-        for amenity in amenities:
-            query = query.filter(getattr(Offer, amenity).is_(True))
+    # if amenities:
+    #     for amenity in amenities:
+    #         query = query.filter(getattr(Offer, amenity).is_(True))
 
     offers = query.all()
     print(f"--offers {offers}")
