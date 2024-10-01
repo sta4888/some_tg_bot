@@ -639,6 +639,10 @@ def show_photo(call, user_id, photos):
     if current_index < len(photos) - 1:
         markup.add(types.InlineKeyboardButton(text="Вперед ▶️", callback_data="next_photo"))
 
+    # Кнопка "СДЕЛАТЬ ГЛАВНОЙ" и "ЗАМЕНИТЬ"
+    markup.add(types.InlineKeyboardButton(text="СДЕЛАТЬ ГЛАВНОЙ", callback_data="make_main_photo"))
+    markup.add(types.InlineKeyboardButton(text="ЗАМЕНИТЬ", callback_data="replace_photo"))
+
     # Кнопка "Назад к офферу"
     markup.add(types.InlineKeyboardButton(text="Назад к офферу", callback_data="back_to_offer"))
 
@@ -680,6 +684,58 @@ def handle_back_to_offer(call):
     # Удаляем сообщение с фотографией
     bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
 
+
+# Обработка замены фотографии
+@bot.callback_query_handler(func=lambda call: call.data == "replace_photo")
+def handle_replace_photo(call):
+    user_id = call.from_user.id
+    state = user_states.get(user_id)
+
+    if not state:
+        bot.send_message(user_id, "Ошибка: Не удалось найти оффер для редактирования.")
+        return
+
+    offer = state['offer_to_edit']
+    current_photo_index = state['current_photo_index']
+    photo_to_replace = offer.photos[current_photo_index]
+
+    # Запросить новое фото у пользователя
+    bot.send_message(user_id, "Пожалуйста, загрузите новое фото для замены.")
+    bot.register_next_step_handler_by_chat_id(user_id, lambda message: save_new_photo(message, photo_to_replace))
+
+
+def save_new_photo(message, photo_to_replace):
+    if message.content_type == 'photo':
+        new_photo = message.photo[-1].file_id  # Получаем ID нового фото
+        # Обновляем ссылку на изображение в базе данных
+        photo_to_replace.url = new_photo
+        session.commit()  # Предполагая, что вы используете SQLAlchemy для работы с базой данных
+        bot.send_message(message.chat.id, "Фото успешно заменено!")
+    else:
+        bot.send_message(message.chat.id, "Пожалуйста, загрузите фото.")
+
+
+# Обработка установки главного фото
+@bot.callback_query_handler(func=lambda call: call.data == "make_main_photo")
+def handle_make_main_photo(call):
+    user_id = call.from_user.id
+    state = user_states.get(user_id)
+
+    if not state:
+        bot.send_message(user_id, "Ошибка: Не удалось найти оффер для редактирования.")
+        return
+
+    offer = state['offer_to_edit']
+    current_photo_index = state['current_photo_index']
+    photo_to_make_main = offer.photos[current_photo_index]
+
+    # Сначала устанавливаем все фото как не главные
+    for photo in offer.photos:
+        photo.is_main = False
+    photo_to_make_main.is_main = True  # Устанавливаем выбранное фото как главное
+
+    session.commit()  # Сохраняем изменения в базе данных
+    bot.send_message(user_id, "Фото сделано главным!")
 
 
 #####################################################################################################################
