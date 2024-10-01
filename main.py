@@ -656,6 +656,9 @@ def show_photo(user_id):
     if current_index < len(photos) - 1:
         markup.add(types.InlineKeyboardButton(text="Вперед ▶️", callback_data="next_photo"))
 
+    # Кнопка "Назад к офферу"
+    markup.add(types.InlineKeyboardButton(text="Назад к офферу", callback_data="back_to_offer"))
+
     # Отправляем сообщение с фото и кнопками
     bot.send_photo(chat_id=user_id, photo=photo.url, reply_markup=markup)
 
@@ -677,6 +680,22 @@ def handle_photo_navigation(call):
     # Обновляем текущее фото
     bot.delete_message(chat_id=user_id, message_id=call.message.message_id)  # Удаляем предыдущее сообщение
     show_photo(user_id)  # Показываем следующее фото
+
+
+@bot.callback_query_handler(func=lambda call: call.data == "back_to_offer")
+def handle_back_to_offer(call):
+    user_id = call.from_user.id
+    state = user_states.get(user_id)
+
+    if not state:
+        bot.send_message(user_id, "Оффер не найден.")
+        return
+
+    # Удаляем сообщение с фотографией
+    bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
+
+    # Отправляем простое сообщение после возврата к офферу
+    bot.send_message(chat_id=user_id, text="Вы вернулись к офферу.")
 
 
 #####################################################################################################################
