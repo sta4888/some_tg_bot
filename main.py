@@ -369,7 +369,7 @@ def handle_toggle_field(call):
     print(f"--offer {offer}", f"\n--field {field}\n--current_value {current_value}")
 
     setattr(offer, field, new_value)
-    bot.answer_callback_query(call.id, show_alert=True, text=f"Изменили {BOOLEAN_FIELDS.get(field)} на {new_value}")
+    bot.answer_callback_query(call.id, show_alert=False, text=f"Изменили {BOOLEAN_FIELDS.get(field)} на {new_value}")
 
     # Сохраняем изменения в базе данных
     session.commit()
