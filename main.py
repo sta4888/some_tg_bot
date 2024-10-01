@@ -340,9 +340,13 @@ def handle_offer_selection(call):
     offer = session.query(Offer).filter_by(internal_id=str(internal_id)).first()
 
     if offer and offer.creator.telegram_id == call.from_user.id:
-        # Показываем кнопки редактирования
+        # Сохраняем информацию о выбранном оффере и идентификатор сообщения в user_states
+        user_states[call.from_user.id] = {
+            'offer_to_edit': offer,
+            'current_page': 0,
+            'offer_message_id': call.message.message_id  # Сохраняем ID сообщения с оффером
+        }
         update_offer_buttons(call, offer)
-        user_states[call.from_user.id] = {'offer_to_edit': offer, 'current_page': 0}  # Инициализация текущей страницы
     else:
         bot.send_message(call.message.chat.id, "Ошибка: Оффер не найден или не принадлежит вам.")
 
@@ -604,9 +608,8 @@ def handle_cancel_edit(call):
 #####################################################################################################################
 #####################################################################################################################
 
-
 # Обработка кнопки "Изменить фото"
-@bot.callback_query_handler(func=lambda call: call.data.startswith("edit_photos_"))
+@bot.callback_query_handler(func=lambda call: call.data == "edit_photo")
 def handle_edit_photo(call):
     user_id = call.from_user.id
     state = user_states.get(user_id)
@@ -641,15 +644,24 @@ def handle_back_to_offer(call):
     if 'photo_message_id' in state:
         bot.delete_message(chat_id=call.message.chat.id, message_id=state['photo_message_id'])
 
-    # Редактируем сообщение с оффером
-    bot.edit_message_text(
-        chat_id=call.message.chat.id,
-        message_id=state['offer_message_id'],
-        text="Вы вернулись к редактированию оффера.",
-        reply_markup=None
-    )
-    # Обновляем кнопки редактирования оффера
-    update_offer_buttons(call, state['offer_to_edit'])
+    # Возвращаемся к сообщению с оффером
+    if 'offer_message_id' in state:
+        bot.edit_message_text(
+            chat_id=call.message.chat.id,
+            message_id=state['offer_message_id'],
+            text="Вы вернулись к редактированию оффера.",
+            reply_markup=None
+        )
+        # Обновляем кнопки редактирования оффера
+        update_offer_buttons(call, state['offer_to_edit'])
+
+
+# Функция обновления кнопок редактирования оффера
+def update_offer_buttons(call, offer):
+    markup = types.InlineKeyboardMarkup()
+    markup.add(types.InlineKeyboardButton(text="Изменить фото", callback_data="edit_photo"))
+    # Добавьте другие кнопки по необходимости
+    bot.edit_message_reply_markup(chat_id=call.message.chat.id, message_id=call.message.message_id, reply_markup=markup)
 
 
 #####################################################################################################################
