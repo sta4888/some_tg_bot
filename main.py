@@ -311,7 +311,7 @@ def update_offer_buttons(call, offer, page=0, message=None):
         types.InlineKeyboardButton(text="Отмена", callback_data="cancel_edit"),
     )
 
-    if message:
+    if message is None:
         bot.edit_message_text(
             chat_id=call.message.chat.id,
             message_id=call.message.message_id,
