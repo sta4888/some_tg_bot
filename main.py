@@ -295,7 +295,7 @@ def create_boolean_buttons(offer, page=0):
 
 
 # Функция для обновления кнопок оффера
-def update_offer_buttons(call, offer, page=0):
+def update_offer_buttons(call, offer, page=0, message=None):
     offer_details = f"Текущий оффер:\nID: {offer.internal_id}\nURL: {offer.url_to}\nАдрес: {offer.location.address}\nОписание: {offer.description[:200]}..."
 
     markup = create_boolean_buttons(offer, page)
@@ -311,12 +311,20 @@ def update_offer_buttons(call, offer, page=0):
         types.InlineKeyboardButton(text="Отмена", callback_data="cancel_edit"),
     )
 
-    bot.edit_message_text(
-        chat_id=call.message.chat.id,
-        message_id=call.message.message_id,
-        text=offer_details + "\n\nЧто вы хотите изменить?",
-        reply_markup=markup
-    )
+    if message:
+        bot.edit_message_text(
+            chat_id=call.message.chat.id,
+            message_id=call.message.message_id,
+            text=offer_details + "\n\nЧто вы хотите изменить?",
+            reply_markup=markup
+        )
+    else:
+        bot.edit_message_text(
+            chat_id=message.chat.id,
+            message_id=message.message_id,
+            text=offer_details + "\n\nЧто вы хотите изменить?",
+            reply_markup=markup
+        )
 
 
 @bot.callback_query_handler(func=lambda call: call.data == "back_to_offers")
@@ -684,8 +692,8 @@ def handle_back_to_offer(call):
     # Удаляем сообщение с фотографией
     bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
     offer = state['offer_to_edit']
-    bot.send_message(user_id, "Минутку")
-    update_offer_buttons(call, offer)
+    message = bot.send_message(user_id, "Минутку")
+    update_offer_buttons(call, offer, message=message)
 
 
 # Обработка замены фотографии
