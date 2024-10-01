@@ -334,17 +334,28 @@ def handle_back_to_offers(call):
 
 
 # Обработка выбора оффера для редактирования
+# Обработка выбора оффера для редактирования
 @bot.callback_query_handler(func=lambda call: call.data.startswith("edit_offer_"))
 def handle_offer_selection(call):
     internal_id = call.data.split("_")[2]
     offer = session.query(Offer).filter_by(internal_id=str(internal_id)).first()
 
     if offer and offer.creator.telegram_id == call.from_user.id:
-        # Показываем кнопки редактирования
-        update_offer_buttons(call, offer)
-        user_states[call.from_user.id] = {'offer_to_edit': offer, 'current_page': 0}  # Инициализация текущей страницы
+        # Инициализация состояния
+        user_states[call.from_user.id] = {'offer_to_edit': offer, 'current_page': 0}
+        # Логика для показа оффера
+        edit_offer(call, offer)
     else:
         bot.send_message(call.message.chat.id, "Ошибка: Оффер не найден или не принадлежит вам.")
+
+
+# Логика отображения оффера
+def edit_offer(call, offer):
+    # Удаляем предыдущее сообщение с фотографией, если оно есть
+    bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
+
+    # Показываем кнопки редактирования
+    update_offer_buttons(call, offer)
 
 
 # Обработка переключения булевого поля
@@ -682,6 +693,7 @@ def handle_photo_navigation(call):
     show_photo(user_id)  # Показываем следующее фото
 
 
+# Возврат к офферу после редактирования фотографий
 @bot.callback_query_handler(func=lambda call: call.data == "back_to_offer")
 def handle_back_to_offer(call):
     user_id = call.from_user.id
@@ -697,9 +709,9 @@ def handle_back_to_offer(call):
     # Отправляем простое сообщение после возврата к офферу
     bot.send_message(chat_id=user_id, text="Вы вернулись к офферу.")
 
-    # Вызов логики для возврата к редактированию оффера
-    handle_offer_selection(call)
-
+    # Логика для показа оффера
+    offer = state['offer_to_edit']
+    edit_offer(call, offer)
 
 
 #####################################################################################################################
