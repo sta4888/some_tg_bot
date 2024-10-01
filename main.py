@@ -307,10 +307,12 @@ def contact_host(call):
     chat_id = call.message.chat.id
     current_offer_index = user_data[chat_id]['current_offer_index']
     offer = user_data[chat_id]['offers'][current_offer_index]
+
     # Получаем пользователя, который создал оффер
     host = session.query(User).get(offer.created_by)
+
+    # Получаем текущего пользователя по telegram_id
     user = session.query(User).filter_by(telegram_id=call.from_user.id).first()
-    # user = session.query(User).get(telegram_id=call.from_user.id)
 
     print(f"--user {user}")
     print(f"--host {host}")
@@ -364,6 +366,9 @@ def contact_host(call):
 
     # Зафиксируйте изменения
     session.commit()
+
+    # Очищаем данные пользователя
+    user_data.pop(chat_id, None)
 
 
 # Обработчик кнопки "Назад"
