@@ -334,28 +334,17 @@ def handle_back_to_offers(call):
 
 
 # Обработка выбора оффера для редактирования
-# Обработка выбора оффера для редактирования
 @bot.callback_query_handler(func=lambda call: call.data.startswith("edit_offer_"))
 def handle_offer_selection(call):
     internal_id = call.data.split("_")[2]
     offer = session.query(Offer).filter_by(internal_id=str(internal_id)).first()
 
     if offer and offer.creator.telegram_id == call.from_user.id:
-        # Инициализация состояния
-        user_states[call.from_user.id] = {'offer_to_edit': offer, 'current_page': 0}
-        # Логика для показа оффера
-        edit_offer(call, offer)
+        # Показываем кнопки редактирования
+        update_offer_buttons(call, offer)
+        user_states[call.from_user.id] = {'offer_to_edit': offer, 'current_page': 0}  # Инициализация текущей страницы
     else:
         bot.send_message(call.message.chat.id, "Ошибка: Оффер не найден или не принадлежит вам.")
-
-
-# Логика отображения оффера
-def edit_offer(call, offer):
-    # Удаляем предыдущее сообщение с фотографией, если оно есть
-    bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
-
-    # Показываем кнопки редактирования
-    update_offer_buttons(call, offer)
 
 
 # Обработка переключения булевого поля
@@ -617,51 +606,63 @@ def handle_cancel_edit(call):
 user_states = {}
 
 
+# Обработка выбора оффера для редактирования
+@bot.callback_query_handler(func=lambda call: call.data.startswith("edit_offer_"))
+def handle_offer_selection(call):
+    internal_id = call.data.split("_")[2]
+    offer = session.query(Offer).filter_by(internal_id=str(internal_id)).first()
+
+    if offer and offer.creator.telegram_id == call.from_user.id:
+        # Инициализация состояния
+        user_states[call.from_user.id] = {'offer_to_edit': offer, 'current_photo_index': 0}
+        # Редактируем сообщение с кнопками оффера
+        update_offer_buttons(call, offer)
+    else:
+        bot.send_message(call.message.chat.id, "Ошибка: Оффер не найден или не принадлежит вам.")
+
+
+# Логика обновления кнопок оффера
+def update_offer_buttons(call, offer):
+    markup = types.InlineKeyboardMarkup()
+    markup.add(types.InlineKeyboardButton(text="Изменить фото", callback_data=f"edit_photos_{offer.internal_id}"))
+    bot.edit_message_text(
+        chat_id=call.message.chat.id,
+        message_id=call.message.message_id,
+        text=f"Редактирование оффера: {offer.title}",
+        reply_markup=markup
+    )
+
+
+# Обработка изменения фотографий
 @bot.callback_query_handler(func=lambda call: call.data.startswith("edit_photos_"))
 def handle_edit_photos(call):
-    internal_id = call.data.split("_")[2]
-    offer = session.query(Offer).filter_by(internal_id=internal_id).first()
+    user_id = call.from_user.id
+    state = user_states.get(user_id)
 
-    if not offer:
-        bot.send_message(call.message.chat.id, "Оффер не найден.")
+    if not state:
+        bot.send_message(call.message.chat.id, "Ошибка: Не удалось найти оффер для редактирования.")
         return
 
-    # Получаем все фотографии
-    photos = offer.photos  # Все фото
+    offer = state['offer_to_edit']
+    photos = offer.photos
+
     if not photos:
         bot.send_message(call.message.chat.id, "Нет фотографий для редактирования.")
         return
 
-    # Инициализация состояния для текущего пользователя
-    user_states[call.from_user.id] = {
-        'internal_id': internal_id,
-        'photos': photos,
-        'current_photo_index': 0
-    }
-
-    # Удаляем предыдущее сообщение с оффером
-    bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
-
-    # Отображаем первую фотографию
-    show_photo(call.from_user.id)
+    # Показываем первое фото
+    state['current_photo_index'] = 0
+    show_photo(call, user_id, photos)
 
 
-def show_photo(user_id):
+# Показ фото с кнопками навигации
+def show_photo(call, user_id, photos):
     state = user_states[user_id]
-    internal_id = state['internal_id']
-    photos = state['photos']
     current_index = state['current_photo_index']
-
-    # Проверяем, есть ли текущая фотография
-    if current_index >= len(photos):
-        return
-
     photo = photos[current_index]
 
-    # Создаем клавиатуру
+    # Клавиатура для навигации по фото
     markup = types.InlineKeyboardMarkup()
-
-    # Кнопки "Назад" и "Вперед"
     if current_index > 0:
         markup.add(types.InlineKeyboardButton(text="◀️ Назад", callback_data="prev_photo"))
     if current_index < len(photos) - 1:
@@ -670,17 +671,18 @@ def show_photo(user_id):
     # Кнопка "Назад к офферу"
     markup.add(types.InlineKeyboardButton(text="Назад к офферу", callback_data="back_to_offer"))
 
-    # Отправляем сообщение с фото и кнопками
+    # Отправляем фото с навигацией
     bot.send_photo(chat_id=user_id, photo=photo.url, reply_markup=markup)
 
 
+# Обработка навигации по фотографиям
 @bot.callback_query_handler(func=lambda call: call.data in ["next_photo", "prev_photo"])
 def handle_photo_navigation(call):
     user_id = call.from_user.id
     state = user_states.get(user_id)
 
     if not state:
-        bot.send_message(user_id, "Нет активной сессии для редактирования фотографий.")
+        bot.send_message(user_id, "Ошибка: Не удалось найти оффер для редактирования.")
         return
 
     if call.data == "next_photo":
@@ -689,29 +691,27 @@ def handle_photo_navigation(call):
         state['current_photo_index'] -= 1
 
     # Обновляем текущее фото
-    bot.delete_message(chat_id=user_id, message_id=call.message.message_id)  # Удаляем предыдущее сообщение
-    show_photo(user_id)  # Показываем следующее фото
+    photos = state['offer_to_edit'].photos
+    bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)  # Удаляем текущее фото
+    show_photo(call, user_id, photos)  # Показываем следующее фото
 
 
-# Возврат к офферу после редактирования фотографий
+# Возврат к офферу
 @bot.callback_query_handler(func=lambda call: call.data == "back_to_offer")
 def handle_back_to_offer(call):
     user_id = call.from_user.id
     state = user_states.get(user_id)
 
     if not state:
-        bot.send_message(user_id, "Оффер не найден.")
+        bot.send_message(user_id, "Ошибка: Не удалось найти оффер для редактирования.")
         return
 
     # Удаляем сообщение с фотографией
     bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
 
-    # Отправляем простое сообщение после возврата к офферу
-    bot.send_message(chat_id=user_id, text="Вы вернулись к офферу.")
-
-    # Логика для показа оффера
+    # Редактируем сообщение с оффером
     offer = state['offer_to_edit']
-    edit_offer(call, offer)
+    update_offer_buttons(call, offer)
 
 
 #####################################################################################################################
