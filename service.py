@@ -435,7 +435,7 @@ cities_true = ["Абаза", "Абакан", "Абдулино", "Абинск",
 
 def suggest_city(user_input):
     # Поиск до 3-х городов, которые больше всего похожи на введённое значение
-    suggestions = process.extract(user_input, cities, limit=3)
+    suggestions = process.extract(user_input, cities, limit=4)
 
     if suggestions:
         # Сформируем строку с вариантами

@@ -13,7 +13,7 @@ import os
 from connect import session, Session
 from models import Location, Offer, User, Subscription
 from resender import resend_message
-from service import find_offers, parse_ical, random_with_N_digits, suggest_city, cities
+from service import find_offers, parse_ical, random_with_N_digits, suggest_city, cities, cities_true
 
 load_dotenv()
 
@@ -61,7 +61,7 @@ def ask_city(message):
     suggestions = suggest_city(msg)
 
     # Проверка на корректность введенного города
-    if msg in cities:
+    if msg in cities_true:
         user_data[message.chat.id]['city'] = msg
         ask_start_date(message)
     else:
@@ -70,9 +70,12 @@ def ask_city(message):
             # Создание кнопок с использованием InlineKeyboardMarkup
             markup = types.InlineKeyboardMarkup()
             for suggestion in suggestions:
+                index = cities.index(suggestion)
+                # Получаем соответствующее значение из cities_true
+                corresponding_value = cities_true[index]
                 # Проверка, чтобы убедиться, что suggestion является строкой
-                if isinstance(suggestion, str):
-                    markup.add(types.InlineKeyboardButton(suggestion, callback_data=suggestion))
+                if isinstance(corresponding_value, str):
+                    markup.add(types.InlineKeyboardButton(corresponding_value, callback_data=corresponding_value))
 
             # Отправка сообщения с предложениями
             bot.send_message(message.chat.id, "Возможно, вы имели в виду:", reply_markup=markup)
@@ -84,7 +87,7 @@ def ask_city(message):
 @bot.callback_query_handler(func=lambda call: True)
 def handle_city_selection(call):
     selected_city = call.data
-    if selected_city in cities:
+    if selected_city in cities_true:
         user_data[call.message.chat.id]['city'] = selected_city
         ask_start_date(call.message)
     else:
