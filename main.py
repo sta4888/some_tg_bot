@@ -603,25 +603,6 @@ def handle_cancel_edit(call):
 
 #####################################################################################################################
 #####################################################################################################################
-user_states = {}  # Сохраняем состояние пользователя
-
-
-# Обработка выбора оффера для редактирования
-@bot.callback_query_handler(func=lambda call: call.data.startswith("edit_offer_"))
-def handle_offer_selection(call):
-    internal_id = call.data.split("_")[2]
-    offer = session.query(Offer).filter_by(internal_id=str(internal_id)).first()
-
-    if offer and offer.creator.telegram_id == call.from_user.id:
-        # Сохраняем информацию о выбранном оффере и идентификатор сообщения в user_states
-        user_states[call.from_user.id] = {
-            'offer_to_edit': offer,
-            'current_page': 0,
-            'offer_message_id': call.message.message_id  # Сохраняем ID сообщения с оффером
-        }
-        update_offer_buttons(call, offer)
-    else:
-        bot.send_message(call.message.chat.id, "Ошибка: Оффер не найден или не принадлежит вам.")
 
 
 # Обработка кнопки "Изменить фото"
