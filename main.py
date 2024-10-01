@@ -358,10 +358,11 @@ def handle_toggle_field(call):
 
     # Загружаем оффер из базы данных
     offer = session.query(Offer).filter_by(internal_id=offer_id).first()
-    print(f"--offer {offer}", f"\n--field {field}")
+
 
     # Переключаем значение поля
     current_value = getattr(offer, field)
+    print(f"--offer {offer}", f"\n--field {field}\n--current_value {current_value}")
     setattr(offer, field, not current_value)
 
     # Сохраняем изменения в базе данных
