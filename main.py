@@ -83,15 +83,28 @@ def ask_city(message):
             # Отправка сообщения с предложениями
             bot.send_message(message.chat.id, "Возможно, вы имели в виду:", reply_markup=markup)
         else:
-            bot.send_message(message.chat.id, "К сожалению, я не нашёл подходящих вариантов. Пожалуйста, попробуйте ещё раз.")
+            bot.send_message(message.chat.id,
+                             "К сожалению, я не нашёл подходящих вариантов. Пожалуйста, попробуйте ещё раз.")
             bot.register_next_step_handler(message, ask_city)
 
 
 @bot.callback_query_handler(func=lambda call: True)
 def handle_city_selection(call):
     selected_city = call.data
+
+    # Убедимся, что выбранный город существует в списке
     if selected_city in cities_true:
         user_data[call.message.chat.id]['city'] = selected_city
+
+        # Изменяем текст сообщения с уведомлением о выбранном городе
+        bot.edit_message_text(
+            chat_id=call.message.chat.id,
+            message_id=call.message.message_id,
+            text=f"Вы выбрали город: {selected_city}. Теперь выберите дату заезда.",
+            reply_markup=None  # Убираем клавиатуру после выбора
+        )
+
+        # Переходим к выбору даты
         ask_start_date(call.message)
     else:
         bot.send_message(call.message.chat.id, "Пожалуйста, выберите город из предложенных вариантов.")
