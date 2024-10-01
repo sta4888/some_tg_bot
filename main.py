@@ -698,21 +698,8 @@ def handle_back_to_offer(call):
     bot.send_message(chat_id=user_id, text="Вы вернулись к офферу.")
 
     # Вызов логики для возврата к редактированию оффера
-    handle_edit_offer(call)
+    handle_offer_selection(call)
 
-
-# Обработка выбора оффера для редактирования
-@bot.callback_query_handler(func=lambda call: call.data.startswith("edit_offer_"))
-def handle_edit_offer(call):
-    internal_id = call.data.split("_")[2]
-    offer = session.query(Offer).filter_by(internal_id=internal_id).first()
-
-    if not offer:
-        bot.send_message(call.message.chat.id, "Оффер не найден.")
-        return
-
-    # Здесь добавьте логику редактирования оффера
-    bot.send_message(chat_id=call.message.chat.id, text=f"Редактируем оффер с ID: {internal_id}")
 
 
 #####################################################################################################################
