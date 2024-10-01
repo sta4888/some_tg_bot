@@ -312,14 +312,16 @@ def contact_host(call):
     contact_host_button = types.InlineKeyboardButton("Чат с хостом 💬", url=host_chat_link)
     markup.add(contact_host_button)
 
+    # Генерация уникального request_id
+    request_id = None
     while True:
         request_id = random_with_N_digits(8)
-        subscription = session.query(Subscription).get(unique_digits_id=request_id)
-        if subscription:
+        subscription = session.query(Subscription).filter_by(unique_digits_id=request_id).first()
+        if not subscription:  # Убедитесь, что подписка с этим ID не существует
             break
 
     new_subscription = Subscription(
-        user_id=user,
+        user_id=user.id,  # Передаем user.id, а не объект user
         start_date=user_data[chat_id].get('start_date', 'Не указано'),
         end_date=user_data[chat_id].get('end_date', 'Не указано'),
         offer_id=offer.id,
