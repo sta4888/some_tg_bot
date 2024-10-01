@@ -639,6 +639,7 @@ def handle_edit_photos(call):
 def show_photo(user_id):
     state = user_states[user_id]
     internal_id = state['internal_id']
+    print(f"--internal_id {internal_id}")
     photos = state['photos']
     current_index = state['current_photo_index']
 
