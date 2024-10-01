@@ -350,7 +350,7 @@ def handle_offer_selection(call):
 # Обработка переключения булевого поля
 @bot.callback_query_handler(func=lambda call: call.data.startswith('toggle_'))
 def handle_toggle_field(call):
-    print("handle_toggle_field")
+    # print("handle_toggle_field")
     field, page = call.data.replace('toggle_', '').rsplit('_', 1)
     page = int(page)  # Преобразуем страницу в целое число
     user_id = call.from_user.id
@@ -366,11 +366,11 @@ def handle_toggle_field(call):
     # Переключаем значение поля
     current_value = getattr(offer, field)
     new_value = not current_value
-    print(f"--offer {offer}", f"\n--field {field}\n--current_value {current_value}")
+    # print(f"--offer {offer}", f"\n--field {field}\n--current_value {current_value}")
 
     setattr(offer, field, new_value)
     bot.answer_callback_query(call.id, show_alert=False,
-                              text=f"Теперь {BOOLEAN_FIELDS.get(field)} на {'✅' if new_value else '❌'}")
+                              text=f"Теперь {BOOLEAN_FIELDS.get(field)} {'Да✅' if new_value else 'Нет❌'}")
 
     # Сохраняем изменения в базе данных
     session.commit()
@@ -436,7 +436,7 @@ def handle_edit_sleeps(call):
         bot.edit_message_text(
             chat_id=call.message.chat.id,
             message_id=call.message.message_id,
-            text="Введите новое количество спальных мест:"
+            text="Введите новое количество спальных мест, в формате (2+1):"
         )
         user_states[call.from_user.id]['editing_field'] = 'sleeps'
     else:
@@ -484,14 +484,13 @@ def handle_edit_area(call):
         bot.edit_message_text(
             chat_id=call.message.chat.id,
             message_id=call.message.message_id,
-            text="Введите новую площадь:"
+            text="Введите новую площадь в формате (32 кв.м):"
         )
         user_states[call.from_user.id]['editing_field'] = 'area'
     else:
         bot.send_message(call.message.chat.id, "Ошибка при редактировании оффера.")
 
 
-##########
 @bot.message_handler(
     func=lambda message: message.chat.id in user_states and user_states[message.chat.id].get('editing_field') in ['url',
                                                                                                                   'description',
@@ -509,17 +508,29 @@ def process_offer_updates(message):
         if field == 'url':
             new_value = message.text
             offer.url_to = new_value
+
         elif field == 'description':
             new_value = message.text
             offer.description = new_value
+
         elif field == 'sleeps':
-            new_value = message.text
+            new_value = int(message.text)  # Преобразуем в целое число
             offer.sleeps = new_value  # предполагаем, что это число
+
         elif field == 'price':
-            value, currency = message.text.split()
-            value = float(value)
-            offer.price.value = value
-            offer.price.currency = currency
+            while True:  # Цикл для проверки ввода цены
+                try:
+                    value, currency = message.text.split()
+                    value = float(value)
+                    offer.price.value = value
+                    offer.price.currency = currency
+                    break  # Выход из цикла, если ввод корректен
+                except ValueError:
+                    # Если произошла ошибка, просим ввести данные снова
+                    bot.send_message(message.chat.id,
+                                     "Пожалуйста, введите цену в формате 'значение валюта' (например, '1000 USD').")
+                    return  # Выход из функции, ожидая следующий ввод
+
         elif field == 'sales_agent':
             new_value = message.text
             print(f"Ищем агента с именем: {new_value}")
@@ -537,10 +548,18 @@ def process_offer_updates(message):
             print(f"Обновлен агент на: {offer.sales_agent.name}")
 
         elif field == 'area':
-            value, unit = message.text.split()
-            value = float(value)
-            offer.area.value = value
-            offer.area.unit = unit
+            while True:  # Цикл для проверки ввода площади
+                try:
+                    value, unit = message.text.split()
+                    value = float(value)
+                    offer.area.value = value
+                    offer.area.unit = unit
+                    break  # Выход из цикла, если ввод корректен
+                except ValueError:
+                    # Если произошла ошибка, просим ввести данные снова
+                    bot.send_message(message.chat.id,
+                                     "Пожалуйста, введите площадь в формате 'значение единица' (например, '100 m²').")
+                    return  # Выход из функции, ожидая следующий ввод
 
         # Сохраните изменения в базе данных
         session.commit()
@@ -554,7 +573,6 @@ def process_offer_updates(message):
             types.InlineKeyboardButton(text="Описание", callback_data=f"edit_description_{offer.internal_id}"),
             types.InlineKeyboardButton(text="Спальных мест", callback_data=f"edit_sleeps_{offer.internal_id}"),
             types.InlineKeyboardButton(text="Изменить цену", callback_data=f"edit_price_{offer.internal_id}"),
-            # types.InlineKeyboardButton(text="Изменить агента", callback_data=f"edit_sales_agent_{offer.internal_id}"),
             types.InlineKeyboardButton(text="Изменить площадь", callback_data=f"edit_area_{offer.internal_id}"),
             types.InlineKeyboardButton(text="К списку офферов", callback_data="back_to_offers"),
             types.InlineKeyboardButton(text="Отмена", callback_data="cancel_edit"),
@@ -563,9 +581,6 @@ def process_offer_updates(message):
         bot.send_message(chat_id=message.chat.id, text=offer_details + "\n\nЧто вы хотите изменить?",
                          reply_markup=markup)
 
-    except ValueError as e:
-        bot.send_message(chat_id=message.chat.id,
-                         text=f"Ошибка при обновлении: {str(e)}. Пожалуйста, проверьте введенные данные.")
     except Exception as e:
         bot.send_message(chat_id=message.chat.id, text=f"Произошла ошибка: {str(e)}")
 
