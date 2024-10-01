@@ -299,6 +299,9 @@ def contact_host(call):
     host = session.query(User).get(offer.created_by)
     user = session.query(User).get(call.message.chat.id)
 
+    print(f"--user {user}")
+    print(f"--host {host}")
+
     markup = types.InlineKeyboardMarkup()
 
     # Если у хоста есть username в Telegram, то используем его
