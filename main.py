@@ -61,8 +61,11 @@ def ask_city(message):
     suggestions = suggest_city(msg)
 
     # Проверка на корректность введенного города
-    if msg in cities_true:
-        user_data[message.chat.id]['city'] = msg
+    if msg in cities:
+        index = cities.index(msg)
+        # Получаем соответствующее значение из cities_true
+        corresponding_value = cities_true[index]
+        user_data[message.chat.id]['city'] = corresponding_value
         ask_start_date(message)
     else:
         # Если город не найден, выводим сообщение с предложениями
