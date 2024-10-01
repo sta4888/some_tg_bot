@@ -606,33 +606,6 @@ def handle_cancel_edit(call):
 user_states = {}
 
 
-# Обработка выбора оффера для редактирования
-@bot.callback_query_handler(func=lambda call: call.data.startswith("edit_offer_"))
-def handle_offer_selection(call):
-    internal_id = call.data.split("_")[2]
-    offer = session.query(Offer).filter_by(internal_id=str(internal_id)).first()
-
-    if offer and offer.creator.telegram_id == call.from_user.id:
-        # Инициализация состояния
-        user_states[call.from_user.id] = {'offer_to_edit': offer, 'current_photo_index': 0}
-        # Редактируем сообщение с кнопками оффера
-        update_offer_buttons(call, offer)
-    else:
-        bot.send_message(call.message.chat.id, "Ошибка: Оффер не найден или не принадлежит вам.")
-
-
-# Логика обновления кнопок оффера
-def update_offer_buttons(call, offer):
-    markup = types.InlineKeyboardMarkup()
-    markup.add(types.InlineKeyboardButton(text="Изменить фото", callback_data=f"edit_photos_{offer.internal_id}"))
-    bot.edit_message_text(
-        chat_id=call.message.chat.id,
-        message_id=call.message.message_id,
-        text=f"Редактирование оффера: {offer.title}",
-        reply_markup=markup
-    )
-
-
 # Обработка изменения фотографий
 @bot.callback_query_handler(func=lambda call: call.data.startswith("edit_photos_"))
 def handle_edit_photos(call):
