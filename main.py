@@ -350,6 +350,7 @@ def handle_offer_selection(call):
 # Обработка переключения булевого поля
 @bot.callback_query_handler(func=lambda call: call.data.startswith('toggle_'))
 def handle_toggle_field(call):
+    print("handle_toggle_field")
     field, page = call.data.replace('toggle_', '').rsplit('_', 1)
     page = int(page)  # Преобразуем страницу в целое число
     user_id = call.from_user.id
@@ -357,6 +358,7 @@ def handle_toggle_field(call):
 
     # Загружаем оффер из базы данных
     offer = session.query(Offer).filter_by(internal_id=offer_id).first()
+    print(f"--offer {offer}", f"\n--field {field}")
 
     # Переключаем значение поля
     current_value = getattr(offer, field)
