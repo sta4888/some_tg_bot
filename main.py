@@ -78,7 +78,9 @@ def ask_city(message):
                 corresponding_value = cities_true[index]
                 # Проверка, чтобы убедиться, что suggestion является строкой
                 if isinstance(corresponding_value, str):
-                    markup.add(types.InlineKeyboardButton(corresponding_value, callback_data=corresponding_value))
+                    # Добавляем префикс к callback_data
+                    markup.add(
+                        types.InlineKeyboardButton(corresponding_value, callback_data=f"city_{corresponding_value}"))
 
             # Отправка сообщения с предложениями
             bot.send_message(message.chat.id, "Возможно, вы имели в виду:", reply_markup=markup)
@@ -88,9 +90,10 @@ def ask_city(message):
             bot.register_next_step_handler(message, ask_city)
 
 
-@bot.callback_query_handler(func=lambda call: True)
+@bot.callback_query_handler(func=lambda call: call.data.startswith('city_'))
 def handle_city_selection(call):
-    selected_city = call.data
+    # Убираем префикс 'city_' из callback_data
+    selected_city = call.data.replace('city_', '')
 
     # Убедимся, что выбранный город существует в списке
     if selected_city in cities_true:
