@@ -606,7 +606,7 @@ def handle_cancel_edit(call):
 
 
 # Обработка кнопки "Изменить фото"
-@bot.callback_query_handler(func=lambda call: call.data == "edit_photo")
+@bot.callback_query_handler(func=lambda call: call.data.startswith("edit_photos_"))
 def handle_edit_photo(call):
     user_id = call.from_user.id
     state = user_states.get(user_id)
