@@ -626,7 +626,7 @@ def handle_edit_photos(call):
         markup.add(button)
 
     # Добавляем кнопку "Назад" для возврата к редактированию оффера
-    markup.add(types.InlineKeyboardButton(text="Назад", callback_data=f"back_to_offer_{offer.internal_id}"))
+    markup.add(types.InlineKeyboardButton(text="Назад", callback_data=f"edit_offer_{offer.internal_id}"))
 
     bot.edit_message_text(
         chat_id=call.message.chat.id,
