@@ -440,6 +440,6 @@ def suggest_city(user_input):
     if suggestions:
         # Сформируем строку с вариантами
         # suggestions_text = ', '.join([suggestion[0] for suggestion in suggestions])
-        return suggestions
+        return [suggestion[0] for suggestion in suggestions]
     else:
         return []

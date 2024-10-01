@@ -61,7 +61,7 @@ def ask_city(message):
     suggestions = suggest_city(msg)
 
     # Проверка на корректность введенного города
-    if msg in suggestions:
+    if msg in cities:
         user_data[message.chat.id]['city'] = msg
         ask_start_date(message)
     else:
@@ -70,12 +70,14 @@ def ask_city(message):
             # Создание кнопок с использованием InlineKeyboardMarkup
             markup = types.InlineKeyboardMarkup()
             for suggestion in suggestions:
-                markup.add(types.InlineKeyboardButton(suggestion, callback_data=suggestion))
+                # Проверка, чтобы убедиться, что suggestion является строкой
+                if isinstance(suggestion, str):
+                    markup.add(types.InlineKeyboardButton(suggestion, callback_data=suggestion))
 
+            # Отправка сообщения с предложениями
             bot.send_message(message.chat.id, "Возможно, вы имели в виду:", reply_markup=markup)
         else:
-            bot.send_message(message.chat.id,
-                             "К сожалению, я не нашёл подходящих вариантов. Пожалуйста, попробуйте ещё раз.")
+            bot.send_message(message.chat.id, "К сожалению, я не нашёл подходящих вариантов. Пожалуйста, попробуйте ещё раз.")
             bot.register_next_step_handler(message, ask_city)
 
 
