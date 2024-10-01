@@ -340,9 +340,14 @@ def handle_offer_selection(call):
     offer = session.query(Offer).filter_by(internal_id=str(internal_id)).first()
 
     if offer and offer.creator.telegram_id == call.from_user.id:
-        # Показываем кнопки редактирования
+        # Инициализация состояния
+        user_states[call.from_user.id] = {
+            'offer_to_edit': offer,
+            'current_photo_index': 0,
+            'offer_message_id': call.message.message_id  # Сохраняем ID сообщения с оффером
+        }
+        # Редактируем сообщение с кнопками оффера
         update_offer_buttons(call, offer)
-        user_states[call.from_user.id] = {'offer_to_edit': offer, 'current_page': 0}  # Инициализация текущей страницы
     else:
         bot.send_message(call.message.chat.id, "Ошибка: Оффер не найден или не принадлежит вам.")
 
