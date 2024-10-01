@@ -616,32 +616,28 @@ def handle_edit_photos(call):
         bot.send_message(call.message.chat.id, "Нет фотографий для редактирования.")
         return
 
-    # Создаем кнопки для удаления фотографий
-    markup = types.InlineKeyboardMarkup()
-    message_ids = []  # Список для хранения идентификаторов сообщений
+    # Добавляем кнопку "Назад" для возврата к редактированию оффера
+    back_button = types.InlineKeyboardButton(text="Назад", callback_data=f"edit_offer_{offer.internal_id}")
 
     # Отправляем сообщения с фотографиями
     for photo in photos:
-        msg = bot.send_photo(chat_id=call.message.chat.id, photo=photo.url,
-                             reply_markup=markup)  # Отправляем каждую фотографию
-        message_ids.append(msg.message_id)  # Сохраняем идентификатор сообщения
-
+        # Создаем отдельную клавиатуру для каждой фотографии
+        markup = types.InlineKeyboardMarkup()
         button = types.InlineKeyboardButton(
             text=f"❌ Удалить {photo.url}",
-            callback_data=f"delete_photo_{photo.id}_{offer.internal_id}_{msg.message_id}"
-            # Передаем id фото, internal_id оффера и message_id
+            callback_data=f"delete_photo_{photo.id}_{offer.internal_id}"  # Передаем id фото и internal_id оффера
         )
         markup.add(button)
+        markup.add(back_button)  # Добавляем кнопку "Назад"
 
-    # Добавляем кнопку "Назад" для возврата к редактированию оффера
-    markup.add(types.InlineKeyboardButton(text="Назад", callback_data=f"edit_offer_{offer.internal_id}"))
+        # Отправляем каждую фотографию с соответствующей клавиатурой
+        bot.send_photo(chat_id=call.message.chat.id, photo=photo.url, reply_markup=markup)
 
-    # Обновляем сообщение с кнопками
+    # Обновляем основное сообщение о редактировании фотографий
     bot.edit_message_text(
         chat_id=call.message.chat.id,
         message_id=call.message.message_id,
-        text="Выберите фотографию для удаления:",
-        reply_markup=markup
+        text="Выберите фотографию для удаления:"
     )
 
 
@@ -650,7 +646,7 @@ def handle_delete_photo(call):
     # Выводим отладочную информацию
     print("Полученные данные:", call.data)  # Вывод данных на консоль для отладки
 
-    photo_id, internal_id, message_id = call.data.split("_")[2:5]  # Получаем message_id
+    photo_id, internal_id = call.data.split("_")[2:4]  # Убираем message_id
     photo_id = int(photo_id)  # Преобразуем ID фото в int
 
     # Находим фотографию в базе данных
@@ -671,9 +667,6 @@ def handle_delete_photo(call):
 
     # Уведомляем пользователя об успешном удалении
     bot.send_message(call.message.chat.id, "Фотография удалена.")
-
-    # Удаляем сообщение с фотографией
-    bot.delete_message(chat_id=call.message.chat.id, message_id=int(message_id))
 
     # Обновляем сообщение, чтобы отобразить оставшиеся фотографии
     handle_edit_photos(call)  # Показать обновленный список фотографий
