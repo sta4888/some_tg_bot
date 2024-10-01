@@ -618,6 +618,8 @@ def handle_edit_photos(call):
     user_id = call.from_user.id
     state = user_states.get(user_id)
 
+    bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
+
     if not state:
         bot.send_message(call.message.chat.id, "Ошибка: Не удалось найти оффер для редактирования.")
         return
