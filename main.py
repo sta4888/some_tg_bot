@@ -359,18 +359,24 @@ def handle_toggle_field(call):
     # Загружаем оффер из базы данных
     offer = session.query(Offer).filter_by(internal_id=offer_id).first()
 
+    if offer is None:
+        bot.answer_callback_query(call.id, show_alert=True, text="Оффер не найден.")
+        return
 
     # Переключаем значение поля
     current_value = getattr(offer, field)
+    new_value = not current_value
     print(f"--offer {offer}", f"\n--field {field}\n--current_value {current_value}")
-    setattr(offer, field, not current_value)
-    bot.answer_callback_query(call.from_user.id, show_alert=True, text=f"В изменили {BOOLEAN_FIELDS.get(field)} на {current_value}")
+
+    setattr(offer, field, new_value)
+    bot.answer_callback_query(call.id, show_alert=True, text=f"Изменили {BOOLEAN_FIELDS.get(field)} на {new_value}")
 
     # Сохраняем изменения в базе данных
     session.commit()
 
     # Обновляем кнопки с учетом изменения, оставаясь на той же странице
     update_offer_buttons(call, offer, page)
+
 
 
 # Обработка пагинации
