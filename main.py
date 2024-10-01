@@ -13,7 +13,7 @@ import os
 from connect import session, Session
 from models import Location, Offer, User, Subscription
 from resender import resend_message
-from service import find_offers, parse_ical, random_with_N_digits
+from service import find_offers, parse_ical, random_with_N_digits, suggest_city
 
 load_dotenv()
 
@@ -57,8 +57,37 @@ def start(message):
 
 
 def ask_city(message):
-    user_data[message.chat.id]['city'] = message.text
-    ask_start_date(message)
+    msg = str(message.text).lower()
+    suggestions = suggest_city(msg)
+
+    # Проверка на корректность введенного города
+    if msg in suggestions:
+        user_data[message.chat.id]['city'] = msg
+        ask_start_date(message)
+    else:
+        # Если город не найден, выводим сообщение с предложениями
+        if suggestions:
+            # Создание кнопок с использованием InlineKeyboardMarkup
+            markup = types.InlineKeyboardMarkup()
+            for suggestion in suggestions:
+                markup.add(types.InlineKeyboardButton(suggestion, callback_data=suggestion))
+
+            bot.send_message(message.chat.id, "Возможно, вы имели в виду:", reply_markup=markup)
+        else:
+            bot.send_message(message.chat.id,
+                             "К сожалению, я не нашёл подходящих вариантов. Пожалуйста, попробуйте ещё раз.")
+            bot.register_next_step_handler(message, ask_city)
+
+
+@bot.callback_query_handler(func=lambda call: True)
+def handle_city_selection(call):
+    selected_city = call.data
+    if selected_city in cities:
+        user_data[call.message.chat.id]['city'] = selected_city
+        ask_start_date(call.message)
+    else:
+        bot.send_message(call.message.chat.id, "Пожалуйста, выберите город из предложенных вариантов.")
+        bot.register_next_step_handler(call.message, ask_city)
 
 
 def ask_start_date(message):

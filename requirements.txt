@@ -11,3 +11,5 @@ qrcode[pil]
 PyPDF2
 segno
 httpx
+fuzzywuzzy
+python-levenshtein
