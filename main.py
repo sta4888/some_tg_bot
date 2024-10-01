@@ -309,7 +309,7 @@ def contact_host(call):
     offer = user_data[chat_id]['offers'][current_offer_index]
     # Получаем пользователя, который создал оффер
     host = session.query(User).get(offer.created_by)
-    user = session.query(User).get(call.from_user.id)
+    user = session.query(User).get(telegram_id=call.from_user.id)
 
     print(f"--user {user}")
     print(f"--host {host}")
