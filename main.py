@@ -217,7 +217,6 @@ def paginate_buttons(offers, page=1):
 
     # Создаем кнопки для офферов на текущей странице
     for offer in offers[start_index:end_index]:
-        print(f"edit_offer_{offer.internal_id}")
         button = types.InlineKeyboardButton(
             text=f"Объект {offer.internal_id} {offer.location.address}",
             callback_data=f"edit_offer_{offer.internal_id}"
@@ -338,7 +337,6 @@ def handle_back_to_offers(call):
 @bot.callback_query_handler(func=lambda call: call.data.startswith("edit_offer_"))
 def handle_offer_selection(call):
     internal_id = call.data.split("_")[2]
-    print(f"--internal_id handle_offer_selection {internal_id}")
     offer = session.query(Offer).filter_by(internal_id=str(internal_id)).first()
 
     if offer and offer.creator.telegram_id == call.from_user.id:
@@ -631,9 +629,6 @@ def handle_edit_photos(call):
         'current_photo_index': 0
     }
 
-    # Удаляем предыдущее сообщение с оффером
-    bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
-
     # Отображаем первую фотографию
     show_photo(call.from_user.id)
 
@@ -641,7 +636,6 @@ def handle_edit_photos(call):
 def show_photo(user_id):
     state = user_states[user_id]
     internal_id = state['internal_id']
-    print(f"--internal_id {internal_id}")
     photos = state['photos']
     current_index = state['current_photo_index']
 
@@ -660,12 +654,21 @@ def show_photo(user_id):
     if current_index < len(photos) - 1:
         markup.add(types.InlineKeyboardButton(text="Вперед ▶️", callback_data="next_photo"))
 
-    # Кнопка "Назад" для возврата к редактированию оффера
-    markup.add(
-        types.InlineKeyboardButton(text="Назад к редактированию оффера", callback_data=f"edit_offer_{internal_id}"))
+    # Обновляем текст сообщения
+    text = "Фотографии для объекта:\n"
 
-    # Отправляем фото с кнопками
-    bot.send_photo(chat_id=user_id, photo=photo.url, reply_markup=markup)
+    # Обновляем или отправляем сообщение с текстом и фотографией
+    if 'message_id' in state:
+        try:
+            bot.edit_message_text(text=text, chat_id=user_id, message_id=state['message_id'], reply_markup=markup)
+            bot.edit_message_media(media=types.InputMediaPhoto(photo.url), chat_id=user_id,
+                                   message_id=state['message_id'])
+        except Exception as e:
+            print(f"Ошибка при редактировании сообщения: {e}")
+    else:
+        # Если это первое сообщение, отправляем его
+        msg = bot.send_photo(chat_id=user_id, photo=photo.url, reply_markup=markup)
+        state['message_id'] = msg.message_id  # Сохраняем ID сообщения
 
 
 @bot.callback_query_handler(func=lambda call: call.data in ["next_photo", "prev_photo"])
@@ -683,7 +686,6 @@ def handle_photo_navigation(call):
         state['current_photo_index'] -= 1
 
     # Обновляем текущее фото
-    bot.delete_message(chat_id=user_id, message_id=call.message.message_id)  # Удаляем предыдущее сообщение
     show_photo(user_id)  # Показываем следующее фото
 
 
@@ -700,7 +702,6 @@ def handle_delete_photo(call):
                            photo.id != int(call.data.split("_")[2])]  # Обновляем список фотографий
         state['current_photo_index'] = max(0, min(state['current_photo_index'],
                                                   len(state['photos']) - 1))  # Обновляем индекс
-        bot.delete_message(chat_id=user_id, message_id=call.message.message_id)  # Удаляем сообщение с кнопкой
         show_photo(user_id)  # Показываем обновленное фото
 
 
