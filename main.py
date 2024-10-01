@@ -616,7 +616,7 @@ def update_offer_buttons(call, offer):
     bot.edit_message_text(
         chat_id=call.message.chat.id,
         message_id=call.message.message_id,
-        text=f"Редактирование оффера: {offer.title}",
+        text=f"Редактирование оффера:",
         reply_markup=markup
     )
 
