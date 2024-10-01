@@ -316,7 +316,7 @@ def contact_host(call):
     request_id = None
     while True:
         request_id = random_with_N_digits(8)
-        subscription = session.query(Subscription).filter_by(unique_digits_id=request_id).first()
+        subscription = session.query(Subscription).filter_by(unique_digits_id=str(request_id)).first()
         if not subscription:  # Убедитесь, что подписка с этим ID не существует
             break
 
