@@ -54,8 +54,9 @@ celery.conf.timezone = 'Asia/Tashkent'
 
 # Пример расписания задач (если нужно)
 celery.conf.beat_schedule = {
-    'send_daily_report': {
-        'task': 'tasks.check_calendars',
-        'schedule': 360.0,  # Задача будет выполняться каждые 60 секунд
+    'check_calendars': {
+        'task': 'check_calendars',  # Исправленное имя задачи
+        'schedule': 360.0,  # Задача будет выполняться каждые 360 секунд
     },
 }
+
