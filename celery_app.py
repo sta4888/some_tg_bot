@@ -19,13 +19,15 @@ celery = make_celery()
 
 
 @celery.task
+@logger.catch
 def add(x, y):
     return x + y
 
 
 # Пример задачи: отправка ежедневного сообщения
-@logger.catch
+
 @celery.task
+@logger.catch
 def send_daily_report():
     logger.info("Отправляем ежедневное сообщение...")
     return 123
