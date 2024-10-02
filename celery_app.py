@@ -36,7 +36,7 @@ def send_daily_report():
     logger.info("Отправляем ежедневное сообщение...")
 
 
-@celery.task
+@celery.task(name="check_calendars")
 @logger.catch
 def check_calendars():
     session = Session()
