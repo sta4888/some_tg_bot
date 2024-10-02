@@ -14,7 +14,7 @@ from loguru import logger
 
 from connect import session, Session
 from models import Location, Offer, User, Subscription
-from resender import resend_message
+from resender import resend_message_with_buttons
 from service import find_offers, parse_ical, random_with_N_digits, suggest_city, cities, cities_true
 
 load_dotenv()

@@ -14,3 +14,5 @@ httpx
 fuzzywuzzy
 python-levenshtein
 loguru
+celery[redis]
+celery-beat

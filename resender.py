@@ -2,15 +2,18 @@ import requests
 from dotenv import load_dotenv
 import os
 from loguru import logger
+import json
+
 load_dotenv()
 
 # Инициализация бота
-SECOND_BOT_TOKEN = os.environ.get('SECOND_BOT_TOKEN')
+SECOND_BOT_TOKEN = os.getenv('SECOND_BOT_TOKEN')
 
-# URL для отправки сообщения второму боту
+# URL для отправки сообщения через API второго бота
 SEND_MESSAGE_URL = f'https://api.telegram.org/bot{SECOND_BOT_TOKEN}/sendMessage'
 
 
+@logger.catch
 def escape_markdown(text):
     """
     Экранирует специальные символы для MarkdownV2
@@ -19,27 +22,45 @@ def escape_markdown(text):
     return ''.join(['\\' + char if char in escape_chars else char for char in text])
 
 
-def resend_message(bot, message, target_chat_id, text):
-    # URL для отправки сообщения через API второго бота
-    send_message_url = f'https://api.telegram.org/bot{SECOND_BOT_TOKEN}/sendMessage'
-
+@logger.catch
+def resend_message_with_buttons(bot, message, target_chat_id, text):
     # Экранируем текст
     escaped_text = escape_markdown(text)
 
-    # Данные для отправки сообщения второму боту
+    # Создаем кнопки
+    buttons = [
+        [
+            {
+                "text": "Кнопка 1",
+                "callback_data": "button_1_pressed"
+            },
+            {
+                "text": "Кнопка 2",
+                "callback_data": "button_2_pressed"
+            }
+        ]
+    ]
+
+    # Создаем reply_markup с кнопками
+    reply_markup = {
+        "inline_keyboard": buttons
+    }
+
+    # Данные для отправки сообщения с кнопками
     data = {
         'chat_id': target_chat_id,
         'text': escaped_text,
-        'parse_mode': 'MarkdownV2'
+        'parse_mode': 'MarkdownV2',
+        'reply_markup': json.dumps(reply_markup)  # Нужно передавать JSON строкой
     }
 
-    # Отправляем сообщение второму боту через API
-    response = requests.post(send_message_url, data=data)
+    # Отправляем сообщение через API второго бота
+    response = requests.post(SEND_MESSAGE_URL, data=data)
 
     if response.status_code == 200:
-        print("Сообщение успешно отправлено второму боту!")
+        logger.info("Сообщение с кнопками успешно отправлено!")
         return True
     else:
-        print(f"Ошибка при отправке сообщения: {response.status_code}")
-        print(f"Ответ: {response.text}")
+        logger.error(f"Ошибка при отправке сообщения: {response.status_code}")
+        logger.info(f"Ответ: {response.text}")
         return False
