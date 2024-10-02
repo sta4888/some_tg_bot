@@ -67,7 +67,7 @@ def find_offers(city, start_date, end_date, guest_count, bedrooms, amenities=Non
 def parse_ical(offer):
     # Получаем календарь по ссылке
 
-    response = requests.get(offer.url_to, )
+    response = requests.get(offer.url_to)
     if response.status_code != 200:
         logger.error(f"Ошибка при загрузке календаря: {response.status_code}")
         return
