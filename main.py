@@ -795,6 +795,33 @@ def handle_make_main_photo(call):
 
 #####################################################################################################################
 #####################################################################################################################
+
+# Обработка офрмеления заказа
+@logger.catch
+@bot.callback_query_handler(func=lambda call: call.data == "button_")
+def handle_make_main_photo(call):
+    user_id = call.from_user.id
+    state = user_states.get(user_id)
+
+    if not state:
+        bot.send_message(user_id, "Ошибка: Не удалось найти оффер для редактирования.")
+        return
+
+    offer = state['offer_to_edit']
+    current_photo_index = state['current_photo_index']
+    photo_to_make_main = offer.photos[current_photo_index]
+
+    # Сначала устанавливаем все фото как не главные
+    for photo in offer.photos:
+        photo.is_main = False
+    photo_to_make_main.is_main = True  # Устанавливаем выбранное фото как главное
+
+    session.commit()  # Сохраняем изменения в базе данных
+    bot.send_message(user_id, "Фото сделано главным!")
+
+
+#####################################################################################################################
+#####################################################################################################################
 # Обработка нажатия кнопки "СГЕНЕРИРОВАТЬ РЕФЕРАЛЬНУЮ ССЫЛКУ"
 @logger.catch
 @bot.message_handler(func=lambda message: message.text == "СГЕНЕРИРОВАТЬ РЕФЕРАЛЬНУЮ ССЫЛКУ")
