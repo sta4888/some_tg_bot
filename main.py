@@ -216,6 +216,7 @@ def edit_offer(message):
     markup = paginate_buttons(offers, page=1)
     bot.send_message(message.chat.id, "Выберите оффер для редактирования:", reply_markup=markup)
 
+
 @logger.catch
 def paginate_buttons(offers, page=1):
     markup = types.InlineKeyboardMarkup()
@@ -253,6 +254,7 @@ def paginate_buttons(offers, page=1):
         markup.add(*pagination_buttons)
 
     return markup
+
 
 @logger.catch
 @bot.callback_query_handler(func=lambda call: call.data.startswith(('prev_page_', 'next_page_')))
@@ -336,6 +338,7 @@ def update_offer_buttons(call, offer, page=0, message=None):
             text=offer_details + "\n\nЧто вы хотите изменить?",
             reply_markup=markup
         )
+
 
 @logger.catch
 @bot.callback_query_handler(func=lambda call: call.data == "back_to_offers")
@@ -743,6 +746,7 @@ def handle_replace_photo(call):
     bot.send_message(user_id, "Пожалуйста, загрузите новое фото для замены.")
     bot.register_next_step_handler_by_chat_id(user_id, lambda message: save_new_photo(message, photo_to_replace))
 
+
 @logger.catch
 def save_new_photo(message, photo_to_replace):
     user_id = message.chat.id
@@ -854,4 +858,5 @@ def handle_allrefstats(message):
 
 
 if __name__ == "__main__":
-    bot.polling()
+    with logger.catch():
+        bot.polling()
