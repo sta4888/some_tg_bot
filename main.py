@@ -409,7 +409,7 @@ def contact_host(call):
                     f"Адрес: {offer.location.address}\n" \
                     f"Цена: {offer.price.value} {offer.price.currency}\n\n"
 
-    resend_message_with_buttons(bot, call.message, host.chat_id, offer_message)
+    resend_message_with_buttons(bot, call.message, host.chat_id, offer_message, request_id)
 
     # Добавьте новую подписку в сессию
     session.add(new_subscription)

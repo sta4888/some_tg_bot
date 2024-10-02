@@ -23,7 +23,7 @@ def escape_markdown(text):
 
 
 @logger.catch
-def resend_message_with_buttons(bot, message, target_chat_id, text):
+def resend_message_with_buttons(bot, message, target_chat_id, text, request_id):
     # Экранируем текст
     escaped_text = escape_markdown(text)
 
@@ -31,12 +31,12 @@ def resend_message_with_buttons(bot, message, target_chat_id, text):
     buttons = [
         [
             {
-                "text": "Кнопка 1",
-                "callback_data": "button_1_pressed"
+                "text": "Оформлен ✅",
+                "callback_data": f"button_p_{request_id}"
             },
             {
-                "text": "Кнопка 2",
-                "callback_data": "button_2_pressed"
+                "text": "Отменен ❌",
+                "callback_data": f"button_n_{request_id}"
             }
         ]
     ]
