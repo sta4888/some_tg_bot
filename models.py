@@ -230,6 +230,7 @@ class Event(Base):
 class UserAction(Base):
     __tablename__ = 'user_action'
 
+    id = Column(Integer, primary_key=True)
     telegram_id = Column(BigInteger, unique=False, nullable=False)  # Изменение на BigInteger
     username = Column(String(100), nullable=True, default="")
     first_name = Column(String(100), nullable=True, default="")
