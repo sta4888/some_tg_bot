@@ -1,11 +1,5 @@
-# celery.py
-
-import os
 from celery import Celery
-
-# Установим переменные окружения для подключения к Redis
-os.environ.setdefault('CELERY_BROKER_URL', 'redis://localhost:6379/0')
-os.environ.setdefault('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0')
+import os
 
 app = Celery('telegram_bot')
 
@@ -13,13 +7,13 @@ app = Celery('telegram_bot')
 app.conf.broker_url = os.getenv('CELERY_BROKER_URL', 'redis://localhost:6379/0')
 app.conf.result_backend = os.getenv('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0')
 
-# Настройки для Celery Beat (расписание задач)
+# Пример расписания задач (если нужно)
 app.conf.beat_schedule = {
     'send_daily_report': {
         'task': 'tasks.send_daily_report',
-        'schedule': 60.0,  # Например, задача будет выполняться каждые 60 секунд
+        'schedule': 60.0,  # Задача будет выполняться каждые 60 секунд
     },
 }
 
-# Установка таймзоны
+# Укажите правильный часовой пояс
 app.conf.timezone = 'Asia/Tashkent'
