@@ -1,18 +1,18 @@
 from celery import Celery
 import os
+import os
+from loguru import logger
+
+broker_url = os.getenv('CELERY_BROKER_URL', 'redis://localhost:6379/0')
+result_backend = os.getenv('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0')
+
+logger.info(f'Broker URL: {broker_url}')
+logger.info(f'Result Backend: {result_backend}')
 
 # Настройки Celery
-# broker_url = os.getenv('CELERY_BROKER_URL', 'redis://localhost:6379/0')
-# result_backend = os.getenv('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0')
-#
-# app = Celery('telegram_bot', broker_pool_limit=1, broker=broker_url,
-#              result_backend=result_backend)
+app = Celery('telegram_bot', broker=broker_url, backend=result_backend)
 
-app = Celery(__name__)
-app.conf.broker_url = os.environ.get("CELERY_BROKER_URL", "redis://localhost:6379")
-app.conf.result_backend = os.environ.get("CELERY_RESULT_BACKEND", "redis://localhost:6379")
-
-
+app.conf.timezone = 'Asia/Tashkent'
 
 # Пример расписания задач (если нужно)
 app.conf.beat_schedule = {
@@ -21,6 +21,3 @@ app.conf.beat_schedule = {
         'schedule': 60.0,  # Задача будет выполняться каждые 60 секунд
     },
 }
-
-# Укажите правильный часовой пояс
-app.conf.timezone = 'Asia/Tashkent'
