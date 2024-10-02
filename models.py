@@ -226,14 +226,14 @@ class Event(Base):
     def __str__(self):
         return f"{self.summary} ({self.start_time} - {self.end_time})"
 
-#
-# class UserAction(Base):
-#     __tablename__ = 'user_action'
-#
-#     telegram_id = Column(BigInteger, unique=False, nullable=False)  # Изменение на BigInteger
-#     username = Column(String(100), nullable=True, default="")
-#     first_name = Column(String(100), nullable=True, default="")
-#     second_name = Column(String(100), nullable=True, default="")
-#     chat_id = Column(BigInteger, nullable=True)  # Если это целое число, лучше тоже поменять
-#     action_type = Column(String(255), nullable=True, default="")  # тип действия sand command, send message, changing button
-#     action = Column(String(255), nullable=True, default="") # /start..., msg text, button text
+
+class UserAction(Base):
+    __tablename__ = 'user_action'
+
+    telegram_id = Column(BigInteger, unique=False, nullable=False)  # Изменение на BigInteger
+    username = Column(String(100), nullable=True, default="")
+    first_name = Column(String(100), nullable=True, default="")
+    second_name = Column(String(100), nullable=True, default="")
+    chat_id = Column(BigInteger, nullable=True)  # Если это целое число, лучше тоже поменять
+    action_type = Column(String(255), nullable=True, default="")  # тип действия sand command, send message, changing button
+    action = Column(String(255), nullable=True, default="") # /start..., msg text, button text
