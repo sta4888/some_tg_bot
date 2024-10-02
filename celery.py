@@ -2,11 +2,17 @@ from celery import Celery
 import os
 
 # Настройки Celery
-broker_url = os.getenv('CELERY_BROKER_URL', 'redis://localhost:6379/0')
-result_backend = os.getenv('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0')
+# broker_url = os.getenv('CELERY_BROKER_URL', 'redis://localhost:6379/0')
+# result_backend = os.getenv('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0')
+#
+# app = Celery('telegram_bot', broker_pool_limit=1, broker=broker_url,
+#              result_backend=result_backend)
 
-app = Celery('telegram_bot', broker_pool_limit=1, broker=broker_url,
-             result_backend=result_backend)
+app = Celery(__name__)
+app.conf.broker_url = os.environ.get("CELERY_BROKER_URL", "redis://localhost:6379")
+app.conf.result_backend = os.environ.get("CELERY_RESULT_BACKEND", "redis://localhost:6379")
+
+
 
 # Пример расписания задач (если нужно)
 app.conf.beat_schedule = {
