@@ -19,12 +19,10 @@ from service import find_offers, parse_ical, random_with_N_digits, suggest_city,
 
 load_dotenv()
 
-
 # Настройка логгера
 logger.remove()  # Удаляем стандартный обработчик
 logger.add(sys.stdout, format="{time} {level} {message}", level="INFO")  # Логи в консоль
 logger.add("file.log", format="{time} {level} {message}", level="DEBUG", rotation="10 MB")  # Логи в файл
-
 
 # Инициализация бота
 API_TOKEN = os.environ.get('BOT_TOKEN')
@@ -409,7 +407,7 @@ def contact_host(call):
                     f"Адрес: {offer.location.address}\n" \
                     f"Цена: {offer.price.value} {offer.price.currency}\n\n"
 
-    resend_message(bot, call.message, host.chat_id, offer_message)
+    resend_message_with_buttons(bot, call.message, host.chat_id, offer_message)
 
     # Добавьте новую подписку в сессию
     session.add(new_subscription)
