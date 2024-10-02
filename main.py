@@ -11,7 +11,7 @@ from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, InputMedia
 from telegram_bot_calendar import DetailedTelegramCalendar, LSTEP
 from dotenv import load_dotenv
 from loguru import logger
-from celery_app import send_daily_report, add
+from celery_app import addi
 from connect import session, Session
 from models import Location, Offer, User, Subscription
 from resender import resend_message_with_buttons
