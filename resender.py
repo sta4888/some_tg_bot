@@ -1,7 +1,7 @@
 import requests
 from dotenv import load_dotenv
 import os
-
+from loguru import logger
 load_dotenv()
 
 # Инициализация бота

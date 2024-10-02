@@ -15,20 +15,19 @@ import segno
 from PyPDF2 import PdfReader, PdfWriter
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
+from loguru import logger
 
 
+@logger.catch
 def find_offers(city, start_date, end_date, guest_count, bedrooms, amenities=None):
     # Поиск местоположения по городу
     locations = session.query(Location).filter(Location.locality_name.ilike(f'%{city}%')).all()
-    print(f"--locations {locations}")
 
     end_date = datetime.strptime(end_date, '%Y-%m-%d')
     start_date = datetime.strptime(start_date, '%Y-%m-%d')
 
     if not locations:
         return None  # Если нет предложений в этом городе
-
-    print(city, start_date, end_date, guest_count, bedrooms, amenities)
 
     # Начало фильтрации предложений
     query = session.query(Offer).options(joinedload(Offer.photos)).filter(
@@ -43,7 +42,6 @@ def find_offers(city, start_date, end_date, guest_count, bedrooms, amenities=Non
     #         query = query.filter(getattr(Offer, amenity).is_(True))
 
     offers = query.all()
-    print(f"--offers {offers}")
 
     # Фильтруем предложения по датам
     valid_offers = []
@@ -65,12 +63,13 @@ def find_offers(city, start_date, end_date, guest_count, bedrooms, amenities=Non
     return valid_offers
 
 
+@logger.catch
 def parse_ical(ical_url, offer, session: Session):
     # Получаем календарь по ссылке
 
     response = requests.get(ical_url)
     if response.status_code != 200:
-        print(f"Ошибка при загрузке календаря: {response.status_code}")
+        logger.error(f"Ошибка при загрузке календаря: {response.status_code}")
         return
 
     ical_string = response.content
@@ -95,7 +94,7 @@ def parse_ical(ical_url, offer, session: Session):
 
             if existing_event:
                 # Если событие уже существует, пропускаем его
-                print(f"Событие {uid} уже существует. Пропуск.")
+                logger.info(f"Событие {uid} уже существует. Пропуск.")
                 continue
 
             # Если событие не найдено, создаем его
@@ -112,6 +111,7 @@ def parse_ical(ical_url, offer, session: Session):
     session.commit()
 
 
+@logger.catch
 def qr_generate(qr_data: str, pdf_file: str) -> None:
     qrcode = segno.make_qr(qr_data)
     image_file = "darkblue_qrcode.png"
@@ -126,6 +126,7 @@ def qr_generate(qr_data: str, pdf_file: str) -> None:
     insert_image_to_pdf(pdf_file, output_pdf, image_file, 90, 26)
 
 
+@logger.catch
 def insert_image_to_pdf(existing_pdf, output_pdf, image_path, x, y):
     # Create a PDF with the image
     packet = BytesIO()
@@ -151,6 +152,7 @@ def insert_image_to_pdf(existing_pdf, output_pdf, image_path, x, y):
         pdf_writer.write(output_file)
 
 
+@logger.catch
 def random_with_N_digits(n):
     range_start = 10 ** (n - 1)
     range_end = (10 ** n) - 1
@@ -433,6 +435,7 @@ cities_true = ["Абаза", "Абакан", "Абдулино", "Абинск",
                "Ярцево", "Ясногорск", "Ясный", "Яхрома"]
 
 
+@logger.catch
 def suggest_city(user_input):
     # Поиск до 3-х городов, которые больше всего похожи на введённое значение
     suggestions = process.extract(user_input, cities, limit=4)

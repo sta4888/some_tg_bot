@@ -1,6 +1,8 @@
 import asyncio
 import datetime
 import re
+import os
+import sys
 
 import httpx
 import telebot
@@ -8,7 +10,7 @@ from sqlalchemy import distinct
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, InputMediaPhoto
 from telegram_bot_calendar import DetailedTelegramCalendar, LSTEP
 from dotenv import load_dotenv
-import os
+from loguru import logger
 
 from connect import session, Session
 from models import Location, Offer, User, Subscription
@@ -17,23 +19,54 @@ from service import find_offers, parse_ical, random_with_N_digits, suggest_city,
 
 load_dotenv()
 
+
+# Настройка логгера
+logger.remove()  # Удаляем стандартный обработчик
+logger.add(sys.stdout, format="{time} {level} {message}", level="INFO")  # Логи в консоль
+logger.add("file.log", format="{time} {level} {message}", level="DEBUG", rotation="10 MB")  # Логи в файл
+
+
 # Инициализация бота
 API_TOKEN = os.environ.get('BOT_TOKEN')
 bot = telebot.TeleBot(API_TOKEN)
 
 user_data = {}
 
-# Словарь для дней недели и месяцев на русском
-days_of_week = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
-months_of_year = [
-    'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
-    'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
-]
+from telebot import types
+
+# Удобства с эмодзи
+AMENITIES_EMOJI = {
+    "Стиральная машина": "🧺",
+    "Wi-Fi": "📶",
+    "Телевизор": "📺",
+    "Кондиционер": "❄️",
+    "Дружественно для детей": "👶",
+    "Разрешены вечеринки": "🎉",
+    "Холодильник": "🧊",
+    "Телефон": "📞",
+    "Плита": "🍳",
+    "Посудомоечная машина": "🍽️",
+    "Музыкальный центр": "🎵",
+    "Микроволновка": "🍲",
+    "Утюг": "🧼",
+    "Консьерж": "👨‍✈️",
+    "Парковка": "🚗",
+    "Сейф": "🔒",
+    "Водонагреватель": "💧",
+    "Телевидение": "📡",
+    "Ванная комната": "🛁",
+    "Можно с животными": "🐕",
+    "Можно курить": "🚬",
+    "Романтическая атмосфера": "💖",
+    "Джакузи": "🛀",
+    "Балкон": "🏞️",
+    "Лифт": "🛗"
+}
 
 
 @bot.message_handler(commands=['start'])
 def start(message):
-    # Найдем пользователя по telegram_id
+    logger.info(f"Пользователь {message.from_user.username} ({message.from_user.id}) отправил команду /start")
     user = session.query(User).filter_by(telegram_id=message.from_user.id).first()
 
     # Если пользователь новый, создаем его
@@ -185,38 +218,6 @@ def ask_guest(message):
         bot.register_next_step_handler(message, ask_guest)
 
 
-from telebot import types
-
-# Удобства с эмодзи
-AMENITIES_EMOJI = {
-    "Стиральная машина": "🧺",
-    "Wi-Fi": "📶",
-    "Телевизор": "📺",
-    "Кондиционер": "❄️",
-    "Дружественно для детей": "👶",
-    "Разрешены вечеринки": "🎉",
-    "Холодильник": "🧊",
-    "Телефон": "📞",
-    "Плита": "🍳",
-    "Посудомоечная машина": "🍽️",
-    "Музыкальный центр": "🎵",
-    "Микроволновка": "🍲",
-    "Утюг": "🧼",
-    "Консьерж": "👨‍✈️",
-    "Парковка": "🚗",
-    "Сейф": "🔒",
-    "Водонагреватель": "💧",
-    "Телевидение": "📡",
-    "Ванная комната": "🛁",
-    "Можно с животными": "🐕",
-    "Можно курить": "🚬",
-    "Романтическая атмосфера": "💖",
-    "Джакузи": "🛀",
-    "Балкон": "🏞️",
-    "Лифт": "🛗"
-}
-
-
 @bot.callback_query_handler(func=lambda call: re.match(r'^\d+(\+\d+)*$', call.data))
 def handle_bedrooms_selection(call):
     chat_id = call.message.chat.id
@@ -264,7 +265,7 @@ async def check_url(client, url):
         response = await client.get(url)
         return response.status_code >= 200 and response.status_code < 300
     except Exception as e:
-        print(f"Ошибка при проверке URL {url}: {e}")
+        logger.error(f"Ошибка при проверке URL {url}: {e}")
         return False
 
 
@@ -273,7 +274,7 @@ async def check_media_links(urls):
     async with httpx.AsyncClient() as client:
         tasks = [check_url(client, url) for url in urls]
         results = await asyncio.gather(*tasks)
-        print(f"--results {results}")
+        logger.info(f"--results {results}")
         valid_urls = [url for url, is_valid in zip(urls, results) if is_valid]
     return valid_urls
 
@@ -343,10 +344,9 @@ def send_offer_message(chat_id):
 
     if main_photo:
         try:
-            print(f"Отправка фото: {main_photo}")  # Добавьте это для отладки
             message = bot.send_photo(chat_id, main_photo, caption=offer_message, reply_markup=markup)
         except telebot.apihelper.ApiTelegramException as tg_exception:
-            print(f"--tg_exception {tg_exception}")
+            logger.error(f"--tg_exception {tg_exception}")
             message = bot.send_message(chat_id, offer_message, reply_markup=markup)
     else:
         message = bot.send_message(chat_id, offer_message, reply_markup=markup)
@@ -366,9 +366,6 @@ def contact_host(call):
 
     # Получаем текущего пользователя по telegram_id
     user = session.query(User).filter_by(telegram_id=call.from_user.id).first()
-
-    print(f"--user {user}")
-    print(f"--host {host}")
 
     markup = types.InlineKeyboardMarkup()
 
@@ -568,9 +565,7 @@ def handle_back_to_offers(call):
 def check_calendars():
     session = Session()
     offers = session.query(Offer).all()
-    print(len(offers))
     for offer in offers:
-        print(offer.id)
         if offer.url_to.startswith("http"):
             # Логика для проверки и обновления событий календаря url_to
             parse_ical(offer.url_to, offer,
@@ -584,5 +579,6 @@ def check_calendars():
 
 
 if __name__ == '__main__':
-    check_calendars()
-    bot.infinity_polling()
+    with logger.catch():
+        check_calendars()
+        bot.infinity_polling()
