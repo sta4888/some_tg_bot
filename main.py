@@ -64,7 +64,7 @@ AMENITIES_EMOJI = {
 
 @bot.message_handler(commands=['start'])
 def start(message):
-    result = add.delay(4+2)
+    result = add.delay(4 + 2)
     logger.info(f"result {result}t")
     logger.info(f"Пользователь {message.from_user.username} ({message.from_user.id}) отправил команду /start")
     user = session.query(User).filter_by(telegram_id=message.from_user.id).first()
@@ -562,23 +562,6 @@ def handle_back_to_offers(call):
     bot.delete_message(chat_id, call.message.message_id)  # Удаляем сообщение с подробностями
 
 
-def check_calendars():
-    session = Session()
-    offers = session.query(Offer).all()
-    for offer in offers:
-        if offer.url_to.startswith("http"):
-            # Логика для проверки и обновления событий календаря url_to
-            parse_ical(offer.url_to, offer,
-                       session)  # fixme если мы и так передаем объект Offer то зачем мы отдельно отдаем ссылку на календарь офера?
-        else:
-            continue
-    session.close()
-
-
-# qr_generate("example.com", "guest.pdf")
-
-
 if __name__ == '__main__':
     with logger.catch():
-        check_calendars()
         bot.infinity_polling()

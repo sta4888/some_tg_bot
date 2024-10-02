@@ -65,6 +65,10 @@ class Subscription(Base):
     start_date = Column(DateTime, nullable=False)  # Установите значение по умолчанию
     end_date = Column(DateTime, nullable=False)
     creation_date = Column(DateTime, default=datetime.utcnow)
+    # количество гостей
+    # количество спальных мест
+    # город
+    # оформлен или нет Булево
 
     user = relationship("User", back_populates="subscriptions")
     offer_id = Column(Integer, ForeignKey('offer.id'))  # Если подписка связана с предложением

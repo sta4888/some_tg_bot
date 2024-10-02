@@ -63,12 +63,11 @@ def find_offers(city, start_date, end_date, guest_count, bedrooms, amenities=Non
     return valid_offers
 
 
-# todo задачу в celery-beat!!!
 @logger.catch
-def parse_ical(ical_url, offer, session: Session):
+def parse_ical(offer):
     # Получаем календарь по ссылке
 
-    response = requests.get(ical_url)
+    response = requests.get(offer.url_to, )
     if response.status_code != 200:
         logger.error(f"Ошибка при загрузке календаря: {response.status_code}")
         return
