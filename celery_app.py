@@ -30,7 +30,6 @@ def add(x, y):
 @logger.catch
 def send_daily_report():
     logger.info("Отправляем ежедневное сообщение...")
-    return 123
 
 
 celery.conf.timezone = 'Asia/Tashkent'
