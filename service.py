@@ -63,6 +63,7 @@ def find_offers(city, start_date, end_date, guest_count, bedrooms, amenities=Non
     return valid_offers
 
 
+# todo задачу в celery-beat!!!
 @logger.catch
 def parse_ical(ical_url, offer, session: Session):
     # Получаем календарь по ссылке
