@@ -11,7 +11,7 @@ from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, InputMedia
 from telegram_bot_calendar import DetailedTelegramCalendar, LSTEP
 from dotenv import load_dotenv
 from loguru import logger
-
+from celery_app import send_daily_report
 from connect import session, Session
 from models import Location, Offer, User, Subscription
 from resender import resend_message_with_buttons
@@ -64,6 +64,8 @@ AMENITIES_EMOJI = {
 
 @bot.message_handler(commands=['start'])
 def start(message):
+    result = send_daily_report.delay()
+    logger.info(f"result {result}t")
     logger.info(f"Пользователь {message.from_user.username} ({message.from_user.id}) отправил команду /start")
     user = session.query(User).filter_by(telegram_id=message.from_user.id).first()
 

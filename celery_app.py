@@ -2,6 +2,7 @@ import os
 
 from celery import Celery
 from dotenv import load_dotenv
+from loguru import logger
 
 load_dotenv()
 
@@ -20,3 +21,22 @@ celery = make_celery()
 @celery.task
 def add(x, y):
     return x + y
+
+
+# Пример задачи: отправка ежедневного сообщения
+@logger.catch
+@celery.task
+def send_daily_report():
+    logger.info("Отправляем ежедневное сообщение...")
+    return 123
+
+
+celery.conf.timezone = 'Asia/Tashkent'
+
+# Пример расписания задач (если нужно)
+celery.conf.beat_schedule = {
+    'send_daily_report': {
+        'task': 'tasks.send_daily_report',
+        'schedule': 60.0,  # Задача будет выполняться каждые 60 секунд
+    },
+}
