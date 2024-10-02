@@ -10,3 +10,7 @@ requests
 segno
 PyPDF2
 reportlab
+
+loguru
+celery[redis]
+redis

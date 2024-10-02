@@ -1,8 +1,7 @@
 import os
 from datetime import datetime
 from io import BytesIO
-from pprint import pprint
-
+from loguru import logger
 import segno
 from PyPDF2 import PdfReader, PdfWriter
 from bs4 import BeautifulSoup
@@ -13,6 +12,7 @@ from connect import engine, session
 from models import Photo, Offer, User, SalesAgent, Price, Location, Area, Subscription
 
 
+@logger.catch
 def parse_and_save_offer(xml_data, bot, message):
     internal_ids = []
     # Создаем сессию
@@ -26,7 +26,7 @@ def parse_and_save_offer(xml_data, bot, message):
     agency_id = int(soup.find('agency-id').text) if soup.find('agency-id') else None
 
     for num, offer in enumerate(soup.find_all('offer')):
-        print(f"################# {num} ######################")
+        logger.info(f"################# {num} ######################")
         internal_id = offer.get('internal-id') if offer.get('internal-id') else None
         offer_type = offer.find('type').text if offer.find('type') else None
         property_type = offer.find('property-type').text if offer.find('property-type') else None
@@ -43,7 +43,7 @@ def parse_and_save_offer(xml_data, bot, message):
         # Проверяем, существует ли предложение с таким internal_id
         existing_offer = session.query(Offer).filter_by(internal_id=internal_id).first()
 
-        print(f"--internal_id {internal_id}")
+        logger.info(f"--internal_id {internal_id}")
 
         # Обработка агента по продажам
         agent_name = offer.find('sales-agent').find('name').text if offer.find('sales-agent') and offer.find(
@@ -107,7 +107,7 @@ def parse_and_save_offer(xml_data, bot, message):
                 region=location_region,
                 locality_name=location_locality_name,
             ).first()
-            print(f"--location {location}")
+            logger.info(f"--location {location}")
             if not location:
                 location = Location(
                     internal_id=internal_id,
@@ -170,7 +170,7 @@ def parse_and_save_offer(xml_data, bot, message):
         }
 
         if existing_offer:
-            print(f"----------------------------## existing_offer {existing_offer.created_by} ##--")
+            logger.info(f"----------------------------## existing_offer {existing_offer.created_by} ##--")
 
         if existing_offer:
             if existing_offer.created_by == user.id:
@@ -199,7 +199,7 @@ def parse_and_save_offer(xml_data, bot, message):
                 continue
 
         internal_ids.append({'internal_id': internal_id, 'location_address': location_address})
-        print("Finnnnnnn")
+        logger.info("Finnnnnnn")
 
         # Создаем новое предложение
         new_offer = Offer(
@@ -234,11 +234,10 @@ def parse_and_save_offer(xml_data, bot, message):
     session.commit()
     session.close()
 
-    print(f"--internal_ids {internal_ids}")
-
     return internal_ids
 
 
+@logger.catch
 def qr_generate(qr_data: str, pdf_file: str, uuid_user: str) -> None:
     qrcode = segno.make_qr(qr_data)
     image_file = f"{os.getcwd()}/{uuid_user}.png"
@@ -253,6 +252,7 @@ def qr_generate(qr_data: str, pdf_file: str, uuid_user: str) -> None:
     insert_image_to_pdf(pdf_file, output_pdf, image_file, 92, 27)
 
 
+@logger.catch
 def insert_image_to_pdf(existing_pdf, output_pdf, image_path, x, y):
     # Create a PDF with the image
     packet = BytesIO()
@@ -278,6 +278,7 @@ def insert_image_to_pdf(existing_pdf, output_pdf, image_path, x, y):
         pdf_writer.write(output_file)
 
 
+@logger.catch
 def get_referral_chain(user, level=1, max_levels=6):
     if not user or level > max_levels:
         return []
@@ -295,9 +296,6 @@ def get_referral_chain(user, level=1, max_levels=6):
             # Получаем обе даты в виде объектов типа `date` для корректного сравнения
             subscription_end_date = latest_subscription.end_date.date()
             current_date = datetime.utcnow().date()
-
-            print(subscription_end_date, ":", current_date)
-            print(subscription_end_date >= current_date)  # Сравнение по дате
 
             if subscription_end_date >= current_date:
                 has_active_subscription = True

@@ -1,3 +1,5 @@
+import sys
+
 import telebot
 
 from uuid import UUID
@@ -15,7 +17,12 @@ load_dotenv()
 
 API_TOKEN = os.environ.get('BOT_TOKEN')
 bot = telebot.TeleBot(API_TOKEN)
+from loguru import logger
 
+# Настройка логгера
+logger.remove()  # Удаляем стандартный обработчик
+logger.add(sys.stdout, format="{time} {level} {message}", level="INFO")  # Логи в консоль
+logger.add("main.log", format="{time} {level} {message}", level="DEBUG", rotation="10 MB")  # Логи в файл
 # Словарь для хранения состояния пользователей
 user_states = {}
 
@@ -35,6 +42,7 @@ BOOLEAN_FIELDS = {
 
 
 # Обработчик команды /start
+@logger.catch
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
     command = message.text.split()
@@ -87,6 +95,7 @@ def send_welcome(message):
 
 #####################################################################################################################
 # Обработка ссылки на XML-файл
+@logger.catch
 @bot.message_handler(func=lambda message: 'https://realtycalendar.ru/xml_feed' in message.text)
 def handle_url_input(message):
     user_id = message.from_user.id
@@ -109,7 +118,6 @@ def handle_url_input(message):
         xml_data = response.content.decode('utf-8')
 
         internal_ids = parse_and_save_offer(xml_data, bot, message)
-        print(internal_ids)
 
         if internal_ids:
             new_feed = XML_FEED(url=url, user_id=user.id)
@@ -132,6 +140,7 @@ def handle_url_input(message):
 
 
 # Обработка ссылок на объекты (apart)
+@logger.catch
 @bot.message_handler(
     func=lambda message: message.from_user.id in user_states and 'awaiting_object_urls' in user_states[
         message.from_user.id])
@@ -181,7 +190,7 @@ def handle_object_url(message):
 
 
 ######################################################################################################################
-
+@logger.catch
 @bot.message_handler(commands=['edit_offer'])
 def edit_offer(message):
     user = session.query(User).filter_by(telegram_id=message.from_user.id).first()
@@ -207,7 +216,7 @@ def edit_offer(message):
     markup = paginate_buttons(offers, page=1)
     bot.send_message(message.chat.id, "Выберите оффер для редактирования:", reply_markup=markup)
 
-
+@logger.catch
 def paginate_buttons(offers, page=1):
     markup = types.InlineKeyboardMarkup()
 
@@ -245,7 +254,7 @@ def paginate_buttons(offers, page=1):
 
     return markup
 
-
+@logger.catch
 @bot.callback_query_handler(func=lambda call: call.data.startswith(('prev_page_', 'next_page_')))
 def handle_pagination(call):
     page = int(call.data.split('_')[-1])  # Определяем номер страницы из callback_data
@@ -261,6 +270,7 @@ def handle_pagination(call):
 
 
 # Создайте функцию для создания булевых кнопок
+@logger.catch
 def create_boolean_buttons(offer, page=0):
     markup = types.InlineKeyboardMarkup()
 
@@ -295,6 +305,7 @@ def create_boolean_buttons(offer, page=0):
 
 
 # Функция для обновления кнопок оффера
+@logger.catch
 def update_offer_buttons(call, offer, page=0, message=None):
     offer_details = f"Текущий оффер:\nID: {offer.internal_id}\nURL: {offer.url_to}\nАдрес: {offer.location.address}\nОписание: {offer.description[:200]}..."
 
@@ -326,7 +337,7 @@ def update_offer_buttons(call, offer, page=0, message=None):
             reply_markup=markup
         )
 
-
+@logger.catch
 @bot.callback_query_handler(func=lambda call: call.data == "back_to_offers")
 def handle_back_to_offers(call):
     user = session.query(User).filter_by(telegram_id=call.from_user.id).first()
@@ -342,6 +353,7 @@ def handle_back_to_offers(call):
 
 
 # Обработка выбора оффера для редактирования
+@logger.catch
 @bot.callback_query_handler(func=lambda call: call.data.startswith("edit_offer_"))
 def handle_offer_selection(call):
     internal_id = call.data.split("_")[2]
@@ -356,6 +368,7 @@ def handle_offer_selection(call):
 
 
 # Обработка переключения булевого поля
+@logger.catch
 @bot.callback_query_handler(func=lambda call: call.data.startswith('toggle_'))
 def handle_toggle_field(call):
     # print("handle_toggle_field")
@@ -388,6 +401,7 @@ def handle_toggle_field(call):
 
 
 # Обработка пагинации
+@logger.catch
 @bot.callback_query_handler(func=lambda call: call.data.startswith('page_'))
 def handle_pagination(call):
     page = int(call.data.split('_')[1])
@@ -401,6 +415,7 @@ def handle_pagination(call):
     update_offer_buttons(call, offer, page)
 
 
+@logger.catch
 @bot.callback_query_handler(func=lambda call: call.data.startswith("edit_url_"))
 def handle_edit_url(call):
     internal_id = call.data.split("_")[2]
@@ -419,6 +434,7 @@ def handle_edit_url(call):
 
 
 ####### ---------- JGJHGJHGHJ  -------- #########
+@logger.catch
 @bot.callback_query_handler(func=lambda call: call.data.startswith("edit_description_"))
 def handle_edit_description(call):
     internal_id = call.data.split("_")[2]
@@ -435,6 +451,7 @@ def handle_edit_description(call):
         bot.send_message(call.message.chat.id, "Ошибка при редактировании оффера.")
 
 
+@logger.catch
 @bot.callback_query_handler(func=lambda call: call.data.startswith("edit_sleeps_"))
 def handle_edit_sleeps(call):
     internal_id = call.data.split("_")[2]
@@ -451,6 +468,7 @@ def handle_edit_sleeps(call):
         bot.send_message(call.message.chat.id, "Ошибка при редактировании оффера.")
 
 
+@logger.catch
 @bot.callback_query_handler(func=lambda call: call.data.startswith("edit_price_"))
 def handle_edit_price(call):
     internal_id = call.data.split("_")[2]
@@ -467,6 +485,7 @@ def handle_edit_price(call):
         bot.send_message(call.message.chat.id, "Ошибка при редактировании оффера.")
 
 
+@logger.catch
 @bot.callback_query_handler(func=lambda call: call.data.startswith("edit_sales_agent_"))
 def handle_edit_sales_agent(call):
     internal_id = call.data.split("_")[2]
@@ -483,6 +502,7 @@ def handle_edit_sales_agent(call):
         bot.send_message(call.message.chat.id, "Ошибка при редактировании оффера.")
 
 
+@logger.catch
 @bot.callback_query_handler(func=lambda call: call.data.startswith("edit_area_"))
 def handle_edit_area(call):
     internal_id = call.data.split("_")[2]
@@ -499,6 +519,7 @@ def handle_edit_area(call):
         bot.send_message(call.message.chat.id, "Ошибка при редактировании оффера.")
 
 
+@logger.catch
 @bot.message_handler(
     func=lambda message: message.chat.id in user_states and user_states[message.chat.id].get('editing_field') in ['url',
                                                                                                                   'description',
@@ -541,19 +562,19 @@ def process_offer_updates(message):
 
         elif field == 'sales_agent':
             new_value = message.text
-            print(f"Ищем агента с именем: {new_value}")
+            logger.info(f"Ищем агента с именем: {new_value}")
             agent = session.query(SalesAgent).filter(SalesAgent.name == new_value).first()
 
             if agent is None:
                 # Если агент не найден, создаем нового
                 agent = SalesAgent(name=new_value)
                 session.add(agent)  # Добавляем нового агента в сессию
-                print(f"Создан новый агент с именем: {agent.name}")
+                logger.info(f"Создан новый агент с именем: {agent.name}")
 
             # Присваиваем агенту оффера
             offer.sales_agent = agent
             session.commit()  # Сохраняем изменения в базе данных
-            print(f"Обновлен агент на: {offer.sales_agent.name}")
+            logger.info(f"Обновлен агент на: {offer.sales_agent.name}")
 
         elif field == 'area':
             while True:  # Цикл для проверки ввода площади
@@ -599,6 +620,7 @@ def process_offer_updates(message):
 
 
 # Обработка отмены
+@logger.catch
 @bot.callback_query_handler(func=lambda call: call.data == "cancel_edit")
 def handle_cancel_edit(call):
     bot.edit_message_text(
@@ -613,6 +635,7 @@ def handle_cancel_edit(call):
 #####################################################################################################################
 
 # Обработка изменения фотографий
+@logger.catch
 @bot.callback_query_handler(func=lambda call: call.data.startswith("edit_photos_"))
 def handle_edit_photos(call):
     user_id = call.from_user.id
@@ -637,6 +660,7 @@ def handle_edit_photos(call):
 
 
 # Показ фото с кнопками навигации
+@logger.catch
 def show_photo(call, user_id, photos):
     state = user_states[user_id]
     current_index = state['current_photo_index']
@@ -661,6 +685,7 @@ def show_photo(call, user_id, photos):
 
 
 # Обработка навигации по фотографиям
+@logger.catch
 @bot.callback_query_handler(func=lambda call: call.data in ["next_photo", "prev_photo"])
 def handle_photo_navigation(call):
     user_id = call.from_user.id
@@ -682,6 +707,7 @@ def handle_photo_navigation(call):
 
 
 # Возврат к офферу
+@logger.catch
 @bot.callback_query_handler(func=lambda call: call.data == "back_to_offer")
 def handle_back_to_offer(call):
     user_id = call.from_user.id
@@ -699,6 +725,7 @@ def handle_back_to_offer(call):
 
 
 # Обработка замены фотографии
+@logger.catch
 @bot.callback_query_handler(func=lambda call: call.data == "replace_photo")
 def handle_replace_photo(call):
     user_id = call.from_user.id
@@ -716,7 +743,7 @@ def handle_replace_photo(call):
     bot.send_message(user_id, "Пожалуйста, загрузите новое фото для замены.")
     bot.register_next_step_handler_by_chat_id(user_id, lambda message: save_new_photo(message, photo_to_replace))
 
-
+@logger.catch
 def save_new_photo(message, photo_to_replace):
     user_id = message.chat.id
     state = user_states.get(user_id)
@@ -739,6 +766,7 @@ def save_new_photo(message, photo_to_replace):
 
 
 # Обработка установки главного фото
+@logger.catch
 @bot.callback_query_handler(func=lambda call: call.data == "make_main_photo")
 def handle_make_main_photo(call):
     user_id = call.from_user.id
@@ -764,6 +792,7 @@ def handle_make_main_photo(call):
 #####################################################################################################################
 #####################################################################################################################
 # Обработка нажатия кнопки "СГЕНЕРИРОВАТЬ РЕФЕРАЛЬНУЮ ССЫЛКУ"
+@logger.catch
 @bot.message_handler(func=lambda message: message.text == "СГЕНЕРИРОВАТЬ РЕФЕРАЛЬНУЮ ССЫЛКУ")
 def handle_referral_link(message):
     telegram_user_id = message.from_user.id
@@ -797,6 +826,7 @@ def handle_referral_link(message):
 
 
 # Команда для получения рефералов до 6 уровня
+@logger.catch
 @bot.message_handler(commands=['allrefstats'])
 def handle_allrefstats(message):
     telegram_user_id = message.from_user.id
