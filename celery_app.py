@@ -24,7 +24,7 @@ celery = make_celery()
 
 @celery.task
 @logger.catch
-def add(x, y):
+def addi(x, y):
     return x + y
 
 

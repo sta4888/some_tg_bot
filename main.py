@@ -64,7 +64,7 @@ AMENITIES_EMOJI = {
 
 @bot.message_handler(commands=['start'])
 def start(message):
-    result = add.delay(4 + 2)
+    result = addi.delay(4 + 2)
     logger.info(f"result {result}t")
     logger.info(f"Пользователь {message.from_user.username} ({message.from_user.id}) отправил команду /start")
     user = session.query(User).filter_by(telegram_id=message.from_user.id).first()
