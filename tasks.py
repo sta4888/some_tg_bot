@@ -1,9 +1,10 @@
 # tasks.py
 
-from celery import Celery
 from loguru import logger
 import os
 import telebot
+
+from celery_app import celery
 
 # Получение токена из переменной окружения
 API_TOKEN = os.environ.get('BOT_TOKEN')
@@ -11,12 +12,10 @@ API_TOKEN = os.environ.get('BOT_TOKEN')
 # Инициализация бота
 bot = telebot.TeleBot(API_TOKEN)
 
-# Celery
-app = Celery('telegram_bot')
 
 # Пример задачи: отправка ежедневного сообщения
 @logger.catch
-@app.task
+@celery.task
 def send_daily_report():
     logger.info("Отправляем ежедневное сообщение...")
 
