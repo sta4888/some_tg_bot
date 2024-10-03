@@ -312,3 +312,11 @@ def get_referral_chain(user, level=1, max_levels=6):
         chain.extend(get_referral_chain(referral, level + 1, max_levels))
 
     return chain
+
+
+def escape_markdown(text):
+    """
+    Экранирует специальные символы для MarkdownV2
+    """
+    escape_chars = r'_*[]()~`>#+-=|{}.!'
+    return ''.join(['\\' + char if char in escape_chars else char for char in text])

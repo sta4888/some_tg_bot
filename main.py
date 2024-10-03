@@ -8,7 +8,7 @@ from models import User, Offer, XML_FEED, Photo, SalesAgent, Subscription
 from dotenv import load_dotenv
 import os
 import requests  # Добавим библиотеку для HTTP-запросов
-from service import parse_and_save_offer, qr_generate, get_referral_chain
+from service import parse_and_save_offer, qr_generate, get_referral_chain, escape_markdown
 
 from math import ceil
 from telebot import types
@@ -795,12 +795,7 @@ def handle_make_main_photo(call):
 
 #####################################################################################################################
 #####################################################################################################################
-def escape_markdown(text):
-    """
-    Экранирует специальные символы для MarkdownV2
-    """
-    escape_chars = r'_*[]()~`>#+-=|{}.!'
-    return ''.join(['\\' + char if char in escape_chars else char for char in text])
+
 
 # Обработка изменения статуса подписки
 @logger.catch
