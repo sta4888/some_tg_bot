@@ -834,7 +834,7 @@ def handle_update_issued_status(call):
     status = "Оформлен ✅" if subscription.issued else "Отменен ❌"
 
     # Текст сообщения с текущим статусом
-    updated_text = f"{escaped_text}\n\n*Статус подписки:* {status}"
+    updated_text = f"{escaped_text}\n\n*Статус заявки:* {status}"
 
     # Редактируем исходное сообщение, добавляя статус
     try:
