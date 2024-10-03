@@ -190,6 +190,7 @@ def parse_and_save_offer(xml_data, bot, message):
                 existing_offer.photos.clear()
                 for photo in offer.find_all('image'):
                     photo_url = photo.text if photo else None
+                    photo_url = photo_url if str(photo_url).startswith('http') else None
                     photo_is_main = photo.get('main') if photo else None
                     if photo_url:
                         new_photo = Photo(url=photo_url, is_main=1 if photo_is_main else 0)
