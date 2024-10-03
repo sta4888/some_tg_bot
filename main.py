@@ -4,7 +4,7 @@ import telebot
 
 from uuid import UUID
 from connect import session
-from models import User, Offer, XML_FEED, Photo, SalesAgent
+from models import User, Offer, XML_FEED, Photo, SalesAgent, Subscription
 from dotenv import load_dotenv
 import os
 import requests  # Добавим библиотеку для HTTP-запросов
@@ -796,28 +796,56 @@ def handle_make_main_photo(call):
 #####################################################################################################################
 #####################################################################################################################
 
-# Обработка офрмеления заказа
+# Обработка изменения статуса подписки
 @logger.catch
-@bot.callback_query_handler(func=lambda call: call.data == "button_")
-def handle_make_main_photo(call):
+@bot.callback_query_handler(func=lambda call: call.data.startswith("button_"))
+def handle_update_issued_status(call):
     user_id = call.from_user.id
-    state = user_states.get(user_id)
+    callback_data = call.data.split('_')
 
-    if not state:
-        bot.send_message(user_id, "Ошибка: Не удалось найти оффер для редактирования.")
+    if len(callback_data) < 3:
+        bot.send_message(user_id, "Ошибка: Некорректные данные для обновления.")
         return
 
-    offer = state['offer_to_edit']
-    current_photo_index = state['current_photo_index']
-    photo_to_make_main = offer.photos[current_photo_index]
+    action = callback_data[1]  # "p" для "Оформлен", "n" для "Отменен"
+    request_id = int(callback_data[2])  # request_id для идентификации подписки
 
-    # Сначала устанавливаем все фото как не главные
-    for photo in offer.photos:
-        photo.is_main = False
-    photo_to_make_main.is_main = True  # Устанавливаем выбранное фото как главное
+    # Получаем подписку по request_id (или как он у вас называется)
+    subscription = session.query(Subscription).filter_by(id=request_id).first()
+
+    if not subscription:
+        bot.send_message(user_id, "Ошибка: Подписка не найдена.")
+        return
+
+    # Устанавливаем значение поля 'issued' в зависимости от кнопки
+    if action == 'p':
+        subscription.issued = True
+    elif action == 'n':
+        subscription.issued = False
+    else:
+        bot.send_message(user_id, "Ошибка: Неизвестное действие.")
+        return
 
     session.commit()  # Сохраняем изменения в базе данных
-    bot.send_message(user_id, "Фото сделано главным!")
+
+    # Подготовка статуса для отображения
+    status = "Оформлен ✅" if subscription.issued else "Отменен ❌"
+
+    # Текст сообщения с текущим статусом
+    updated_text = f"{call.message.text}\n\n*Статус подписки:* {status}"
+
+    # Редактируем исходное сообщение, добавляя статус
+    try:
+        bot.edit_message_text(
+            chat_id=call.message.chat.id,
+            message_id=call.message.message_id,
+            text=updated_text,
+            parse_mode='MarkdownV2',
+            reply_markup=call.message.reply_markup  # Оставляем кнопки для повторного изменения
+        )
+    except Exception as e:
+        logger.error(f"Ошибка при редактировании сообщения: {e}")
+        bot.send_message(user_id, "Ошибка при обновлении статуса.")
 
 
 #####################################################################################################################
