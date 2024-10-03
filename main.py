@@ -393,7 +393,10 @@ def contact_host(call):
         start_date=user_data[chat_id].get('start_date', 'Не указано'),
         end_date=user_data[chat_id].get('end_date', 'Не указано'),
         offer_id=offer.id,
-        unique_digits_id=request_id
+        unique_digits_id=request_id,
+        number_of_guests=user_data[chat_id].get('guest', 0),
+        city=user_data[chat_id].get('city', 'Не указано'),
+        sleeps=user_data[chat_id].get('bedrooms', 'Не указано'),
     )
 
     # Отправляем сообщение пользователю с ссылкой на чат с хостом
