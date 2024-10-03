@@ -795,6 +795,12 @@ def handle_make_main_photo(call):
 
 #####################################################################################################################
 #####################################################################################################################
+def escape_markdown(text):
+    """
+    Экранирует специальные символы для MarkdownV2
+    """
+    escape_chars = r'_*[]()~`>#+-=|{}.!'
+    return ''.join(['\\' + char if char in escape_chars else char for char in text])
 
 # Обработка изменения статуса подписки
 @logger.catch
@@ -802,6 +808,7 @@ def handle_make_main_photo(call):
 def handle_update_issued_status(call):
     user_id = call.from_user.id
     callback_data = call.data.split('_')
+    escaped_text = escape_markdown(call.message.text)
 
     if len(callback_data) < 3:
         bot.send_message(user_id, "Ошибка: Некорректные данные для обновления.")
@@ -832,7 +839,7 @@ def handle_update_issued_status(call):
     status = "Оформлен ✅" if subscription.issued else "Отменен ❌"
 
     # Текст сообщения с текущим статусом
-    updated_text = f"{call.message.text}\n\n*Статус подписки:* {status}"
+    updated_text = f"{escaped_text}\n\n*Статус подписки:* {status}"
 
     # Редактируем исходное сообщение, добавляя статус
     try:
