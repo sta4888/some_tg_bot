@@ -811,7 +811,7 @@ def handle_update_issued_status(call):
     request_id = int(callback_data[2])  # request_id для идентификации подписки
 
     # Получаем подписку по request_id (или как он у вас называется)
-    subscription = session.query(Subscription).filter_by(unique_digits_id=request_id).first()
+    subscription = session.query(Subscription).filter_by(unique_digits_id=str(request_id)).first()
 
     if not subscription:
         bot.send_message(user_id, "Ошибка: Подписка не найдена.")
