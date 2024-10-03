@@ -841,7 +841,6 @@ def handle_update_issued_status(call):
             message_id=call.message.message_id,
             text=updated_text,
             parse_mode='MarkdownV2',
-            reply_markup=call.message.reply_markup  # Оставляем кнопки для повторного изменения
         )
     except Exception as e:
         logger.error(f"Ошибка при редактировании сообщения: {e}")
