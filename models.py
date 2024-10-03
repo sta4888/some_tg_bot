@@ -65,10 +65,10 @@ class Subscription(Base):
     start_date = Column(DateTime, nullable=False)  # Установите значение по умолчанию
     end_date = Column(DateTime, nullable=False)
     creation_date = Column(DateTime, default=datetime.utcnow)
-    # количество гостей
-    # количество спальных мест
-    # город
-    # оформлен или нет Булево
+    number_of_guests = Column(Integer)  # Количество гостей
+    city = Column(String(120))  # город
+    issued = Column(Boolean)  # Оформлен?
+    sleeps = Column(String(20))
 
     user = relationship("User", back_populates="subscriptions")
     offer_id = Column(Integer, ForeignKey('offer.id'))  # Если подписка связана с предложением
@@ -240,5 +240,6 @@ class UserAction(Base):
     first_name = Column(String(100), nullable=True, default="")
     second_name = Column(String(100), nullable=True, default="")
     chat_id = Column(BigInteger, nullable=True)  # Если это целое число, лучше тоже поменять
-    action_type = Column(String(255), nullable=True, default="")  # тип действия sand command, send message, changing button
-    action = Column(String(255), nullable=True, default="") # /start..., msg text, button text
+    action_type = Column(String(255), nullable=True,
+                         default="")  # тип действия sand command, send message, changing button
+    action = Column(String(255), nullable=True, default="")  # /start..., msg text, button text
