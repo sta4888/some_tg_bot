@@ -326,7 +326,7 @@ def send_offer_message(chat_id):
     offer_message = f"Предложение: \n" \
                     f"{offer.location.region}, {offer.location.locality_name}\n" \
                     f"Адрес: {offer.location.address}\n" \
-                    f"Цена: {offer.price.value} {offer.price.currency}\n\n" \
+                    f"Цена от: {offer.price.value} {offer.price.currency}\n\n" \
                     f"Удобства: {amenities_str}\n\n" \
                     f"Депозит: {offer.price.deposit} {offer.price.deposit_currency}\n\n" \
                     f"Найдено {total_offers} | {current_offer_number}"
@@ -407,7 +407,7 @@ def contact_host(call):
                     f"ID Заявки: `{request_id}`\n" \
                     f"{offer.location.region}, {offer.location.locality_name}\n" \
                     f"Адрес: {offer.location.address}\n" \
-                    f"Цена: {offer.price.value} {offer.price.currency}\n\n"
+                    f"Цена от: {offer.price.value} {offer.price.currency}\n\n"
 
     resend_message_with_buttons(bot, call.message, host.chat_id, offer_message, request_id)
 
