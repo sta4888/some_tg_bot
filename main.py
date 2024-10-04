@@ -8,7 +8,7 @@ from models import User, Offer, XML_FEED, Photo, SalesAgent, Subscription
 from dotenv import load_dotenv
 import os
 import requests  # Добавим библиотеку для HTTP-запросов
-from service import parse_and_save_offer, qr_generate, get_referral_chain, escape_markdown
+from service import parse_and_save_offer, qr_generate, get_referral_chain, escape_markdown, check_calendars
 
 from math import ceil
 from telebot import types
@@ -184,6 +184,7 @@ def handle_object_url(message):
                          f"Введите URL для объекта с internal_id: {next_internal_id}, адрес: {next_location_address}")
         else:
             del user_states[user_id]
+            check_calendars()
             bot.reply_to(message, "Все ссылки успешно добавлены!")
     else:
         bot.reply_to(message, f"Предложение с internal_id {internal_id} не найдено.")

@@ -1,15 +1,19 @@
 import os
 from datetime import datetime
 from io import BytesIO
+
+import icalendar
+import requests
 from loguru import logger
 import segno
 from PyPDF2 import PdfReader, PdfWriter
 from bs4 import BeautifulSoup
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy import and_
+from sqlalchemy.orm import sessionmaker, Session
 from connect import engine, session
-from models import Photo, Offer, User, SalesAgent, Price, Location, Area, Subscription
+from models import Photo, Offer, User, SalesAgent, Price, Location, Area, Subscription, Event
 
 
 @logger.catch
@@ -322,3 +326,65 @@ def escape_markdown(text):
     """
     escape_chars = r'_*[]()~`>#+-=|{}.!'
     return ''.join(['\\' + char if char in escape_chars else char for char in text])
+
+
+def check_calendars():
+    session = Session()
+    offers = session.query(Offer).all()
+    print(len(offers))
+    for offer in offers:
+        print(offer.id)
+        if offer.url_to.startswith("http"):
+            # Логика для проверки и обновления событий календаря url_to
+            parse_ical(offer.url_to, offer,
+                       session)  # fixme если мы и так передаем объект Offer то зачем мы отдельно отдаем ссылку на календарь офера?
+        else:
+            continue
+    session.close()
+
+
+def parse_ical(ical_url, offer, session: Session):
+    # Получаем календарь по ссылке
+
+    response = requests.get(ical_url)
+    if response.status_code != 200:
+        print(f"Ошибка при загрузке календаря: {response.status_code}")
+        return
+
+    ical_string = response.content
+    calendar = icalendar.Calendar.from_ical(ical_string)
+
+    for component in calendar.walk():
+        if component.name == "VEVENT":
+            uid = component.get('UID')
+            start_time = component.get('DTSTART').dt
+            end_time = component.get('DTEND').dt
+            summary = component.get('SUMMARY')
+
+            # Проверяем, существует ли уже такое событие
+            existing_event = session.query(Event).filter(
+                and_(
+                    Event.uid == uid,
+                    Event.start_time == start_time,
+                    Event.end_time == end_time,
+                    Event.offer == offer  # если offer уникален для сотрудника
+                )
+            ).first()
+
+            if existing_event:
+                # Если событие уже существует, пропускаем его
+                print(f"Событие {uid} уже существует. Пропуск.")
+                continue
+
+            # Если событие не найдено, создаем его
+            event = Event(
+                offer=offer,
+                uid=uid,
+                start_time=start_time,
+                end_time=end_time,
+                summary=summary
+            )
+            session.add(event)
+
+    # Сохраняем изменения
+    session.commit()
