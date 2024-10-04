@@ -61,7 +61,9 @@ def send_welcome(message):
     # Создаем клавиатуру
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
     ref_link_btn = types.KeyboardButton("СГЕНЕРИРОВАТЬ РЕФЕРАЛЬНУЮ ССЫЛКУ")
+    purchase_subscription = types.KeyboardButton("ОПЛАТИТЬ ПОДПИСКУ")
     markup.add(ref_link_btn)
+    markup.add(purchase_subscription)
 
     # Если пользователь новый, создаем его
     if user is None:
@@ -884,6 +886,21 @@ def handle_referral_link(message):
             bot.send_message(message.chat.id, "Не удалось найти PDF файл. Попробуйте позже.")
     else:
         bot.send_message(message.chat.id, "Вы не зарегистрированы.")
+
+
+###############################  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! ########################################
+@logger.catch
+@bot.message_handler(func=lambda message: message.text == "ОПЛАТИТЬ ПОДПИСКУ")
+def handle_referral_link(message):
+    # Клавиатура для навигации по фото
+    markup = types.InlineKeyboardMarkup()
+    markup.add(types.InlineKeyboardButton(text="Оплатить 3600", callback_data="buy"))
+    bot.send_message(message.chat.id,
+                     f"Оплатите доступ к продвижению и получите возможность отображать ваши объекты в выдаче бота, а также полный функционал платформы на 30 дней. Это неисключительная лицензия, позволяющая вам воспользоваться всеми преимуществами нашей системы прямого бронирования. Ваши объекты будут видны широкому кругу потенциальных клиентов, что увеличит вероятность успешных бронирований.",
+                     reply_markup=markup)
+
+
+###############################  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! ########################################
 
 
 # Команда для получения рефералов до 6 уровня
