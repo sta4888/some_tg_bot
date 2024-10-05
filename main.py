@@ -914,7 +914,7 @@ def handle_referral_link(message):
 
     if user:
         # Генерируем реферальную ссылку с UUID пользователя
-        ref_link = f"https://t.me/VgostiBot2_bot?start={user.uuid}-11"
+        ref_link = f"https://t.me/VgostiBot2_bot?start={user.uuid}&e=11"
         # Отправляем сообщение с реферальной ссылкой
         bot.send_message(message.chat.id, f"Ваша реферальная ссылка: {ref_link}")
     else:
