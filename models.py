@@ -25,8 +25,7 @@ class User(Base):
     referer = relationship('User', remote_side=[id], backref='referred_users')
 
     # Связь с работодателем (пригласившим работодателем)
-    employer_id = Column(Integer, ForeignKey('users.id'), nullable=True)
-    employer = relationship('User', remote_side=[id], backref='employees')
+    employer_id = Column(Integer, nullable=True)
 
     # Связь с ролью
     role_id = Column(Integer, ForeignKey('role.id'), nullable=False)
