@@ -329,7 +329,6 @@ def escape_markdown(text):
 
 
 def check_calendars():
-    session = Session()
     offers = session.query(Offer).all()
     print(len(offers))
     for offer in offers:
