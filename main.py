@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 from loguru import logger
 from celery_app import addi
 from connect import session, Session
-from models import Location, Offer, User, Subscription
+from models import Location, Offer, User, Subscription, Role
 from resender import resend_message_with_buttons
 from service import find_offers, parse_ical, random_with_N_digits, suggest_city, cities, cities_true
 
@@ -68,6 +68,7 @@ def start(message):
     logger.info(f"result {result}t")
     logger.info(f"Пользователь {message.from_user.username} ({message.from_user.id}) отправил команду /start")
     user = session.query(User).filter_by(telegram_id=message.from_user.id).first()
+    role = session.query(Role).filter_by(role_num=5).first()
 
     # Если пользователь новый, создаем его
     if user is None:
@@ -76,6 +77,7 @@ def start(message):
             username=message.from_user.username,
             chat_id=message.chat.id,
             is_client=True,  # По умолчанию не хост
+            role=role,  # Роль
         )
 
         session.add(user)
@@ -362,7 +364,7 @@ def contact_host(call):
     offer = user_data[chat_id]['offers'][current_offer_index]
 
     # Получаем пользователя, который создал оффер
-    host = session.query(User).get(offer.created_by)
+    host = session.query(User).get(offer.responsible_user)
 
     # Получаем текущего пользователя по telegram_id
     user = session.query(User).filter_by(telegram_id=call.from_user.id).first()
