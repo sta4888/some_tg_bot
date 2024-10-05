@@ -87,7 +87,7 @@ class Role(Base):
     __tablename__ = 'role'
     id = Column(Integer, primary_key=True)
     role = Column(String(255), nullable=False)
-    role_num = Column(String(255), nullable=False)  # гость, админ, помощник
+    role_num = Column(Integer, nullable=False)  # гость, админ, помощник
 
     users = relationship("User", back_populates="role")  # Связь с моделью User
 
