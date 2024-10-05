@@ -48,12 +48,13 @@ def send_welcome(message):
     command = message.text.split()
     print(f"--message.text {message.text}")
     print(f"--command {command}")
-    print(f"--command[1] {command[1]}")
     referrer_uuid = None
     role_num = 22
 
     if len(command) > 1:
         try:
+
+            print(f"--command[1] {command[1]}")
             referrer_uuid = UUID(command[1])  # Парсим переданный UUID
         except ValueError:
             bot.send_message(message.chat.id, "Неверная реферальная ссылка.\nЗапросите новую")
