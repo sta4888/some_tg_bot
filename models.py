@@ -128,6 +128,7 @@ class Offer(Base):
     creation_date = Column(DateTime, default=datetime.utcnow)
     last_update_date = Column(DateTime, default=datetime.utcnow)
     responsible_user = Column(Integer, ForeignKey('users.id'))
+    # нужно дописать last updated и кем
 
     min_stay = Column(Integer)
     agency_id = Column(Integer)

@@ -4,7 +4,7 @@ import telebot
 
 from uuid import UUID
 from connect import session
-from models import User, Offer, XML_FEED, Photo, SalesAgent, Subscription
+from models import User, Offer, XML_FEED, Photo, SalesAgent, Subscription, Role
 from dotenv import load_dotenv
 import os
 import requests  # Добавим библиотеку для HTTP-запросов
@@ -47,6 +47,7 @@ BOOLEAN_FIELDS = {
 def send_welcome(message):
     command = message.text.split()
     referrer_uuid = None
+    role_num = 22
 
     if len(command) > 1:
         try:
@@ -71,13 +72,18 @@ def send_welcome(message):
 
         if referrer_uuid:
             referer = session.query(User).filter_by(uuid=referrer_uuid).first()
+        if role_num != 22:
+            role = session.query(Role).filter_by(role_num=role_num).first()
+        else:
+            role = session.query(Role).filter_by(role_num=role_num).first()
 
         user = User(
             telegram_id=message.from_user.id,
             username=message.from_user.username,
             chat_id=message.chat.id,
             is_client=False,  # По умолчанию не хост
-            referer=referer  # Сохраняем реферера, если он есть
+            referer=referer,  # Сохраняем реферера, если он есть
+            role=role,  # Сохраняем реферера, если он есть
         )
 
         session.add(user)
@@ -197,6 +203,7 @@ def handle_object_url(message):
 @bot.message_handler(commands=['edit_offer'])
 def edit_offer(message):
     user = session.query(User).filter_by(telegram_id=message.from_user.id).first()
+    # todo нужно показывать работадателю все оферы его команды, а рабочему только те, которые он сам добавлял или на какие был назначен
 
     if not user:
         bot.send_message(message.chat.id, "Вы не зарегистрированы.")
@@ -322,6 +329,8 @@ def update_offer_buttons(call, offer, page=0, message=None):
         types.InlineKeyboardButton(text="Изменить цену", callback_data=f"edit_price_{offer.internal_id}"),
         # types.InlineKeyboardButton(text="Изменить агента", callback_data=f"edit_sales_agent_{offer.internal_id}"),
         types.InlineKeyboardButton(text="Изменить площадь", callback_data=f"edit_area_{offer.internal_id}"),
+        # для того чтоб проставить ответственного за объект
+        # types.InlineKeyboardButton(text="поставить отьветственным", callback_data=f"edit_area_{offer.internal_id}"),
         types.InlineKeyboardButton(text="Изменить фото", callback_data=f"edit_photos_{offer.internal_id}"),
         types.InlineKeyboardButton(text="К списку офферов", callback_data="back_to_offers"),
         types.InlineKeyboardButton(text="Отмена", callback_data="cancel_edit"),
