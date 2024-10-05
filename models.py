@@ -21,7 +21,9 @@ class User(Base):
     is_client = Column(Boolean, nullable=False, default=True)
     referer_id = Column(Integer, ForeignKey('users.id'), nullable=True)
     referer = relationship('User', remote_side=[id], backref='referred_users')
-    employer = relationship('User', remote_side=[id], backref='referred_users')
+    # Поле работодателя (того, кому пользователь подчиняется)
+    employer_id = Column(Integer, ForeignKey('users.id'), nullable=True)
+    employer = relationship('User', remote_side=[id], backref='employees')
 
     role_id = Column(Integer, ForeignKey('role.id'), nullable=False)  # Добавляем роль
     role = relationship("Role", back_populates="users")  # Связь с моделью Role
