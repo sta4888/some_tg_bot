@@ -19,20 +19,26 @@ class User(Base):
     second_name = Column(String(100), nullable=True, default="")
     chat_id = Column(BigInteger, nullable=True)
     is_client = Column(Boolean, nullable=False, default=True)
+
+    # Поле реферера (пригласившего пользователя)
     referer_id = Column(Integer, ForeignKey('users.id'), nullable=True)
     referer = relationship('User', remote_side=[id], backref='referred_users')
+
     # Поле работодателя (того, кому пользователь подчиняется)
     employer_id = Column(Integer, ForeignKey('users.id'), nullable=True)
     employer = relationship('User', remote_side=[id], backref='employees')
 
-    role_id = Column(Integer, ForeignKey('role.id'), nullable=False)  # Добавляем роль
-    role = relationship("Role", back_populates="users")  # Связь с моделью Role
+    # Поле роли (например, админ, клиент и т.д.)
+    role_id = Column(Integer, ForeignKey('role.id'), nullable=False)
+    role = relationship("Role", back_populates="users")
 
-    xml_feeds = relationship('XML_FEED', back_populates='user')
-    invited_count = Column(Integer, default=0)
+    # Отношения с другими таблицами
+    xml_feeds = relationship('XmlFeed', back_populates='user')  # имя таблицы в нижнем регистре
     payments = relationship("Payment", back_populates="user")
     payouts = relationship("Payout", back_populates="user")
     subscriptions = relationship("Subscription", back_populates="user")
+
+    invited_count = Column(Integer, default=0)
 
 
 class Payment(Base):
