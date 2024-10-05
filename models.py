@@ -13,14 +13,17 @@ class User(Base):
 
     id = Column(Integer, primary_key=True)
     uuid = Column(UUID(as_uuid=True), default=uuid.uuid4, unique=True, nullable=False)
-    telegram_id = Column(BigInteger, unique=True, nullable=False)  # Изменение на BigInteger
+    telegram_id = Column(BigInteger, unique=True, nullable=False)
     username = Column(String(100), nullable=True, default="")
     first_name = Column(String(100), nullable=True, default="")
     second_name = Column(String(100), nullable=True, default="")
-    chat_id = Column(BigInteger, nullable=True)  # Если это целое число, лучше тоже поменять
+    chat_id = Column(BigInteger, nullable=True)
     is_client = Column(Boolean, nullable=False, default=True)
     referer_id = Column(Integer, ForeignKey('users.id'), nullable=True)
     referer = relationship('User', remote_side=[id], backref='referred_users')
+
+    role_id = Column(Integer, ForeignKey('role.id'), nullable=False)  # Добавляем роль
+    role = relationship("Role", back_populates="users")  # Связь с моделью Role
 
     xml_feeds = relationship('XML_FEED', back_populates='user')
     invited_count = Column(Integer, default=0)
@@ -77,6 +80,15 @@ class Subscription(Base):
 
     def __repr__(self):
         return f"<Subscription(user_id={self.user_id}, start_date={self.start_date}, end_date={self.end_date})>"
+
+
+class Role(Base):
+    __tablename__ = 'role'
+    id = Column(Integer, primary_key=True)
+    role = Column(String(255), nullable=False)
+    role_num = Column(String(255), nullable=False)  # гость, админ, помощник
+
+    users = relationship("User", back_populates="role")  # Связь с моделью User
 
 
 class XML_FEED(Base):
