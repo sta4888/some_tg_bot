@@ -46,6 +46,9 @@ BOOLEAN_FIELDS = {
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
     command = message.text.split()
+    print(f"--message.text {message.text}")
+    print(f"--command {command}")
+    print(f"--command[1] {command[1]}")
     referrer_uuid = None
     role_num = 22
 
@@ -62,8 +65,10 @@ def send_welcome(message):
     # Создаем клавиатуру
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
     ref_link_btn = types.KeyboardButton("СГЕНЕРИРОВАТЬ РЕФЕРАЛЬНУЮ ССЫЛКУ")
+    employer_helper_link = types.KeyboardButton("ССЫЛКА ПОМОЩНИКУ")
     purchase_subscription = types.KeyboardButton("ОПЛАТИТЬ ПОДПИСКУ")
     markup.add(ref_link_btn)
+    markup.add(employer_helper_link)
     markup.add(purchase_subscription)
 
     # Если пользователь новый, создаем его
@@ -893,6 +898,24 @@ def handle_referral_link(message):
         else:
             # Если файл не найден, отправляем сообщение об ошибке
             bot.send_message(message.chat.id, "Не удалось найти PDF файл. Попробуйте позже.")
+    else:
+        bot.send_message(message.chat.id, "Вы не зарегистрированы.")
+
+
+# ССЫЛКА ПОМОЩНИКУ
+@logger.catch
+@bot.message_handler(func=lambda message: message.text == "ССЫЛКА ПОМОЩНИКУ")
+def handle_referral_link(message):
+    telegram_user_id = message.from_user.id
+
+    # Найдем пользователя по telegram_id
+    user = session.query(User).filter_by(telegram_id=telegram_user_id).first()
+
+    if user:
+        # Генерируем реферальную ссылку с UUID пользователя
+        ref_link = f"https://t.me/VgostiBot2_bot?start={user.uuid}-11"
+        # Отправляем сообщение с реферальной ссылкой
+        bot.send_message(message.chat.id, f"Ваша реферальная ссылка: {ref_link}")
     else:
         bot.send_message(message.chat.id, "Вы не зарегистрированы.")
 
