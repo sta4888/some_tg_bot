@@ -109,6 +109,7 @@ class Offer(Base):
     url_to = Column(String(150), default=None)
     creation_date = Column(DateTime, default=datetime.utcnow)
     last_update_date = Column(DateTime, default=datetime.utcnow)
+    responsible_user = Column(Integer, ForeignKey('users.id'))
 
     min_stay = Column(Integer)
     agency_id = Column(Integer)
@@ -169,6 +170,11 @@ class Offer(Base):
     subscriptions = relationship("Subscription", back_populates="offer")
 
     available_on_file = Column(Boolean, default=True)
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        if 'responsible_user' not in kwargs:
+            self.responsible_user = self.created_by
 
 
 class Price(Base):
