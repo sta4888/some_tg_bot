@@ -19,12 +19,17 @@ class User(Base):
     second_name = Column(String(100), nullable=True, default="")
     chat_id = Column(BigInteger, nullable=True)
     is_client = Column(Boolean, nullable=False, default=True)
+
+    # Связь с реферером (пригласившим пользователем)
     referer_id = Column(Integer, ForeignKey('users.id'), nullable=True)
     referer = relationship('User', remote_side=[id], backref='referred_users')
-    employer = relationship('User', remote_side=[id], backref='referred_users')
 
-    role_id = Column(Integer, ForeignKey('role.id'), nullable=False)  # Добавляем роль
-    role = relationship("Role", back_populates="users")  # Связь с моделью Role
+    # Связь с работодателем (пригласившим работодателем)
+    employer_id = Column(Integer, nullable=True)
+
+    # Связь с ролью
+    role_id = Column(Integer, ForeignKey('role.id'), nullable=False)
+    role = relationship("Role", back_populates="users")
 
     xml_feeds = relationship('XML_FEED', back_populates='user')
     invited_count = Column(Integer, default=0)
@@ -87,7 +92,7 @@ class Role(Base):
     __tablename__ = 'role'
     id = Column(Integer, primary_key=True)
     role = Column(String(255), nullable=False)
-    role_num = Column(String(255), nullable=False)  # гость, админ, помощник
+    role_num = Column(Integer, nullable=False)  # гость, админ, помощник
 
     users = relationship("User", back_populates="role")  # Связь с моделью User
 
