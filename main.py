@@ -1,11 +1,15 @@
 import os
 import uuid
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from icalendar import Calendar, Event
 from datetime import datetime
 from pathlib import Path
+
+from starlette.responses import HTMLResponse
+from starlette.staticfiles import StaticFiles
+from starlette.templating import Jinja2Templates
 
 app = FastAPI()
 
@@ -20,6 +24,18 @@ class EventData(BaseModel):
     location: str
     dtstart: datetime
     dtend: datetime
+
+
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+templates = Jinja2Templates(directory="templates")
+
+
+@app.get("/", response_class=HTMLResponse)
+async def index(request: Request):
+    return templates.TemplateResponse(
+        request=request, name="index.html", context={}
+    )
 
 
 @app.post("/generate_ical/")
@@ -85,5 +101,3 @@ def get_ical_file(unique_id: str):
 
     # Возвращаем файл
     return FileResponse(filepath, media_type='text/calendar', filename=f"{unique_id}.ical")
-
-

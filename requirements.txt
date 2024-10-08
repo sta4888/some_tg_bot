@@ -10,3 +10,4 @@ requests
 pydantic
 fastapi[standard]
 uvicorn
+jinja2
