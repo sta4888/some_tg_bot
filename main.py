@@ -329,6 +329,7 @@ def send_offer_message(chat_id):
     total_offers = len(offers)
     current_offer_number = current_offer_index + 1  # Номер предложения (1-индексация)
     # f"Даты: {user_data[chat_id].get('start_date', 'Не указано')} - {user_data[chat_id].get('end_date', 'Не указано')}\n"
+    print("Цена общая", user_data[chat_id]['days'])
 
     offer_message = f"Предложение: \n" \
                     f"{offer.location.region}, {offer.location.locality_name}\n" \
