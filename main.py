@@ -324,14 +324,17 @@ def send_offer_message(chat_id):
 
     total_offers = len(offers)
     current_offer_number = current_offer_index + 1  # Номер предложения (1-индексация)
-
+    # f"Даты: {user_data[chat_id].get('start_date', 'Не указано')} - {user_data[chat_id].get('end_date', 'Не указано')}\n"
+    days = user_data[chat_id].get('end_date', 'Не указано') - user_data[chat_id].get('start_date', 'Не указано')
     offer_message = f"Предложение: \n" \
                     f"{offer.location.region}, {offer.location.locality_name}\n" \
                     f"Адрес: {offer.location.address}\n" \
-                    f"Цена от: {offer.price.value} {offer.price.currency}\n\n" \
+                    f"Цена за сутки от: {offer.price.value} {offer.price.currency}\n\n" \
                     f"Удобства: {amenities_str}\n\n" \
+                    f"days: {days}\n\n" \
                     f"Депозит: {offer.price.deposit} {offer.price.deposit_currency}\n\n" \
                     f"Найдено {total_offers} | {current_offer_number}"
+
 
     markup = types.InlineKeyboardMarkup()
     next_button = types.InlineKeyboardButton("Далее", callback_data="next_offer")
@@ -412,7 +415,7 @@ def contact_host(call):
                     f"ID Заявки: `{request_id}`\n" \
                     f"{offer.location.region}, {offer.location.locality_name}\n" \
                     f"Адрес: {offer.location.address}\n" \
-                    f"Цена от: {offer.price.value} {offer.price.currency}\n\n"
+                    f"Цена за сутки от: {offer.price.value} {offer.price.currency}\n\n"
 
     resend_message_with_buttons(bot, call.message, host.chat_id, offer_message, request_id)
 
