@@ -15,7 +15,8 @@ from celery_app import addi
 from connect import session, Session
 from models import Location, Offer, User, Subscription, Role
 from resender import resend_message_with_buttons
-from service import find_offers, parse_ical, random_with_N_digits, suggest_city, cities, cities_true
+from service import find_offers, parse_ical, random_with_N_digits, suggest_city, cities, cities_true, \
+    calculate_days_between
 
 load_dotenv()
 
@@ -234,9 +235,8 @@ def handle_bedrooms_selection(call):
                           chat_id,
                           call.message.message_id)
 
-    print(type(user_data[chat_id].get('end_date', 'Не указано')))
-    print(type(user_data[chat_id].get('start_date', 'Не указано')))
-    days = 123
+    days = calculate_days_between(user_data[chat_id].get('end_date', 'Не указано'), user_data[chat_id].get('start_date', 'Не указано'))
+    user_data[chat_id]['days'] = days
 
     bot.send_message(chat_id, "Спасибо! Вот ваши данные:")
     bot.send_message(chat_id, f"Город: {user_data[chat_id].get('city', 'Не указано')}\n"
@@ -334,6 +334,7 @@ def send_offer_message(chat_id):
                     f"{offer.location.region}, {offer.location.locality_name}\n" \
                     f"Адрес: {offer.location.address}\n" \
                     f"Цена за сутки от: {offer.price.value} {offer.price.currency}\n\n" \
+                    f"Цена: {int(user_data[chat_id]['days']) * float(offer.price.value)} {offer.price.currency}\n\n" \
                     f"Удобства: {amenities_str}\n\n" \
                     f"Депозит: {offer.price.deposit} {offer.price.deposit_currency}\n\n" \
                     f"Найдено {total_offers} | {current_offer_number}"

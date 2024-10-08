@@ -446,3 +446,13 @@ def suggest_city(user_input):
         return [suggestion[0] for suggestion in suggestions]
     else:
         return []
+
+
+def calculate_days_between(check_in_str, check_out_str):
+    # Преобразуем строки в объекты даты
+    check_in = datetime.strptime(check_in_str, "%Y-%m-%d")
+    check_out = datetime.strptime(check_out_str, "%Y-%m-%d")
+
+    # Рассчитываем разницу в днях
+    days_stayed = (check_out - check_in).days
+    return days_stayed
