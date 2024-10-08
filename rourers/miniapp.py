@@ -1,5 +1,7 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 from starlette import status
+
+from main import templates
 
 router = APIRouter(
     prefix="/miniapp",
@@ -8,12 +10,14 @@ router = APIRouter(
 
 
 @router.get("",
-            summary="Получение списка",
+            summary="Получение главной страницы Мини Ап",
             status_code=status.HTTP_200_OK)
-async def get_some():
+async def get_mini_app(request: Request):
     """
-    Get запрос получения списка.
+    Get запрос получения главной страницы.
 
     """
 
-    return {"DATA": 123}
+    return templates.TemplateResponse(
+        request=request, name="miniapp/index.html", context={}
+    )
