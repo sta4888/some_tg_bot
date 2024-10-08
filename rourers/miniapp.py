@@ -21,5 +21,5 @@ async def get_mini_app(request: Request):
     """
 
     return templates.TemplateResponse(
-        request=request, name="miniapp/index.html", context={}
+        request=request, name="miniapp/miniapp.html", context={}
     )
