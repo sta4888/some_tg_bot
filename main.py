@@ -233,15 +233,16 @@ def handle_bedrooms_selection(call):
     bot.edit_message_text(f"Вы выбрали {bedrooms} раздельных спальных мест.",
                           chat_id,
                           call.message.message_id)
-    days = user_data[chat_id].get('end_date', 'Не указано') - user_data[chat_id].get('start_date', 'Не указано')
 
+    days = user_data[chat_id].get('end_date', 'Не указано') - user_data[chat_id].get('start_date', 'Не указано')
 
     bot.send_message(chat_id, "Спасибо! Вот ваши данные:")
     bot.send_message(chat_id, f"Город: {user_data[chat_id].get('city', 'Не указано')}\n"
                               f"Даты: {user_data[chat_id].get('start_date', 'Не указано')} - {user_data[chat_id].get('end_date', 'Не указано')}\n"
-                              f"Количество гостей: {user_data[chat_id].get('guest', 'Не указано')}\n"
-                              f"days: {days}\n\n"
+                              f"Количество гостей: {user_data[chat_id].get('guest', 'Не указано')}\ndays: {days}\n\n"
                               f"Спальных мест: {user_data[chat_id].get('bedrooms', 'Не указано')}")
+
+
 
     city = user_data[chat_id].get('city')
     start_date = user_data[chat_id].get('start_date')
