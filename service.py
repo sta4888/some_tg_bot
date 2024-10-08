@@ -455,4 +455,4 @@ def calculate_days_between(check_in_str, check_out_str):
 
     # Рассчитываем разницу в днях
     days_stayed = (check_out - check_in).days
-    return days_stayed
+    return abs(days_stayed)
