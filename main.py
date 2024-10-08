@@ -11,7 +11,7 @@ from starlette.responses import HTMLResponse
 from starlette.staticfiles import StaticFiles
 from starlette.templating import Jinja2Templates
 
-app = FastAPI()
+app = FastAPI(docs_url="/main/docs")
 
 # Папка для хранения сгенерированных файлов
 ICAL_FILES_DIR = Path("./ical_files")
