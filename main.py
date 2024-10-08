@@ -234,15 +234,15 @@ def handle_bedrooms_selection(call):
                           chat_id,
                           call.message.message_id)
 
-    days = user_data[chat_id].get('end_date', 'Не указано') - user_data[chat_id].get('start_date', 'Не указано')
+    print(type(user_data[chat_id].get('end_date', 'Не указано')))
+    print(type(user_data[chat_id].get('start_date', 'Не указано')))
+    days = 123
 
     bot.send_message(chat_id, "Спасибо! Вот ваши данные:")
     bot.send_message(chat_id, f"Город: {user_data[chat_id].get('city', 'Не указано')}\n"
                               f"Даты: {user_data[chat_id].get('start_date', 'Не указано')} - {user_data[chat_id].get('end_date', 'Не указано')}\n"
                               f"Количество гостей: {user_data[chat_id].get('guest', 'Не указано')}\ndays: {days}\n\n"
                               f"Спальных мест: {user_data[chat_id].get('bedrooms', 'Не указано')}")
-
-
 
     city = user_data[chat_id].get('city')
     start_date = user_data[chat_id].get('start_date')
@@ -330,15 +330,13 @@ def send_offer_message(chat_id):
     current_offer_number = current_offer_index + 1  # Номер предложения (1-индексация)
     # f"Даты: {user_data[chat_id].get('start_date', 'Не указано')} - {user_data[chat_id].get('end_date', 'Не указано')}\n"
 
-
     offer_message = f"Предложение: \n" \
                     f"{offer.location.region}, {offer.location.locality_name}\n" \
                     f"Адрес: {offer.location.address}\n" \
                     f"Цена за сутки от: {offer.price.value} {offer.price.currency}\n\n" \
-                    f"Удобства: {amenities_str}\n\n" \                    
+                    f"Удобства: {amenities_str}\n\n" \
                     f"Депозит: {offer.price.deposit} {offer.price.deposit_currency}\n\n" \
                     f"Найдено {total_offers} | {current_offer_number}"
-
 
     markup = types.InlineKeyboardMarkup()
     next_button = types.InlineKeyboardButton("Далее", callback_data="next_offer")
