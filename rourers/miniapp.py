@@ -1,12 +1,14 @@
 from fastapi import APIRouter, Request
 from starlette import status
+from starlette.templating import Jinja2Templates
 
-from main import templates
 
 router = APIRouter(
     prefix="/miniapp",
     tags=["miniapp"]
 )
+
+templates = Jinja2Templates(directory="templates")
 
 
 @router.get("",
