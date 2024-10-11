@@ -945,11 +945,11 @@ def handle_allrefstats(message):
 
     if user:
         # Получаем реферальную цепочку
-        all_referrals = get_referral_chain(user)
+        all_referrals = get_referral_chain(user, max_levels=3)
 
         # Формируем сообщение с деталями
         if all_referrals:
-            message_text = "Рефералы до 6 уровня:\n"
+            message_text = "Рефералы до 3 уровня:\n"
             for referral_info in all_referrals:
                 subscription_status = "Подписка активна" if referral_info[
                     "has_active_subscription"] else "Подписка не активна"
